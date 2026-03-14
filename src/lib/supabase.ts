@@ -7,6 +7,5 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   auth: {
     persistSession: true,
     detectSessionInUrl: true,
-    storage: window.localStorage,
   },
 })
