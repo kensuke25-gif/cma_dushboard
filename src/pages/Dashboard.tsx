@@ -1,12 +1,11 @@
 import PomodoroTimer from '../components/dashboard/PomodoroTimer'
 import TodayTasks from '../components/dashboard/TodayTasks'
 import ProgressSection from '../components/dashboard/ProgressSection'
-import StudyRecordPanel from '../components/dashboard/StudyRecordPanel'
 
 export default function Dashboard() {
   return (
-    <div className="min-h-screen bg-gray-950">
-      <header className="bg-gray-900 border-b border-gray-800 px-6 py-4">
+    <div className="min-h-screen bg-zinc-900">
+      <header className="bg-zinc-800 border-b border-zinc-700 px-6 py-4">
         <div className="max-w-5xl mx-auto flex justify-between items-center">
           <h1 className="text-lg font-semibold text-white">証券アナリスト2次 学習ダッシュボード</h1>
           <span className="text-sm text-orange-400 font-medium">試験まで残87日</span>
@@ -19,7 +18,6 @@ export default function Dashboard() {
         <div className="flex flex-col gap-6">
           <TodayTasks />
           <PomodoroTimer />
-          <StudyRecordPanel />
         </div>
       </main>
     </div>

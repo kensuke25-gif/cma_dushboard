@@ -48,7 +48,7 @@ export default function PomodoroTimer() {
   ]
 
   return (
-    <div className="bg-gray-900 rounded-xl border border-gray-800 p-5">
+    <div className="bg-zinc-800 rounded-xl border border-zinc-700 p-5">
       <h2 className="text-sm font-semibold text-white mb-4">ポモドーロタイマー</h2>
 
       {/* モード切替 */}
@@ -60,7 +60,7 @@ export default function PomodoroTimer() {
             className={`text-xs px-3 py-1 rounded-full border transition-all ${
               mode === m
                 ? 'bg-orange-500 text-white border-orange-500'
-                : 'text-gray-500 border-gray-700 hover:border-gray-500'
+                : 'text-zinc-500 border-zinc-600 hover:border-zinc-400'
             }`}
           >
             {MODES[m].label}{MODES[m].minutes}分
@@ -84,7 +84,7 @@ export default function PomodoroTimer() {
             isAnimationActive={false}
           >
             <Cell fill={MODES[mode].ringColor} />
-            <Cell fill="#1f2937" />
+            <Cell fill="#3f3f46" />
           </Pie>
         </PieChart>
         {/* 中央テキスト */}
@@ -92,12 +92,12 @@ export default function PomodoroTimer() {
           <span className={`text-3xl font-bold tabular-nums ${MODES[mode].textColor}`}>
             {mm}:{ss}
           </span>
-          <span className="text-xs text-gray-500 mt-1">{MODES[mode].label}</span>
+          <span className="text-xs text-zinc-500 mt-1">{MODES[mode].label}</span>
         </div>
       </div>
 
       {/* セット数 */}
-      <p className="text-xs text-gray-500 text-center mb-4">
+      <p className="text-xs text-zinc-500 text-center mb-4">
         セット数：{sets} / 今日の累計 {sets * 25}分
       </p>
 
@@ -111,7 +111,7 @@ export default function PomodoroTimer() {
         </button>
         <button
           onClick={() => { setRunning(false); setSeconds(MODES[mode].minutes * 60) }}
-          className="px-5 py-2 rounded-full border border-gray-700 text-gray-400 hover:text-gray-200 hover:border-gray-500 text-sm transition-colors"
+          className="px-5 py-2 rounded-full border border-zinc-700 text-zinc-400 hover:text-zinc-200 hover:border-zinc-500 text-sm transition-colors"
         >
           リセット
         </button>
