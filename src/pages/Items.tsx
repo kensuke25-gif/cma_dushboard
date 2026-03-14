@@ -86,13 +86,15 @@ export default function Items() {
   const [links, setLinks] = useState<Record<string, string>>(loadCache)
   const [modal, setModal] = useState<ModalState | null>(null)
   const [saving, setSaving] = useState(false)
+  const [saveError, setSaveError] = useState<string | null>(null)
 
   useEffect(() => { fetchWeakItems() }, [fetchWeakItems])
 
   // Supabase からリンクを取得
   useEffect(() => {
     supabase.from('item_links').select('link_key, url').then(({ data, error }) => {
-      if (error || !data) return
+      if (error) { console.error('[item_links fetch]', error); return }
+      if (!data) return
       const map: Record<string, string> = {}
       data.forEach((r: { link_key: string; url: string }) => { map[r.link_key] = r.url })
       setLinks(map)
@@ -113,11 +115,13 @@ export default function Items() {
     if (url) {
       window.open(url, '_blank', 'noopener,noreferrer')
     } else {
+      setSaveError(null)
       setModal({ key, label, inputValue: '' })
     }
   }
 
   function handleEdit(key: string, label: string) {
+    setSaveError(null)
     setModal({ key, label, inputValue: links[key] ?? '' })
   }
 
@@ -127,16 +131,29 @@ export default function Items() {
     if (!url) return
 
     setSaving(true)
-    const { data: { user } } = await supabase.auth.getUser()
-    if (user) {
-      await supabase.from('item_links').upsert(
-        { user_id: user.id, link_key: modal.key, url, updated_at: new Date().toISOString() },
-        { onConflict: 'user_id,link_key' }
-      )
+    setSaveError(null)
+
+    const { data: { user }, error: authError } = await supabase.auth.getUser()
+    if (authError || !user) {
+      setSaveError(`認証エラー: ${authError?.message ?? 'ユーザーが取得できません'}`)
+      setSaving(false)
+      return
     }
+
+    const { error: upsertError } = await supabase.from('item_links').upsert(
+      { user_id: user.id, link_key: modal.key, url, updated_at: new Date().toISOString() },
+      { onConflict: 'user_id,link_key' }
+    )
+
     setSaving(false)
 
-    // 楽観的更新
+    if (upsertError) {
+      console.error('[item_links upsert]', upsertError)
+      setSaveError(`保存エラー: ${upsertError.message}`)
+      return
+    }
+
+    // 保存成功 → 楽観的更新
     const next = { ...links, [modal.key]: url }
     setLinks(next)
     saveCache(next)
@@ -327,6 +344,12 @@ export default function Items() {
                 />
               </div>
             </div>
+
+            {saveError && (
+              <div className="mx-5 mb-3 px-3 py-2 bg-red-900/30 border border-red-800/50 rounded-xl">
+                <p className="text-xs text-red-400">{saveError}</p>
+              </div>
+            )}
 
             <div className="px-5 pb-5 flex gap-2 justify-end">
               <button
