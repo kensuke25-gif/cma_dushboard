@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import { PieChart, Pie, Cell } from 'recharts'
 
 const MODES = {
-  focus: { label: '集中', minutes: 25, ringColor: '#f97316', textColor: 'text-orange-400' },
+  focus: { label: '集中', minutes: 25, ringColor: '#7c4dff', textColor: 'text-[#a78bfa]' },
   short: { label: '休憩', minutes: 5, ringColor: '#22c55e', textColor: 'text-green-400' },
   long: { label: '長休憩', minutes: 15, ringColor: '#3b82f6', textColor: 'text-blue-400' },
 }
@@ -48,19 +48,19 @@ export default function PomodoroTimer() {
   ]
 
   return (
-    <div className="bg-zinc-800 rounded-xl border border-zinc-700 p-5">
+    <div className="bg-[#1e1e3a] rounded-[20px] border border-[#2a2a4a] p-5">
       <h2 className="text-sm font-semibold text-white mb-4">ポモドーロタイマー</h2>
 
-      {/* モード切替 */}
-      <div className="flex gap-2 mb-5">
+      {/* モード切替 — 学習レポートの期間トグルと同じスタイル */}
+      <div className="flex gap-1 bg-[#111125] rounded-full p-1 mb-5 w-fit mx-auto">
         {(Object.keys(MODES) as Array<keyof typeof MODES>).map(m => (
           <button
             key={m}
             onClick={() => setMode(m)}
-            className={`text-xs px-3 py-1 rounded-full border transition-all ${
+            className={`text-xs px-3 py-1 rounded-full transition-all ${
               mode === m
-                ? 'bg-orange-500 text-white border-orange-500'
-                : 'text-zinc-500 border-zinc-600 hover:border-zinc-400'
+                ? 'bg-[#7c4dff] text-white font-medium'
+                : 'text-[#8888aa] hover:text-[#c8c8e8]'
             }`}
           >
             {MODES[m].label}{MODES[m].minutes}分
@@ -84,7 +84,7 @@ export default function PomodoroTimer() {
             isAnimationActive={false}
           >
             <Cell fill={MODES[mode].ringColor} />
-            <Cell fill="#3f3f46" />
+            <Cell fill="#252540" />
           </Pie>
         </PieChart>
         {/* 中央テキスト */}
@@ -92,12 +92,12 @@ export default function PomodoroTimer() {
           <span className={`text-3xl font-bold tabular-nums ${MODES[mode].textColor}`}>
             {mm}:{ss}
           </span>
-          <span className="text-xs text-zinc-500 mt-1">{MODES[mode].label}</span>
+          <span className="text-xs text-[#8888aa] mt-1">{MODES[mode].label}</span>
         </div>
       </div>
 
       {/* セット数 */}
-      <p className="text-xs text-zinc-500 text-center mb-4">
+      <p className="text-xs text-[#8888aa] text-center mb-4">
         セット数：{sets} / 今日の累計 {sets * 25}分
       </p>
 
@@ -105,13 +105,13 @@ export default function PomodoroTimer() {
       <div className="flex gap-2 justify-center">
         <button
           onClick={() => setRunning(r => !r)}
-          className="px-5 py-2 rounded-full bg-orange-500 hover:bg-orange-400 text-white text-sm font-medium transition-colors"
+          className="px-5 py-2 rounded-full bg-[#7c4dff] hover:bg-[#6c3dee] text-white text-sm font-medium transition-colors"
         >
           {running ? '一時停止' : 'スタート'}
         </button>
         <button
           onClick={() => { setRunning(false); setSeconds(MODES[mode].minutes * 60) }}
-          className="px-5 py-2 rounded-full border border-zinc-700 text-zinc-400 hover:text-zinc-200 hover:border-zinc-500 text-sm transition-colors"
+          className="px-5 py-2 rounded-full border border-[#3a3a5c] text-[#8888aa] hover:text-[#c8c8e8] hover:border-[#7c4dff] text-sm transition-colors"
         >
           リセット
         </button>
