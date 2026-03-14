@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from 'recharts'
+import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer, type PieLabelRenderProps } from 'recharts'
 
 type Period = 'today' | 'week' | 'month'
 
@@ -29,8 +29,7 @@ const timeBreakdown: Record<Period, { name: string; value: number; color: string
     { name: '証券分析', value: 50, color: '#60a5fa' },
     { name: '財務分析', value: 25, color: '#fb923c' },
     { name: 'CF', value: 10, color: '#34d399' },
-    { name: '経済', value: 0, color: '#f87171' },
-  ].filter(d => d.value > 0),
+  ],
   week: [
     { name: '証券分析', value: 180, color: '#60a5fa' },
     { name: '財務分析', value: 120, color: '#fb923c' },
@@ -49,6 +48,37 @@ const bottomStats = [
   { label: '連続日数', value: '8日' },
   { label: '残り日数', value: '87日' },
 ]
+
+function formatMinutes(minutes: number): string {
+  if (minutes >= 60) {
+    const h = Math.floor(minutes / 60)
+    const m = minutes % 60
+    return m > 0 ? `${h}h ${m}m` : `${h}h`
+  }
+  return `${minutes}分`
+}
+
+const RADIAN = Math.PI / 180
+
+const renderCustomLabel = (props: PieLabelRenderProps) => {
+  const { cx, cy, midAngle, outerRadius, name, value } = props
+  if (cx == null || cy == null || midAngle == null || outerRadius == null) return null
+  const radius = (outerRadius as number) + 32
+  const x = (cx as number) + radius * Math.cos(-midAngle * RADIAN)
+  const y = (cy as number) + radius * Math.sin(-midAngle * RADIAN)
+  return (
+    <text
+      x={x}
+      y={y}
+      fill="#9ca3af"
+      textAnchor={x > (cx as number) ? 'start' : 'end'}
+      dominantBaseline="central"
+      fontSize={10}
+    >
+      {name} {formatMinutes(value as number)}
+    </text>
+  )
+}
 
 const customTooltipStyle = {
   backgroundColor: '#1f2937',
@@ -103,41 +133,31 @@ export default function StudyStats() {
 
         {/* 勉強時間内訳 円グラフ */}
         <div>
-          <p className="text-xs text-gray-400 mb-3">勉強時間の内訳</p>
-          <div className="flex items-center gap-4">
-            <div className="w-40 h-40 shrink-0">
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie
-                    data={data}
-                    cx="50%"
-                    cy="50%"
-                    innerRadius={42}
-                    outerRadius={60}
-                    paddingAngle={3}
-                    dataKey="value"
-                    strokeWidth={0}
-                  >
-                    {data.map((entry, i) => (
-                      <Cell key={i} fill={entry.color} />
-                    ))}
-                  </Pie>
-                  <Tooltip
-                    formatter={(v) => [`${v}分`, '']}
-                    contentStyle={customTooltipStyle}
-                  />
-                </PieChart>
-              </ResponsiveContainer>
-            </div>
-            <div className="flex flex-col gap-2 flex-1">
-              {data.map(d => (
-                <div key={d.name} className="flex items-center gap-2">
-                  <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: d.color }} />
-                  <span className="text-xs text-gray-400 flex-1">{d.name}</span>
-                  <span className="text-xs font-medium text-gray-200">{d.value}分</span>
-                </div>
-              ))}
-            </div>
+          <p className="text-xs text-gray-400 mb-2">勉強時間の内訳</p>
+          <div className="h-52">
+            <ResponsiveContainer width="100%" height="100%">
+              <PieChart>
+                <Pie
+                  data={data}
+                  cx="50%"
+                  cy="50%"
+                  outerRadius={60}
+                  paddingAngle={3}
+                  dataKey="value"
+                  strokeWidth={0}
+                  label={renderCustomLabel}
+                  labelLine={{ stroke: '#4b5563', strokeWidth: 1 }}
+                >
+                  {data.map((entry, i) => (
+                    <Cell key={i} fill={entry.color} />
+                  ))}
+                </Pie>
+                <Tooltip
+                  formatter={(v) => [formatMinutes(v as number), '']}
+                  contentStyle={customTooltipStyle}
+                />
+              </PieChart>
+            </ResponsiveContainer>
           </div>
         </div>
       </div>
