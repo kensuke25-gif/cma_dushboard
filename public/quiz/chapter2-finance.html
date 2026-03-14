@@ -592,6 +592,41 @@ header {
 }
 .btn-nav:disabled { opacity: 0.3; cursor: not-allowed; }
 .nav-pos { font-size: 13px; color: #999; font-weight: 500; }
+/* ===== SIDEBAR TOGGLE ===== */
+.btn-toggle-sidebar {
+  background: rgba(255,255,255,0.1);
+  border: 1px solid rgba(255,255,255,0.2);
+  color: #fff;
+  width: 34px; height: 34px;
+  border-radius: 6px;
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 18px;
+  flex-shrink: 0;
+  transition: background 0.15s;
+}
+.btn-toggle-sidebar:hover { background: rgba(255,255,255,0.22); }
+.layout.collapsed { grid-template-columns: 1fr; }
+.layout.collapsed .sidebar { display: none; }
+/* ===== 苦手マーク ===== */
+.stat-n.c-weak { color: #e65100; }
+.btn-weak {
+  background: none;
+  border: 1.5px solid #ccc;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 15px;
+  width: 32px; height: 32px;
+  display: flex; align-items: center; justify-content: center;
+  transition: all 0.15s;
+  flex-shrink: 0;
+  line-height: 1;
+}
+.btn-weak:hover { border-color: #e65100; background: #fff3e0; }
+.btn-weak.is-weak { background: #fff3e0; border-color: #e65100; color: #e65100; }
+.q-list li.is-weak .q-no { color: #e65100; }
+.q-list li.is-weak { color: #e65100; }
+.q-list li.is-weak .q-theme-text { color: #e65100; }
 @media print {
   .sidebar, header .btn-pdf, .q-actions, .nav-row { display: none !important; }
   .layout { display: block; }
@@ -603,6 +638,7 @@ header {
 <body>
 <header>
   <div class="header-left">
+    <button class="btn-toggle-sidebar" onclick="toggleSidebar()" id="btn-sidebar-toggle" title="サイドバーを開閉">☰</button>
     <span class="header-logo">CMA</span>
     <div class="header-title-wrap">
       <div class="header-title">証券アナリスト｜金融経済 問題集</div>
@@ -624,11 +660,11 @@ header {
     </div>
     <div class="stat">
       <div class="stat-n c-correct" id="s-n-ok">0</div>
-      <div class="stat-label">正解</div>
+      <div class="stat-label">完了</div>
     </div>
     <div class="stat">
-      <div class="stat-n c-wrong" id="s-n-ng">0</div>
-      <div class="stat-label">不正解</div>
+      <div class="stat-n c-weak" id="s-n-ng">0</div>
+      <div class="stat-label">苦手</div>
     </div>
   </div>
   <div class="q-list-wrap">
@@ -1057,28 +1093,51 @@ const QS = [
 let cur = 0;
 const st = QS.map(() => ({ done: false, ok: false }));
 
+/* ===== 苦手マーク管理 ===== */
+const WEAK_KEY = 'cma_quiz2_weak';
+const weakSet = new Set(JSON.parse(localStorage.getItem(WEAK_KEY) || '[]'));
+function saveWeak() {
+  localStorage.setItem(WEAK_KEY, JSON.stringify([...weakSet]));
+}
+function toggleWeak(id) {
+  weakSet.has(id) ? weakSet.delete(id) : weakSet.add(id);
+  saveWeak();
+  render();
+}
+
+/* ===== サイドバー開閉 ===== */
+function toggleSidebar() {
+  const layout = document.querySelector('.layout');
+  const isCollapsed = layout.classList.toggle('collapsed');
+  document.getElementById('btn-sidebar-toggle').textContent = isCollapsed ? '☰' : '☰';
+}
+
+/* ===== リスト構築 ===== */
 function buildList() {
   const ul = document.getElementById('q-list');
   ul.innerHTML = '';
   const n = QS.length;
   document.getElementById('s-total').textContent = n;
   document.getElementById('s-n-total').textContent = n;
-  const nok = st.filter(s=>s.ok).length;
-  const nng = st.filter(s=>s.done&&!s.ok).length;
-  document.getElementById('s-n-ok').textContent = nok;
-  document.getElementById('s-n-ng').textContent = nng;
+  const ndone = st.filter(s=>s.done).length;
+  const nweak = weakSet.size;
+  document.getElementById('s-n-ok').textContent = ndone;
+  document.getElementById('s-n-ng').textContent = nweak;
   QS.forEach((q,i) => {
     const s = st[i];
+    const isWeak = weakSet.has(q.id);
     const li = document.createElement('li');
-    let cls = s.done ? (s.ok?'done-ok':'done-ng') : '';
+    let cls = s.done ? 'done-ok' : '';
+    if(isWeak) cls += ' is-weak';
     if(i===cur) cls += ' active';
-    li.className = cls;
+    li.className = cls.trim();
     li.onclick = ()=>goQ(i);
-    const mark = s.done ? (s.ok?'✓':'✗') : '';
+    const mark = isWeak ? '★' : (s.done ? '✓' : '');
+    const markColor = isWeak ? '#e65100' : '#2e7d32';
     li.innerHTML = `<span class="q-no">${String(i+1).padStart(2,'0')}</span>
       <span class="q-label"><div class="q-theme-text">${q.id}</div><div class="q-theme-text" style="font-size:11px;color:#888;">${q.theme}</div></span>
       <span class="q-type-badge ${q.type==='pc'?'badge-pc':'badge-ex'}">${q.type==='pc'?'PC':'章末'}</span>
-      <span class="q-mark">${mark}</span>`;
+      <span class="q-mark" style="color:${markColor}">${mark}</span>`;
     ul.appendChild(li);
   });
   const pct = ((cur+1)/QS.length*100).toFixed(1);
@@ -1091,14 +1150,16 @@ function buildList() {
   if(allDone){
     sw.classList.add('show');
     document.getElementById('sc-total').textContent = QS.length;
-    document.getElementById('sc-ok').textContent = nok;
-    document.getElementById('sc-pct').textContent = Math.round(nok/QS.length*100)+'%';
+    document.getElementById('sc-ok').textContent = ndone;
+    document.getElementById('sc-pct').textContent = Math.round(ndone/QS.length*100)+'%';
   } else { sw.classList.remove('show'); }
 }
 
+/* ===== 問題描画 ===== */
 function render() {
   const q = QS[cur];
   const s = st[cur];
+  const isWeak = weakSet.has(q.id);
   const area = document.getElementById('q-area');
   const typeLabel = q.type==='pc' ? 'Point Check' : '章末問題';
   const typeCls   = q.type==='pc' ? 'type-pc' : 'type-ex';
@@ -1119,6 +1180,7 @@ function render() {
     <span class="q-badge">Question ${String(cur+1).padStart(2,'0')}</span>
     <span class="q-card-theme">${q.theme}</span>
     <span class="q-card-type ${typeCls}">${typeLabel} ${q.id}</span>
+    <button class="btn-weak ${isWeak?'is-weak':''}" onclick="toggleWeak('${q.id}')" title="${isWeak?'苦手マークを解除':'苦手マークを付ける'}">${isWeak?'★':'☆'}</button>
   </div>
   <div class="q-card-body">${q.qhtml}</div>
   ${resHtml}

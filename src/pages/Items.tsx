@@ -86,14 +86,32 @@ type ModalState = {
   inputValue: string
 }
 
+// クイズページの苦手マーク数を localStorage から読み取る
+function loadQuiz2WeakCount(): number {
+  try {
+    const arr = JSON.parse(localStorage.getItem('cma_quiz2_weak') || '[]')
+    return Array.isArray(arr) ? arr.length : 0
+  } catch { return 0 }
+}
+
 export default function Items() {
   const { weakItems, fetchWeakItems, toggleWeakItem } = useStudyStore()
   const [links, setLinks] = useState<Record<string, string>>(loadCache)
   const [modal, setModal] = useState<ModalState | null>(null)
   const [saving, setSaving] = useState(false)
   const [saveError, setSaveError] = useState<string | null>(null)
+  const [quiz2WeakCount, setQuiz2WeakCount] = useState(loadQuiz2WeakCount)
 
   useEffect(() => { fetchWeakItems() }, [fetchWeakItems])
+
+  // クイズページが localStorage を更新したら反映する
+  useEffect(() => {
+    const handler = (e: StorageEvent) => {
+      if (e.key === 'cma_quiz2_weak') setQuiz2WeakCount(loadQuiz2WeakCount())
+    }
+    window.addEventListener('storage', handler)
+    return () => window.removeEventListener('storage', handler)
+  }, [])
 
   // Supabase からリンクを取得
   useEffect(() => {
@@ -201,7 +219,14 @@ export default function Items() {
             <div key={chapter}>
               {/* Chapter header row with 問題集 button */}
               <div className="px-4 py-2 bg-[#111125] border-b border-[#2a2a4a] border-l-4 border-l-[#7c4dff] flex items-center justify-between">
-                <span className="text-xs font-semibold text-[#9090bb] tracking-wide">{chapter}</span>
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-semibold text-[#9090bb] tracking-wide">{chapter}</span>
+                  {chapter === '第II章 金融経済' && quiz2WeakCount > 0 && (
+                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-orange-900/30 text-orange-400 border border-orange-800/40 font-medium">
+                      苦手 {quiz2WeakCount}問
+                    </span>
+                  )}
+                </div>
                 <div className="flex items-center gap-1">
                   {probUrl && (
                     <button
