@@ -7,10 +7,10 @@ const initialTasks = [
 ]
 
 const subjectColors: Record<string, string> = {
-  '証券分析': 'bg-blue-100 text-blue-700',
-  '財務分析': 'bg-orange-100 text-orange-700',
-  'CF': 'bg-green-100 text-green-700',
-  '経済': 'bg-red-100 text-red-700',
+  '証券分析': 'bg-blue-900 text-blue-300',
+  '財務分析': 'bg-orange-900 text-orange-300',
+  'CF': 'bg-green-900 text-green-300',
+  '経済': 'bg-red-900 text-red-300',
 }
 
 export default function TodayTasks() {
@@ -23,8 +23,8 @@ export default function TodayTasks() {
   const done = tasks.filter(t => t.done).length
 
   return (
-    <div className="bg-white rounded-xl border border-gray-200 p-5">
-      <h2 className="text-sm font-semibold text-gray-700 mb-4">今日やること</h2>
+    <div className="bg-gray-900 rounded-xl border border-gray-800 p-5">
+      <h2 className="text-sm font-semibold text-white mb-4">今日やること</h2>
       <div className="space-y-3">
         {tasks.map(task => (
           <div key={task.id} className="flex items-start gap-3">
@@ -32,17 +32,17 @@ export default function TodayTasks() {
               type="checkbox"
               checked={task.done}
               onChange={() => toggle(task.id)}
-              className="mt-1 w-4 h-4 accent-blue-600 cursor-pointer"
+              className="mt-1 w-4 h-4 accent-orange-500 cursor-pointer"
             />
             <div className="flex-1">
-              <p className={`text-sm ${task.done ? 'line-through text-gray-400' : 'text-gray-800'}`}>
+              <p className={`text-sm ${task.done ? 'line-through text-gray-600' : 'text-gray-100'}`}>
                 {task.title}
               </p>
               <div className="flex gap-2 mt-1">
                 <span className={`text-xs px-2 py-0.5 rounded-full ${subjectColors[task.subject]}`}>
                   {task.subject}
                 </span>
-                <span className="text-xs text-gray-400">{task.minutes}分</span>
+                <span className="text-xs text-gray-500">{task.minutes}分</span>
               </div>
             </div>
           </div>
@@ -53,9 +53,9 @@ export default function TodayTasks() {
           <span>今日の達成率</span>
           <span>{done}/{tasks.length} 完了</span>
         </div>
-        <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
+        <div className="h-1.5 bg-gray-800 rounded-full overflow-hidden">
           <div
-            className="h-full bg-orange-400 rounded-full transition-all"
+            className="h-full bg-orange-500 rounded-full transition-all"
             style={{ width: `${(done / tasks.length) * 100}%` }}
           />
         </div>
