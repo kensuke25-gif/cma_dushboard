@@ -1,6 +1,7 @@
 import PomodoroTimer from '../components/dashboard/PomodoroTimer'
 import TodayTasks from '../components/dashboard/TodayTasks'
 import ProgressSection from '../components/dashboard/ProgressSection'
+import StudyRecordPanel from '../components/dashboard/StudyRecordPanel'
 
 export default function Dashboard() {
   return (
@@ -18,6 +19,7 @@ export default function Dashboard() {
         <div className="flex flex-col gap-6">
           <TodayTasks />
           <PomodoroTimer />
+          <StudyRecordPanel />
         </div>
       </main>
     </div>
