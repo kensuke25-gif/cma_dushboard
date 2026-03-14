@@ -13,11 +13,11 @@ export default function Dashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-zinc-900">
-      <header className="bg-zinc-800 border-b border-zinc-700 px-6 py-4">
+    <div className="min-h-screen bg-[#1a1a2e]">
+      <header className="bg-[#111125] border-b border-[#2a2a4a] px-6 py-4">
         <div className="max-w-7xl mx-auto flex justify-between items-center">
           <h1 className="text-lg font-semibold text-white">証券アナリスト2次 学習ダッシュボード</h1>
-          <span className="text-sm text-orange-400 font-medium">試験まで残87日</span>
+          <span className="text-sm text-[#7c4dff] font-medium">試験まで残87日</span>
         </div>
       </header>
       <main className="max-w-7xl mx-auto px-6 py-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">

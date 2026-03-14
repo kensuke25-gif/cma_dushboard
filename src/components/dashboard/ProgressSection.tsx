@@ -27,19 +27,19 @@ const periodStats: Record<Period, { primary: { label: string; value: string }; s
 
 const timeBreakdown: Record<Period, { name: string; value: number; color: string }[]> = {
   today: [
-    { name: '証券分析', value: 50, color: '#60a5fa' },
-    { name: '財務分析', value: 25, color: '#fb923c' },
+    { name: '証券分析', value: 50, color: '#7c4dff' },
+    { name: '財務分析', value: 25, color: '#60a5fa' },
     { name: '市場分析', value: 10, color: '#a78bfa' },
   ],
   week: [
-    { name: '証券分析', value: 180, color: '#60a5fa' },
-    { name: '財務分析', value: 120, color: '#fb923c' },
+    { name: '証券分析', value: 180, color: '#7c4dff' },
+    { name: '財務分析', value: 120, color: '#60a5fa' },
     { name: '市場分析', value: 90, color: '#a78bfa' },
     { name: '職業行為・倫理基準', value: 40, color: '#2dd4bf' },
   ],
   month: [
-    { name: '証券分析', value: 720, color: '#60a5fa' },
-    { name: '財務分析', value: 480, color: '#fb923c' },
+    { name: '証券分析', value: 720, color: '#7c4dff' },
+    { name: '財務分析', value: 480, color: '#60a5fa' },
     { name: '市場分析', value: 380, color: '#a78bfa' },
     { name: '職業行為・倫理基準', value: 160, color: '#2dd4bf' },
   ],
@@ -71,7 +71,7 @@ const renderCustomLabel = (props: PieLabelRenderProps) => {
     <text
       x={x}
       y={y}
-      fill="#71717a"
+      fill="#8888aa"
       textAnchor={x > (cx as number) ? 'start' : 'end'}
       dominantBaseline="central"
       fontSize={10}
@@ -82,10 +82,10 @@ const renderCustomLabel = (props: PieLabelRenderProps) => {
 }
 
 const customTooltipStyle = {
-  backgroundColor: '#27272a',
-  border: '1px solid #3f3f46',
-  borderRadius: '8px',
-  color: '#fff',
+  backgroundColor: '#1e1e3a',
+  border: '1px solid #2a2a4a',
+  borderRadius: '12px',
+  color: '#c8c8e8',
   fontSize: '12px',
 }
 
@@ -104,26 +104,26 @@ export default function StudyStats({ records: _records, onSaveRecord }: Props) {
   return (
     <div className="flex flex-col gap-4">
       {/* 学習時間レポートカード */}
-      <div className="bg-zinc-800 rounded-xl border border-zinc-700 p-5">
+      <div className="bg-[#1e1e3a] rounded-[20px] border border-[#2a2a4a] p-5">
         {/* ヘッダー */}
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-sm font-semibold text-white">学習時間レポート</h2>
           <div className="flex items-center gap-2">
             <button
               onClick={() => setIsModalOpen(true)}
-              className="text-xs px-3 py-1 rounded-full bg-orange-500 hover:bg-orange-400 text-white font-medium transition-colors"
+              className="text-xs px-3 py-1 rounded-full bg-[#7c4dff] hover:bg-[#6c3dee] text-white font-medium transition-colors"
             >
               + 記録する
             </button>
-            <div className="flex gap-1 bg-zinc-700 rounded-full p-1">
+            <div className="flex gap-1 bg-[#111125] rounded-full p-1">
               {(Object.keys(periodLabels) as Period[]).map(p => (
                 <button
                   key={p}
                   onClick={() => setPeriod(p)}
                   className={`text-xs px-3 py-1 rounded-full transition-all ${
                     period === p
-                      ? 'bg-orange-500 text-white font-medium'
-                      : 'text-zinc-400 hover:text-zinc-200'
+                      ? 'bg-[#7c4dff] text-white font-medium'
+                      : 'text-[#8888aa] hover:text-[#c8c8e8]'
                   }`}
                 >
                   {periodLabels[p]}
@@ -135,12 +135,12 @@ export default function StudyStats({ records: _records, onSaveRecord }: Props) {
 
         {/* 学習時間カード */}
         <div className="grid grid-cols-2 gap-3 mb-5">
-          <div className="bg-zinc-700 rounded-xl p-4">
-            <p className="text-xs text-zinc-400 mb-1">{stats.primary.label}</p>
+          <div className="bg-[#252540] rounded-[20px] p-4">
+            <p className="text-xs text-[#8888aa] mb-1">{stats.primary.label}</p>
             <p className="text-2xl font-bold text-white">{stats.primary.value}</p>
           </div>
-          <div className="bg-zinc-700 rounded-xl p-4">
-            <p className="text-xs text-zinc-400 mb-1">{stats.secondary.label}</p>
+          <div className="bg-[#252540] rounded-[20px] p-4">
+            <p className="text-xs text-[#8888aa] mb-1">{stats.secondary.label}</p>
             <p className={`text-2xl font-bold ${stats.secondary.value.startsWith('+') ? 'text-green-400' : 'text-white'}`}>
               {stats.secondary.value}
             </p>
@@ -149,7 +149,7 @@ export default function StudyStats({ records: _records, onSaveRecord }: Props) {
 
         {/* 勉強時間内訳 円グラフ */}
         <div>
-          <p className="text-xs text-zinc-400 mb-2">勉強時間の内訳</p>
+          <p className="text-xs text-[#8888aa] mb-2">勉強時間の内訳</p>
           <div className="h-52">
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
@@ -162,10 +162,10 @@ export default function StudyStats({ records: _records, onSaveRecord }: Props) {
                   outerRadius={60}
                   paddingAngle={0}
                   dataKey="value"
-                  stroke="#27272a"
+                  stroke="#1a1a2e"
                   strokeWidth={2}
                   label={renderCustomLabel}
-                  labelLine={{ stroke: '#52525b', strokeWidth: 1 }}
+                  labelLine={{ stroke: '#3a3a5c', strokeWidth: 1 }}
                 >
                   {data.map((entry, i) => (
                     <Cell key={i} fill={entry.color} />
@@ -184,8 +184,8 @@ export default function StudyStats({ records: _records, onSaveRecord }: Props) {
       {/* 連続日数 / 残り日数 */}
       <div className="grid grid-cols-2 gap-3">
         {bottomStats.map(s => (
-          <div key={s.label} className="bg-zinc-800 rounded-xl border border-zinc-700 p-4 text-center">
-            <p className="text-xs text-zinc-400 mb-1">{s.label}</p>
+          <div key={s.label} className="bg-[#1e1e3a] rounded-[20px] border border-[#2a2a4a] p-4 text-center">
+            <p className="text-xs text-[#8888aa] mb-1">{s.label}</p>
             <p className="text-2xl font-bold text-white">{s.value}</p>
           </div>
         ))}
