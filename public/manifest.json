@@ -1,0 +1,25 @@
+{
+  "name": "CMA学習ダッシュボード",
+  "short_name": "CMA学習",
+  "description": "証券アナリスト（CMA）試験対策学習ダッシュボード",
+  "start_url": "/cma_dushboard/",
+  "scope": "/cma_dushboard/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#1a1a2e",
+  "theme_color": "#1a1a2e",
+  "icons": [
+    {
+      "src": "/cma_dushboard/apple-touch-icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/cma_dushboard/apple-touch-icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
