@@ -1,8 +1,9 @@
-import { type StudyRecord, formatMinutes, subjectBadgeColors } from './StudyRecordPanel'
+import { formatMinutes, subjectBadgeColors } from './StudyRecordPanel'
+import { useStudyStore } from '../../stores/studyStore'
 
-type Props = { records: StudyRecord[] }
+export default function RecentHistory() {
+  const records = useStudyStore(s => s.records)
 
-export default function RecentHistory({ records }: Props) {
   return (
     <div className="bg-[#1e1e3a] rounded-[20px] border border-[#2a2a4a] p-5 flex flex-col">
       <h2 className="text-sm font-semibold text-white mb-4">直近の学習履歴</h2>
@@ -20,14 +21,14 @@ export default function RecentHistory({ records }: Props) {
                 </span>
                 <div className="flex items-center gap-2 text-xs text-[#8888aa]">
                   <span>{r.date}</span>
-                  <span>{r.recordedAt}</span>
+                  <span>{r.recorded_at}</span>
                 </div>
               </div>
               <p className="text-sm text-[#c8c8e8] leading-snug mb-1">{r.content}</p>
               <p className="text-xs text-[#7c4dff] font-medium">{formatMinutes(r.minutes)}</p>
-              {r.nextAction && (
+              {r.next_action && (
                 <p className="text-xs text-[#8888aa] mt-1">
-                  <span className="text-[#8888aa]">次→</span> {r.nextAction}
+                  <span className="text-[#8888aa]">次→</span> {r.next_action}
                 </p>
               )}
             </div>

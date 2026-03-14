@@ -1,61 +1,62 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
+import { Loader2 } from 'lucide-react'
 import { SUBJECTS, subjectBadgeColors } from './StudyRecordPanel'
-
-type Task = {
-  id: number
-  title: string
-  subject: string
-  minutes: number
-  done: boolean
-}
+import { useTasksStore, type Task } from '../../stores/tasksStore'
 
 type EditingTask = {
-  id: number
+  id: string
   title: string
   subject: string
   minutes: string
   done: boolean
 }
 
-const initialTasks: Task[] = [
-  { id: 1, title: '証券分析：株式評価モデル（DCF）復習', subject: '証券分析', minutes: 25, done: false },
-  { id: 2, title: '財務諸表分析：ROE分解 問題演習10問', subject: '財務分析', minutes: 25, done: false },
-  { id: 3, title: '市場分析：金利と債券価格の関係確認', subject: '市場分析', minutes: 25, done: false },
-]
-
 export default function TodayTasks() {
-  const [tasks, setTasks] = useState<Task[]>(initialTasks)
+  const { tasks, loading, fetchTasks, addTask, toggleTask, saveTasks } = useTasksStore()
   const [isEditOpen, setIsEditOpen] = useState(false)
   const [editingTasks, setEditingTasks] = useState<EditingTask[]>([])
 
-  const toggle = (id: number) => {
-    setTasks(tasks.map(t => t.id === id ? { ...t, done: !t.done } : t))
-  }
+  useEffect(() => { fetchTasks() }, [fetchTasks])
 
   const openEditModal = () => {
     setEditingTasks(tasks.map(t => ({ ...t, minutes: String(t.minutes) })))
     setIsEditOpen(true)
   }
 
-  const handleEditChange = (id: number, field: keyof EditingTask, value: string) => {
+  const handleEditChange = (id: string, field: keyof EditingTask, value: string) => {
     setEditingTasks(prev => prev.map(t => t.id === id ? { ...t, [field]: value } : t))
   }
 
-  const handleDeleteEditing = (id: number) => {
+  const handleDeleteEditing = (id: string) => {
     setEditingTasks(prev => prev.filter(t => t.id !== id))
   }
 
   const handleAddNew = () => {
     setEditingTasks(prev => [...prev, {
-      id: Date.now(), title: '', subject: SUBJECTS[0], minutes: '25', done: false
+      id: `new-${Date.now()}`, title: '', subject: SUBJECTS[0], minutes: '25', done: false
     }])
   }
 
-  const handleSave = () => {
-    setTasks(editingTasks
-      .filter(t => t.title.trim())
-      .map(t => ({ ...t, title: t.title.trim(), minutes: parseInt(t.minutes) || 25 }))
-    )
+  const handleSave = async () => {
+    const validTasks = editingTasks.filter(t => t.title.trim())
+    const isNew = (id: string) => id.startsWith('new-')
+
+    // 新規タスクを個別追加
+    for (const t of validTasks.filter(t => isNew(t.id))) {
+      await addTask({
+        title: t.title.trim(),
+        subject: t.subject,
+        minutes: parseInt(t.minutes) || 25,
+        done: false,
+      })
+    }
+
+    // 既存タスクの更新・削除
+    const existingEdited = validTasks
+      .filter(t => !isNew(t.id))
+      .map(t => ({ ...t, minutes: parseInt(t.minutes) || 25 } as Task))
+    await saveTasks(existingEdited)
+
     setIsEditOpen(false)
   }
 
@@ -73,42 +74,54 @@ export default function TodayTasks() {
         </button>
       </div>
 
-      <div className="space-y-3">
-        {tasks.map(task => (
-          <div key={task.id} className="flex items-start gap-3">
-            <input
-              type="checkbox"
-              checked={task.done}
-              onChange={() => toggle(task.id)}
-              className="mt-1 w-4 h-4 accent-[#7c4dff] cursor-pointer"
-            />
-            <div className="flex-1">
-              <p className={`text-sm ${task.done ? 'line-through text-[#8888aa]' : 'text-[#c8c8e8]'}`}>
-                {task.title}
-              </p>
-              <div className="flex gap-2 mt-1">
-                <span className={`text-xs px-2 py-0.5 rounded-full ${subjectBadgeColors[task.subject] ?? 'bg-[#252540] text-[#8888aa]'}`}>
-                  {task.subject}
-                </span>
-                <span className="text-xs text-[#8888aa]">{task.minutes}分</span>
+      {loading ? (
+        <div className="flex justify-center py-6">
+          <Loader2 className="w-5 h-5 text-[#7c4dff] animate-spin" />
+        </div>
+      ) : tasks.length === 0 ? (
+        <p className="text-xs text-[#8888aa] text-center py-6">
+          タスクがありません。「編集」から追加してください。
+        </p>
+      ) : (
+        <div className="space-y-3">
+          {tasks.map(task => (
+            <div key={task.id} className="flex items-start gap-3">
+              <input
+                type="checkbox"
+                checked={task.done}
+                onChange={() => toggleTask(task.id)}
+                className="mt-1 w-4 h-4 accent-[#7c4dff] cursor-pointer"
+              />
+              <div className="flex-1">
+                <p className={`text-sm ${task.done ? 'line-through text-[#8888aa]' : 'text-[#c8c8e8]'}`}>
+                  {task.title}
+                </p>
+                <div className="flex gap-2 mt-1">
+                  <span className={`text-xs px-2 py-0.5 rounded-full ${subjectBadgeColors[task.subject] ?? 'bg-[#252540] text-[#8888aa]'}`}>
+                    {task.subject}
+                  </span>
+                  <span className="text-xs text-[#8888aa]">{task.minutes}分</span>
+                </div>
               </div>
             </div>
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
+      )}
 
-      <div className="mt-4">
-        <div className="flex justify-between text-xs text-[#8888aa] mb-1">
-          <span>今日の達成率</span>
-          <span>{done}/{tasks.length} 完了</span>
+      {tasks.length > 0 && (
+        <div className="mt-4">
+          <div className="flex justify-between text-xs text-[#8888aa] mb-1">
+            <span>今日の達成率</span>
+            <span>{done}/{tasks.length} 完了</span>
+          </div>
+          <div className="h-1.5 bg-[#252540] rounded-full overflow-hidden">
+            <div
+              className="h-full bg-[#7c4dff] rounded-full transition-all"
+              style={{ width: tasks.length > 0 ? `${(done / tasks.length) * 100}%` : '0%' }}
+            />
+          </div>
         </div>
-        <div className="h-1.5 bg-[#252540] rounded-full overflow-hidden">
-          <div
-            className="h-full bg-[#7c4dff] rounded-full transition-all"
-            style={{ width: tasks.length > 0 ? `${(done / tasks.length) * 100}%` : '0%' }}
-          />
-        </div>
-      </div>
+      )}
 
       {/* タスク管理モーダル */}
       {isEditOpen && (
@@ -125,7 +138,6 @@ export default function TodayTasks() {
               </button>
             </div>
 
-            {/* タスクリスト */}
             <div className="flex-1 overflow-y-auto flex flex-col gap-3 mb-4">
               {editingTasks.map((task, index) => (
                 <div key={task.id} className="bg-[#252540] rounded-[20px] p-4">
@@ -164,8 +176,6 @@ export default function TodayTasks() {
                   </div>
                 </div>
               ))}
-
-              {/* タスク追加ボタン */}
               <button
                 onClick={handleAddNew}
                 className="w-full py-3 rounded-[20px] border border-dashed border-[#3a3a5c] text-xs text-[#8888aa] hover:text-[#c8c8e8] hover:border-[#7c4dff] transition-colors"
