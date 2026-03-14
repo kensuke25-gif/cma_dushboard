@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Star, ExternalLink, FileText, Pencil, X, ExternalLink as LinkIcon } from 'lucide-react'
 import { useStudyStore } from '../stores/studyStore'
+import { supabase } from '../lib/supabase'
 
 type Item = {
   id: number
@@ -62,15 +63,16 @@ function getItemsGrouped(): { chapter: string; items: Item[] }[] {
   }))
 }
 
-// localStorage keys
-function chapterProblemKey(chapter: string) { return `link:chapter:${chapter}` }
-function itemExplanationKey(itemId: number) { return `link:item:${itemId}` }
+function chapterProblemKey(chapter: string) { return `chapter:${chapter}` }
+function itemExplanationKey(itemId: number) { return `item:${itemId}` }
 
-function loadLinks(): Record<string, string> {
-  try { return JSON.parse(localStorage.getItem('item_links') || '{}') } catch { return {} }
+// localStorage をキャッシュとして使用（ロード中のちらつき防止）
+const LS_KEY = 'item_links_cache'
+function loadCache(): Record<string, string> {
+  try { return JSON.parse(localStorage.getItem(LS_KEY) || '{}') } catch { return {} }
 }
-function saveLinks(links: Record<string, string>) {
-  localStorage.setItem('item_links', JSON.stringify(links))
+function saveCache(links: Record<string, string>) {
+  localStorage.setItem(LS_KEY, JSON.stringify(links))
 }
 
 type ModalState = {
@@ -81,10 +83,22 @@ type ModalState = {
 
 export default function Items() {
   const { weakItems, fetchWeakItems, toggleWeakItem } = useStudyStore()
-  const [links, setLinks] = useState<Record<string, string>>(loadLinks)
+  const [links, setLinks] = useState<Record<string, string>>(loadCache)
   const [modal, setModal] = useState<ModalState | null>(null)
+  const [saving, setSaving] = useState(false)
 
   useEffect(() => { fetchWeakItems() }, [fetchWeakItems])
+
+  // Supabase からリンクを取得
+  useEffect(() => {
+    supabase.from('item_links').select('link_key, url').then(({ data, error }) => {
+      if (error || !data) return
+      const map: Record<string, string> = {}
+      data.forEach((r: { link_key: string; url: string }) => { map[r.link_key] = r.url })
+      setLinks(map)
+      saveCache(map)
+    })
+  }, [])
 
   const grouped = getItemsGrouped()
   const weakCount = weakItems.size
@@ -107,14 +121,26 @@ export default function Items() {
     setModal({ key, label, inputValue: links[key] ?? '' })
   }
 
-  function handleSave() {
+  async function handleSave() {
     if (!modal) return
     const url = modal.inputValue.trim()
     if (!url) return
+
+    setSaving(true)
+    const { data: { user } } = await supabase.auth.getUser()
+    if (user) {
+      await supabase.from('item_links').upsert(
+        { user_id: user.id, link_key: modal.key, url, updated_at: new Date().toISOString() },
+        { onConflict: 'user_id,link_key' }
+      )
+    }
+    setSaving(false)
+
+    // 楽観的更新
     const next = { ...links, [modal.key]: url }
     setLinks(next)
-    saveLinks(next)
-    // open the link immediately after saving
+    saveCache(next)
+
     window.open(url, '_blank', 'noopener,noreferrer')
     setModal(null)
   }
@@ -311,10 +337,10 @@ export default function Items() {
               </button>
               <button
                 onClick={handleSave}
-                disabled={!modal.inputValue.trim()}
+                disabled={!modal.inputValue.trim() || saving}
                 className="px-4 py-2 rounded-xl text-sm font-medium bg-[#7c4dff] text-white hover:bg-[#6a3de8] disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
               >
-                保存して開く
+                {saving ? '保存中…' : '保存して開く'}
               </button>
             </div>
           </div>
