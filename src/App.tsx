@@ -1,10 +1,33 @@
-import { useEffect, type ReactNode } from 'react'
+import { useEffect, type ReactNode, Component } from 'react'
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import Layout from './components/Layout'
 import Dashboard from './pages/Dashboard'
 import Items from './pages/Items'
 import Login from './pages/Login'
 import { useAuthStore } from './stores/authStore'
+
+class ErrorBoundary extends Component<{ children: ReactNode }, { hasError: boolean }> {
+  state = { hasError: false }
+  static getDerivedStateFromError() { return { hasError: true } }
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="min-h-screen bg-[#1a1a2e] flex items-center justify-center p-4">
+          <div className="text-center text-[#8888aa]">
+            <p className="text-lg mb-2">エラーが発生しました</p>
+            <button
+              onClick={() => window.location.reload()}
+              className="text-[#7c4dff] underline text-sm"
+            >
+              ページを再読み込み
+            </button>
+          </div>
+        </div>
+      )
+    }
+    return this.props.children
+  }
+}
 
 function AuthGuard({ children }: { children: ReactNode }) {
   const user = useAuthStore(s => s.user)
@@ -30,6 +53,7 @@ export default function App() {
   }, [initialize])
 
   return (
+    <ErrorBoundary>
     <BrowserRouter basename="/cma_dushboard">
       <Routes>
         <Route path="/login" element={<Login />} />
@@ -45,5 +69,6 @@ export default function App() {
         </Route>
       </Routes>
     </BrowserRouter>
+    </ErrorBoundary>
   )
 }
