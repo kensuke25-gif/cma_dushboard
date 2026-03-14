@@ -1,0 +1,1167 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>証券アナリスト｜金融経済 問題集</title>
+<style>
+/* ===== RESET ===== */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+/* ===== BASE ===== */
+body {
+  font-family: 'Hiragino Kaku Gothic ProN', 'Yu Gothic Medium', 'Noto Sans JP', sans-serif;
+  background: #f5f5f0;
+  color: #1a1a1a;
+  font-size: 14px;
+  line-height: 1.7;
+  min-height: 100vh;
+}
+/* ===== HEADER ===== */
+header {
+  background: #1a1a2e;
+  color: #fff;
+  padding: 12px 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: sticky;
+  top: 0;
+  z-index: 200;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+}
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+.header-logo {
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  background: rgba(255,255,255,0.12);
+  border: 1px solid rgba(255,255,255,0.2);
+  border-radius: 4px;
+  padding: 3px 10px;
+  font-weight: 600;
+}
+.header-title-wrap {}
+.header-title {
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+.header-sub {
+  font-size: 11px;
+  color: rgba(255,255,255,0.55);
+  margin-top: 1px;
+}
+.btn-pdf {
+  background: rgba(255,255,255,0.1);
+  border: 1px solid rgba(255,255,255,0.2);
+  color: #fff;
+  font-size: 12px;
+  padding: 6px 14px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-family: inherit;
+  letter-spacing: 0.03em;
+  transition: background 0.15s;
+}
+.btn-pdf:hover { background: rgba(255,255,255,0.2); }
+/* ===== LAYOUT ===== */
+.layout {
+  display: grid;
+  grid-template-columns: 280px 1fr;
+  min-height: calc(100vh - 52px);
+}
+/* ===== SIDEBAR ===== */
+.sidebar {
+  background: #fff;
+  border-right: 1px solid #e0e0d8;
+  position: sticky;
+  top: 52px;
+  height: calc(100vh - 52px);
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+}
+.sidebar-header {
+  padding: 18px 18px 12px;
+  border-bottom: 1px solid #ebebeb;
+}
+.sidebar-header-title {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  color: #999;
+  text-transform: uppercase;
+  margin-bottom: 10px;
+}
+.sidebar-count {
+  font-size: 13px;
+  color: #555;
+}
+.sidebar-count strong { color: #1a1a2e; }
+.sidebar-stats {
+  display: flex;
+  gap: 8px;
+  padding: 12px 18px;
+  border-bottom: 1px solid #ebebeb;
+}
+.stat {
+  flex: 1;
+  background: #f8f8f5;
+  border-radius: 8px;
+  padding: 8px 6px;
+  text-align: center;
+  border: 1px solid #eee;
+}
+.stat-n {
+  font-size: 22px;
+  font-weight: 700;
+  line-height: 1;
+  margin-bottom: 3px;
+}
+.stat-n.c-correct { color: #2e7d32; }
+.stat-n.c-wrong   { color: #c62828; }
+.stat-n.c-total   { color: #1a1a2e; }
+.stat-label { font-size: 10px; color: #999; }
+/* Q List */
+.q-list-wrap { flex: 1; overflow-y: auto; }
+.q-list-label {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  color: #bbb;
+  padding: 12px 18px 6px;
+  text-transform: uppercase;
+}
+.q-list { list-style: none; }
+.q-list li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 18px;
+  cursor: pointer;
+  font-size: 12.5px;
+  color: #444;
+  border-left: 3px solid transparent;
+  transition: background 0.1s, border-color 0.1s;
+  line-height: 1.4;
+}
+.q-list li:hover { background: #f5f5f0; }
+.q-list li.active {
+  background: #eef3fc;
+  border-left-color: #1a3c8a;
+  color: #1a3c8a;
+  font-weight: 600;
+}
+.q-list li.done-ok { color: #2e7d32; }
+.q-list li.done-ng { color: #c62828; }
+.q-no {
+  font-size: 10px;
+  font-weight: 700;
+  color: #bbb;
+  width: 22px;
+  flex-shrink: 0;
+  text-align: right;
+}
+.q-list li.active .q-no { color: #1a3c8a; }
+.q-list li.done-ok .q-no { color: #2e7d32; }
+.q-list li.done-ng .q-no { color: #c62828; }
+.q-label { flex: 1; min-width: 0; }
+.q-theme-text {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.q-type-badge {
+  font-size: 9px;
+  border-radius: 3px;
+  padding: 1px 5px;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+.badge-pc { background: #e8f0fe; color: #1a3c8a; }
+.badge-ex { background: #fce8e8; color: #c62828; }
+.q-mark {
+  font-size: 13px;
+  flex-shrink: 0;
+  width: 16px;
+  text-align: center;
+}
+/* ===== MAIN ===== */
+.main {
+  padding: 28px 36px 48px;
+  max-width: 820px;
+}
+/* Progress */
+.progress-wrap {
+  margin-bottom: 24px;
+}
+.progress-track {
+  height: 4px;
+  background: #e0e0d8;
+  border-radius: 2px;
+  overflow: hidden;
+}
+.progress-fill {
+  height: 100%;
+  background: #1a3c8a;
+  border-radius: 2px;
+  transition: width 0.4s ease;
+}
+/* Score summary (shown when all done) */
+.score-wrap {
+  display: none;
+  background: #fff;
+  border: 1px solid #e0e0d8;
+  border-radius: 12px;
+  padding: 22px 24px;
+  margin-bottom: 20px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+}
+.score-wrap.show { display: block; }
+.score-title { font-size: 16px; font-weight: 700; margin-bottom: 14px; color: #1a1a2e; }
+.score-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 10px; }
+.score-item {
+  background: #f8f8f5;
+  border: 1px solid #eee;
+  border-radius: 8px;
+  padding: 12px;
+  text-align: center;
+}
+.score-big { font-size: 26px; font-weight: 700; }
+.score-item.s-total .score-big { color: #1a1a2e; }
+.score-item.s-ok    .score-big { color: #2e7d32; }
+.score-item.s-pct   .score-big { color: #1a3c8a; }
+.score-lbl { font-size: 11px; color: #999; margin-top: 3px; }
+/* Question card */
+.q-card {
+  background: #fff;
+  border: 1px solid #e0e0d8;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+  margin-bottom: 16px;
+}
+.q-card-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 20px;
+  background: #f8f8f5;
+  border-bottom: 1px solid #ebebeb;
+}
+.q-badge {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  background: #1a1a2e;
+  color: #fff;
+  padding: 4px 12px;
+  border-radius: 20px;
+}
+.q-card-theme {
+  font-size: 12px;
+  font-weight: 600;
+  background: #eef3fc;
+  color: #1a3c8a;
+  padding: 4px 12px;
+  border-radius: 20px;
+}
+.q-card-type {
+  font-size: 11px;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: 20px;
+}
+.type-pc { background: #e8f0fe; color: #1a3c8a; }
+.type-ex { background: #fce8e8; color: #c62828; }
+.q-card-body { padding: 22px 22px 18px; }
+/* Question text */
+.q-text {
+  font-size: 14px;
+  line-height: 1.85;
+  margin-bottom: 4px;
+}
+.q-stem-block {
+  background: #f5f7ff;
+  border-left: 4px solid #7090cc;
+  border-radius: 0 8px 8px 0;
+  padding: 14px 18px;
+  margin: 14px 0;
+  font-size: 13.5px;
+  line-height: 1.9;
+}
+.q-sub-text {
+  font-size: 13.5px;
+  line-height: 1.85;
+  margin-bottom: 4px;
+}
+.q-sub-item {
+  font-size: 13.5px;
+  line-height: 1.85;
+  margin-left: 1em;
+  text-indent: -1em;
+  padding-left: 1em;
+}
+/* 穴埋め問題の下線 */
+.blank { display: inline-block; min-width: 60px; border-bottom: 2px solid #333; }
+/* 択一式選択肢 */
+.choices { list-style: none; margin-top: 18px; }
+.choice {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 12px 16px;
+  border: 1.5px solid #e0e0d8;
+  border-radius: 8px;
+  margin-bottom: 9px;
+  cursor: pointer;
+  transition: border-color 0.12s, background 0.12s;
+  font-size: 13.5px;
+  line-height: 1.6;
+}
+.choice:hover:not(.disabled) {
+  border-color: #1a3c8a;
+  background: #eef3fc;
+}
+.choice.sel {
+  border-color: #1a3c8a;
+  background: #eef3fc;
+}
+.choice.ok {
+  border-color: #2e7d32;
+  background: #e8f5e9;
+}
+.choice.ng {
+  border-color: #c62828;
+  background: #ffebee;
+}
+.choice.disabled { cursor: default; }
+.choice-label {
+  width: 24px; height: 24px;
+  border-radius: 50%;
+  border: 1.5px solid #ccc;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 11px; font-weight: 700;
+  flex-shrink: 0;
+  margin-top: 1px;
+  transition: all 0.12s;
+  background: #fff;
+}
+.choice.sel .choice-label { background: #1a3c8a; border-color: #1a3c8a; color: #fff; }
+.choice.ok  .choice-label { background: #2e7d32; border-color: #2e7d32; color: #fff; }
+.choice.ng  .choice-label { background: #c62828; border-color: #c62828; color: #fff; }
+/* 記述式問題 */
+.essay-area {
+  margin-top: 16px;
+  background: #f8f8f5;
+  border-radius: 8px;
+  padding: 14px 18px;
+  font-size: 13px;
+  color: #666;
+  border: 1px dashed #ccc;
+  line-height: 1.7;
+}
+/* Actions */
+.q-actions {
+  padding: 0 22px 22px;
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+.btn-submit {
+  background: #1a1a2e;
+  color: #fff;
+  border: none;
+  padding: 10px 28px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+  letter-spacing: 0.03em;
+  transition: opacity 0.15s, transform 0.1s;
+}
+.btn-submit:disabled { opacity: 0.35; cursor: not-allowed; }
+.btn-submit:not(:disabled):hover { opacity: 0.82; transform: translateY(-1px); }
+.btn-retry {
+  background: transparent;
+  color: #666;
+  border: 1.5px solid #ccc;
+  padding: 10px 18px;
+  border-radius: 8px;
+  font-size: 13px;
+  cursor: pointer;
+  font-family: inherit;
+  transition: background 0.12s;
+}
+.btn-retry:hover { background: #f5f5f0; }
+/* Result */
+.result-box {
+  display: none;
+  margin: 0 22px 16px;
+  border-radius: 10px;
+  padding: 16px 20px;
+}
+.result-box.show { display: block; }
+.result-box.ok-box {
+  background: #e8f5e9;
+  border: 1.5px solid #a5d6a7;
+}
+.result-box.ng-box {
+  background: #ffebee;
+  border: 1.5px solid #ef9a9a;
+}
+.result-verdict {
+  font-size: 15px;
+  font-weight: 700;
+  margin-bottom: 8px;
+}
+.result-verdict.ok { color: #2e7d32; }
+.result-verdict.ng { color: #c62828; }
+.result-text { font-size: 13px; line-height: 1.75; }
+/* Explanation card */
+.exp-card {
+  display: none;
+  background: #fff;
+  border: 1px solid #e0e0d8;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+  margin-bottom: 16px;
+}
+.exp-card.show { display: block; }
+.exp-head {
+  background: #1a1a2e;
+  color: #fff;
+  padding: 14px 20px;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.exp-head-icon {
+  background: rgba(255,255,255,0.15);
+  border-radius: 50%;
+  width: 26px; height: 26px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 13px;
+}
+.exp-body { padding: 22px 22px; }
+.exp-section { margin-bottom: 18px; }
+.exp-section:last-child { margin-bottom: 0; }
+.exp-section-title {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  color: #999;
+  text-transform: uppercase;
+  margin-bottom: 8px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid #ebebeb;
+}
+.exp-text { font-size: 13.5px; line-height: 1.85; }
+/* Explanation components */
+.formula-box {
+  background: #eef3fc;
+  border-left: 4px solid #1a3c8a;
+  border-radius: 0 8px 8px 0;
+  padding: 12px 18px;
+  font-size: 14px;
+  text-align: center;
+  margin: 12px 0;
+  color: #1a3c8a;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+}
+.exp-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12.5px;
+  margin: 10px 0;
+}
+.exp-table th {
+  background: #f5f5f0;
+  padding: 8px 12px;
+  text-align: left;
+  font-weight: 700;
+  border: 1px solid #ddd;
+  font-size: 12px;
+}
+.exp-table td {
+  padding: 8px 12px;
+  border: 1px solid #e8e8e8;
+  line-height: 1.6;
+}
+.exp-table tr:nth-child(even) td { background: #fafaf8; }
+.c-up   { color: #c62828; font-weight: 600; }
+.c-down { color: #2e7d32; font-weight: 600; }
+.c-ok   { color: #2e7d32; }
+.c-ng   { color: #c62828; }
+.note-box {
+  background: #fff8e1;
+  border: 1px solid #ffe082;
+  border-radius: 8px;
+  padding: 12px 16px;
+  font-size: 13px;
+  line-height: 1.75;
+  margin: 10px 0;
+}
+.note-box strong { color: #e65100; }
+.tip-box {
+  background: #e0f2f1;
+  border: 1px solid #80cbc4;
+  border-radius: 8px;
+  padding: 12px 16px;
+  font-size: 13px;
+  line-height: 1.75;
+  margin: 10px 0;
+}
+.tip-box strong { color: #00695c; }
+.flow-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 14px 16px;
+  background: #f5f7ff;
+  border-radius: 8px;
+  margin: 10px 0;
+  border: 1px solid #dde3f5;
+}
+.flow-node {
+  background: #eef3fc;
+  border: 1.5px solid #aac0e8;
+  border-radius: 6px;
+  padding: 7px 14px;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: #1a3c8a;
+  text-align: center;
+  line-height: 1.4;
+}
+.flow-arr { font-size: 16px; color: #aaa; }
+.flow-end {
+  background: #e8f5e9;
+  border: 1.5px solid #a5d6a7;
+  border-radius: 6px;
+  padding: 7px 14px;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: #2e7d32;
+  text-align: center;
+}
+/* SVG diagrams inside explanations */
+.exp-diagram-wrap {
+  background: #fafafa;
+  border: 1px solid #ebebeb;
+  border-radius: 8px;
+  padding: 16px;
+  margin: 10px 0;
+  overflow-x: auto;
+}
+/* Navigation */
+.nav-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-top: 6px;
+}
+.btn-nav {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: #fff;
+  border: 1.5px solid #ddd;
+  color: #555;
+  padding: 9px 18px;
+  border-radius: 8px;
+  font-size: 13px;
+  cursor: pointer;
+  font-family: inherit;
+  transition: all 0.12s;
+}
+.btn-nav:hover:not(:disabled) {
+  border-color: #1a3c8a;
+  color: #1a3c8a;
+  background: #eef3fc;
+}
+.btn-nav:disabled { opacity: 0.3; cursor: not-allowed; }
+.nav-pos { font-size: 13px; color: #999; font-weight: 500; }
+@media print {
+  .sidebar, header .btn-pdf, .q-actions, .nav-row { display: none !important; }
+  .layout { display: block; }
+  .main { padding: 0; max-width: 100%; }
+  .exp-card { display: block !important; }
+}
+</style>
+</head>
+<body>
+<header>
+  <div class="header-left">
+    <span class="header-logo">CMA</span>
+    <div class="header-title-wrap">
+      <div class="header-title">証券アナリスト｜金融経済 問題集</div>
+      <div class="header-sub">第Ⅱ章 金融経済 ／ Point Check・章末問題</div>
+    </div>
+  </div>
+  <button class="btn-pdf" onclick="window.print()">🖨 PDF出力</button>
+</header>
+<div class="layout">
+<aside class="sidebar">
+  <div class="sidebar-header">
+    <div class="sidebar-header-title">問題一覧</div>
+    <div class="sidebar-count">全 <strong id="s-total">0</strong> 問 ／ 金融経済</div>
+  </div>
+  <div class="sidebar-stats">
+    <div class="stat">
+      <div class="stat-n c-total" id="s-n-total">0</div>
+      <div class="stat-label">全問</div>
+    </div>
+    <div class="stat">
+      <div class="stat-n c-correct" id="s-n-ok">0</div>
+      <div class="stat-label">正解</div>
+    </div>
+    <div class="stat">
+      <div class="stat-n c-wrong" id="s-n-ng">0</div>
+      <div class="stat-label">不正解</div>
+    </div>
+  </div>
+  <div class="q-list-wrap">
+    <div class="q-list-label">問題一覧</div>
+    <ul class="q-list" id="q-list"></ul>
+  </div>
+</aside>
+<main class="main">
+  <div class="progress-wrap">
+    <div class="progress-track">
+      <div class="progress-fill" id="prog-fill" style="width:0%"></div>
+    </div>
+  </div>
+  <div class="score-wrap" id="score-wrap">
+    <div class="score-title">🎉 全問完了！</div>
+    <div class="score-grid">
+      <div class="score-item s-total"><div class="score-big" id="sc-total">0</div><div class="score-lbl">全問題数</div></div>
+      <div class="score-item s-ok"><div class="score-big" id="sc-ok">0</div><div class="score-lbl">正解数</div></div>
+      <div class="score-item s-pct"><div class="score-big" id="sc-pct">0%</div><div class="score-lbl">正解率</div></div>
+    </div>
+  </div>
+  <div id="q-area"></div>
+  <div class="nav-row">
+    <button class="btn-nav" id="btn-prev" onclick="go(cur-1)">← 前の問題</button>
+    <span class="nav-pos" id="nav-pos">1 / 1</span>
+    <button class="btn-nav" id="btn-next" onclick="go(cur+1)">次の問題 →</button>
+  </div>
+</main>
+</div>
+<script>
+const QS = [
+{
+  id:'II-1', type:'pc', theme:'金融政策の手段・貨幣乗数',
+  qhtml:`<div class="q-text">日本における伝統的な金融政策の手段として、（　①　）操作、（　②　）操作、預金準備率操作、を挙げることができる。現在、日本銀行が民間金融機関に対して貸出を行う際に適用される金利である（　②　）操作は補助的な役割となり、（　①　）操作を使ってインターバンク金利を誘導することが金融政策の中心となっている。また、もともと預金準備率操作は裁量的な金融政策にはあまり使用されてこなかった。</div>
+<div class="q-text" style="margin-top:10px;">通貨量の操作において、日本銀行が直接操作できるのは（　③　）の量であり（　③　）を増減させると、それに応じて民間銀行が貸出を増減させることによって（　④　）の量が増減すると考えられている。</div>`,
+  isEssay: true,
+  answerHtml:`<div class="exp-text">① 公開市場（操作）　② 公定歩合　③ マネタリーベース（ハイパワードマネー）　④ マネーストック</div>`,
+  expHtml:`
+<div class="exp-section">
+  <div class="exp-section-title">金融政策の3つの手段</div>
+  <table class="exp-table">
+    <tr><th>手段</th><th>内容</th><th>現在の位置づけ</th></tr>
+    <tr><td>公開市場操作（買いオペ・売りオペ）</td><td>日銀が市場で国債等の売買を行い、インターバンク金利を誘導</td><td>主たる手段（中心）</td></tr>
+    <tr><td>公定歩合操作（現：基準貸付利率）</td><td>日銀が民間銀行に貸出を行う際の金利</td><td>補助的な役割</td></tr>
+    <tr><td>預金準備率操作</td><td>民間銀行が日銀に積み立てる準備率の変更</td><td>裁量的政策にはあまり使用されず</td></tr>
+  </table>
+</div>
+<div class="exp-section">
+  <div class="exp-section-title">マネタリーベースとマネーストックの関係</div>
+  <div class="formula-box">マネーストック（M） ＝ 貨幣乗数（m） × マネタリーベース（H）</div>
+  <div class="tip-box"><strong>ポイント：</strong>日銀が直接コントロールできるのは「マネタリーベース」のみです。マネーストックは、マネタリーベースに貨幣乗数をかけた値で、民間銀行の貸出行動によって間接的に変化します。</div>
+  <div class="exp-text">マネタリーベース ＝ 日本銀行券発行高 ＋ 貨幣流通高 ＋ 日銀当座預金</div>
+</div>`
+},
+{
+  id:'II-2', type:'pc', theme:'貨幣乗数の低下（2013年）',
+  qhtml:`<div class="q-text">2013年において、マネーストック(M2)が増加しているにもかかわらず、貨幣乗数の値が低下している。そこで、貨幣乗数について説明した後、なぜ貨幣乗数の値が低下したのか、理由を説明しなさい。</div>`,
+  isEssay: true,
+  answerHtml:`<div class="exp-text">貨幣乗数は、マネーストック(M2)をマネタリーベースで除した値と定義されている。2013年度の4月から、日本銀行が質的・量的金融緩和政策を導入することで、マネタリーベースの増加率が大幅に高まった。一方銀行の貸出が、それと比較して低い伸びにとどまった。すなわち、マネタリーベースは、マネーストック(M2)の増加率を上回って増加した。このため、貨幣乗数の値が低下した。</div>`,
+  expHtml:`
+<div class="exp-section">
+  <div class="exp-section-title">貨幣乗数とは</div>
+  <div class="formula-box">貨幣乗数（m） ＝ マネーストック（M） ÷ マネタリーベース（H）　＝ (α+1)/(α+β)</div>
+  <div class="exp-text">α：現金預金比率（C/D）、β：預金準備率（R/D）</div>
+</div>
+<div class="exp-section">
+  <div class="exp-section-title">2013年に貨幣乗数が低下した理由</div>
+  <div class="flow-row">
+    <div class="flow-node">量的・質的金融緩和導入<br>（2013年4月）</div>
+    <div class="flow-arr">→</div>
+    <div class="flow-node">マネタリーベース<br>大幅増加</div>
+    <div class="flow-arr">vs</div>
+    <div class="flow-node">銀行貸出の伸び<br>は低い</div>
+    <div class="flow-arr">→</div>
+    <div class="flow-end">貨幣乗数 ↓</div>
+  </div>
+  <div class="note-box"><strong>変化率の関係式：</strong><br>ΔM/M ＝ Δm/m ＋ ΔH/H<br>マネタリーベースHの伸び率がマネーストックMの伸び率を上回った場合、貨幣乗数mの伸び率はマイナスとなり、貨幣乗数の値は低下します。</div>
+</div>`
+},
+{
+  id:'II-3', type:'pc', theme:'日銀当座預金・マネタリーベース',
+  qhtml:`<div class="q-text">以下はマネタリーベースに関する問題である。(1)および(2)の問いに答えなさい。</div>
+<div class="q-sub-text" style="margin-top:12px;">(1)　日本銀行政策委員会は、2001年3月19日の金融政策決定会合において、金融市場調節方式を変更し、金融調節の主たる操作目標を、従来の「金利（無担保コールレート・オーバーナイト物）」に代えて「資金量（日本銀行当座預金残高）」とすることを決定した。日銀当座預金とは何か、説明しなさい。ただし、準備預金との違いについても触れること。</div>
+<div class="q-sub-text" style="margin-top:10px;">(2)　日銀当座預金が増加する要因について具体例を挙げて説明しなさい。</div>`,
+  isEssay: true,
+  answerHtml:`<div class="exp-text"><strong>(1)</strong> 日銀当座預金とは、金融機関が日銀に保有している当座預金（出し入れ自由な無利子の預金）のことである。役割は①決済手段、②現金通貨の支払準備、③準備預金。日銀当座預金は準備預金より広い概念で、準備預金制度が適用されない金融機関（証券会社、短資会社など）の当座預金も含む。</div>
+<div class="exp-text" style="margin-top:10px;"><strong>(2)</strong> ・円売り・ドル買い介入→政府預金G減少・日銀当座預金F増加。・国債の買いオペ→政府向け信用C増加・日銀当座預金F増加。・現金需要の減少→現金通貨E減少・日銀当座預金F増加。・公共事業代金支払い→政府預金G減少・日銀当座預金F増加。・日銀の民間銀行への貸出→民間銀行向け信用B増加・日銀当座預金F増加。</div>`,
+  expHtml:`
+<div class="exp-section">
+  <div class="exp-section-title">日銀当座預金の役割</div>
+  <table class="exp-table">
+    <tr><th>役割</th><th>内容</th></tr>
+    <tr><td>①決済手段</td><td>金融機関相互間・日銀・国との取引時の決済</td></tr>
+    <tr><td>②支払準備</td><td>個人・企業に払う現金通貨の支払準備</td></tr>
+    <tr><td>③準備預金</td><td>準備預金制度のもとでの準備預金（適用金融機関のみ）</td></tr>
+  </table>
+  <div class="note-box"><strong>準備預金との違い：</strong>日銀当座預金は準備預金よりも広い概念。証券会社・短資会社等の当座預金も含まれます。</div>
+</div>
+<div class="exp-section">
+  <div class="exp-section-title">日銀当座預金が増加する要因</div>
+  <div class="formula-box">マネタリーベース ＝ [A＋(C－G)] ＋ [B＋D] ＝ [E＋F]</div>
+  <table class="exp-table">
+    <tr><th>具体例</th><th>バランスシートの変化</th></tr>
+    <tr><td>円売り・ドル買い介入</td><td>G（政府預金）↓　→　F（日銀当座預金）↑</td></tr>
+    <tr><td>国債の買いオペ実施</td><td>C（政府向け信用）↑　→　F（日銀当座預金）↑</td></tr>
+    <tr><td>現金需要の減少（還流）</td><td>E（現金通貨）↓　→　F（日銀当座預金）↑</td></tr>
+    <tr><td>公共事業代金の支払い</td><td>G（政府預金）↓　→　F（日銀当座預金）↑</td></tr>
+    <tr><td>日銀が民間銀行へ貸出</td><td>B（民間銀行向け信用）↑　→　F（日銀当座預金）↑</td></tr>
+  </table>
+</div>`
+},
+{
+  id:'II-4', type:'pc', theme:'イールドカーブと景気（景気の山・谷）',
+  qhtml:`<div class="q-text">次の景気に関するAおよびBの状況において、イールド・カーブはいかなる形状となるか説明しなさい。また、両イールド・カーブの水準の違いについて説明しなさい。</div>
+<div class="q-stem-block" style="margin-top:12px;">A：景気の山付近　　B：景気の谷付近</div>`,
+  isEssay: true,
+  answerHtml:`<div class="exp-text">政策金利に左右される短期金利は、景気の底付近にある状況Bよりも景気の山付近にある状況Aのほうが高い。期待仮説に基づくと、長期金利は現行の短期金利および将来の短期金利の平均値に等しい。状況Aにおける長期金利の方が状況Bにおける長期金利よりも高いと考えられる。状況Aのカーブはフラット〜逆イールド、状況Bのカーブは右上がりとなる。</div>`,
+  expHtml:`
+<div class="exp-section">
+  <div class="exp-section-title">景気局面とイールドカーブ</div>
+  <table class="exp-table">
+    <tr><th>景気局面</th><th>短期金利水準</th><th>将来の金利予想</th><th>イールドカーブ</th></tr>
+    <tr><td>A：景気の山</td><td>高い</td><td>景気後退→金利低下を予想</td><td>フラット〜逆イールド</td></tr>
+    <tr><td>B：景気の谷</td><td>低い</td><td>景気回復→金利上昇を予想</td><td>右上がり</td></tr>
+  </table>
+  <div class="tip-box"><strong>長期金利の変動が小さい理由：</strong>長期金利は現在から将来にわたる期待短期金利の平均値で決まるため、現在の短期金利が上昇しても、将来分が平均されることで、長期金利の変動幅は短期金利の変動幅より小さくなります。</div>
+</div>`
+},
+{
+  id:'II-5', type:'pc', theme:'純粋期待仮説・フォワードガイダンス',
+  qhtml:`<div class="q-text">中央銀行が「今後ゼロ金利政策を2年間継続し、その後政策金利を1.5％に引き上げる」とアナウンスし、それが市場で信認を得たとする。長期金利が純粋期待仮説に従って決定されるとすると、中央銀行のアナウンスの後、イールドカーブの形状はどのようになるか、説明しなさい。</div>`,
+  isEssay: true,
+  answerHtml:`<div class="exp-text">純粋期待仮説では、長期金利は現在および将来にわたる期待短期金利の（幾何）平均として表される。残存期間1年・2年の金利はゼロ％。3年の場合は(0%＋0%＋1.5%)/3＝0.5%、4年の場合は(0%＋0%＋1.5%＋1.5%)/4＝0.75%となる。残存期間が長くなるほど金利水準は徐々に上昇して1.5%へと近づいていく。</div>`,
+  expHtml:`
+<div class="exp-section">
+  <div class="exp-section-title">各残存期間の金利計算（算術平均近似）</div>
+  <table class="exp-table">
+    <tr><th>残存期間</th><th>計算式</th><th>長期金利</th></tr>
+    <tr><td>1年</td><td>0% ÷ 1</td><td>0%</td></tr>
+    <tr><td>2年</td><td>(0% ＋ 0%) ÷ 2</td><td>0%</td></tr>
+    <tr><td>3年</td><td>(0% ＋ 0% ＋ 1.5%) ÷ 3</td><td class="c-ok"><strong>0.5%</strong></td></tr>
+    <tr><td>4年</td><td>(0% ＋ 0% ＋ 1.5% ＋ 1.5%) ÷ 4</td><td class="c-ok"><strong>0.75%</strong></td></tr>
+    <tr><td>n年（n≥3）</td><td>→ 残存期間が長いほど1.5%へ近づく</td><td>→ 1.5%</td></tr>
+  </table>
+  <div class="formula-box">R(0,n) ＝ [r(0,1) ＋ E[r(1,2)] ＋ … ＋ E[r(n-1,n)]] ÷ n　（算術平均近似）</div>
+</div>`
+},
+{
+  id:'II-6', type:'pc', theme:'テイラー・ルール',
+  qhtml:`<div class="q-text">次の式が示す金融政策運営ルールの名称を答え、係数aおよびbの符号はプラス・マイナスのどちらか答えなさい。</div>
+<div class="q-stem-block" style="margin-top:10px;">名目利子率 ＝ 定数 ＋ a×（インフレ率）＋ b×（GDPギャップ）<br><small>GDPギャップ＝現実の実質GDP－潜在GDP</small></div>`,
+  isEssay: true,
+  answerHtml:`<div class="exp-text">名称：テイラー・ルール<br>係数a：プラス、係数b：プラス<br><br>現実のインフレ率が目標値を上回る場合、あるいはGDPギャップがプラス（景気過熱）の場合、政策金利を引き上げる方向に調整するため、a・bともにプラスの係数となる。</div>`,
+  expHtml:`
+<div class="exp-section">
+  <div class="exp-section-title">テイラー・ルールの標準的な式</div>
+  <div class="formula-box">i ＝ i* ＋ π* ＋ α(π－π*) ＋ β×gap</div>
+  <table class="exp-table">
+    <tr><th>状況</th><th>中央銀行の対応</th><th>係数の符号</th></tr>
+    <tr><td>インフレ率が目標超過（π＞π*）</td><td>政策金利を引き上げ（引き締め）</td><td class="c-ok">a：プラス</td></tr>
+    <tr><td>GDPギャップがプラス（景気過熱）</td><td>政策金利を引き上げ（引き締め）</td><td class="c-ok">b：プラス</td></tr>
+  </table>
+</div>`
+},
+{
+  id:'II-7', type:'pc', theme:'インフレーション・ターゲティング',
+  qhtml:`<div class="q-text">インフレーション・ターゲティング政策について説明し、政策導入の意義と問題点について述べなさい。</div>`,
+  isEssay: true,
+  answerHtml:`<div class="exp-text">インフレーション・ターゲティングは中央銀行が最終目標としての目標インフレ率とその達成時期を設定し、それを明示して金融政策運営を行う枠組みである。<br><br>意義：金融政策の独立性を確保するとともに透明性と説得性を高めることで、民間部門の政策に対する予想形成を容易にさせ、市場の撹乱を比較的小さいものにする。<br><br>問題点：現実の経済においてインフレ率を定義する物価指数として完全なものが存在しない、物価指数という単一の目標で金融政策を運営するのは危険、といった問題が指摘されている。</div>`,
+  expHtml:`
+<div class="exp-section">
+  <div class="exp-section-title">意義（メリット）と問題点（デメリット）</div>
+  <table class="exp-table">
+    <tr><th>区分</th><th>内容</th></tr>
+    <tr><td rowspan="3">意義</td><td>数値で目標と責任をはっきりさせる</td></tr>
+    <tr><td>金融政策の独立性確保・透明性と説得性の向上</td></tr>
+    <tr><td>民間部門の予想形成を容易にし、期待インフレ率を安定化させる</td></tr>
+    <tr><td rowspan="3">問題点</td><td>完全なインフレ率の定義指標が存在しない（CPI・企業物価・GDPデフレーター等）</td></tr>
+    <tr><td>目標インフレ率の水準・達成時期の合理性判断が困難</td></tr>
+    <tr><td>物価という単一目標で金融政策を運営することの危険性</td></tr>
+  </table>
+  <div class="note-box"><strong>2013年1月：</strong>日本銀行が初めてインフレ目標数値（2%）を設定。2013年4月の量的・質的金融緩和（QQE）導入の布石となりました。</div>
+</div>`
+},
+{
+  id:'II-8', type:'pc', theme:'時間軸効果・量的緩和政策',
+  qhtml:`<div class="q-text">2001年3月より導入された量的緩和政策を通じて期待された効果の一つに、債券市場における時間軸効果がある。時間軸効果について純粋期待仮説を用いて説明しなさい。</div>`,
+  isEssay: true,
+  answerHtml:`<div class="exp-text">時間軸効果とは、日銀が消費者物価上昇率に目標を設定し、その達成まで現行の金融緩和政策を継続するとのアナウンスを行うことを通じて、期待短期金利の上昇を抑えて現在の中長期金利を低下または低位安定させる効果である。<br><br>量的緩和導入後、イールドカーブはフラット化しており、時間軸効果が現れていると評価できる。</div>`,
+  expHtml:`
+<div class="exp-section">
+  <div class="exp-section-title">時間軸効果のメカニズム</div>
+  <div class="flow-row">
+    <div class="flow-node">量的緩和政策<br>（2001年3月〜）</div>
+    <div class="flow-arr">+</div>
+    <div class="flow-node">コミットメント<br>「CPI上昇率が安定的に<br>ゼロ以上になるまで継続」</div>
+    <div class="flow-arr">→</div>
+    <div class="flow-node">期待短期金利の<br>上昇を抑制</div>
+    <div class="flow-arr">→</div>
+    <div class="flow-end">中長期金利の<br>低下・低位安定</div>
+  </div>
+  <div class="tip-box"><strong>純粋期待仮説との関係：</strong>長期金利は現在の短期金利と将来の期待短期金利の平均値で決まります。日銀がゼロ金利継続をコミットすれば、期待短期金利が低水準に保たれ、長期金利も低下・低位安定します。</div>
+</div>`
+},
+{
+  id:'II-9', type:'pc', theme:'ポートフォリオ・リバランス効果',
+  qhtml:`<div class="q-text">量的金融緩和政策や量的・質的金融緩和政策において期待された効果に、ポートフォリオ・リバランス効果がある。これについて説明しなさい。</div>`,
+  isEssay: true,
+  answerHtml:`<div class="exp-text">日本銀行が長期国債の買いオペを行うことで、民間銀行の資産において、相対的にリターンとリスクが高い長期国債のストックが減少し、リターンとリスクが低い日銀当座預金残高が増加する。これによりポートフォリオ全体のリターンとリスクがともに低下する。このリターンとリスクの低下を受けて民間銀行が貸し出しなどのリスク資産を取得するなど、ポートフォリオをリバランスする効果のことをポートフォリオ・リバランス効果と呼ぶ。この効果により、総需要が増加し、景気回復が期待された。</div>`,
+  expHtml:`
+<div class="exp-section">
+  <div class="exp-section-title">ポートフォリオ・リバランス効果のメカニズム</div>
+  <div class="flow-row">
+    <div class="flow-node">日銀が長期国債を<br>買いオペで購入</div>
+    <div class="flow-arr">→</div>
+    <div class="flow-node">民間銀行の資産<br>国債↓・当座預金↑</div>
+    <div class="flow-arr">→</div>
+    <div class="flow-node">ポートフォリオ全体の<br>リターン・リスク低下</div>
+    <div class="flow-arr">→</div>
+    <div class="flow-end">リスク資産（貸出等）<br>への投資を積極化</div>
+  </div>
+  <div class="note-box"><strong>重要な注意点：</strong>金融機関がリスク性資産を購入した場合、その購入代金は別の金融機関の日銀当座預金残高に振り替わるため、金融システム全体としての日銀当座預金残高は変化しません。したがって、日銀当座預金残高が積み上がっていることをもってリバランス効果がないとは言えません。</div>
+</div>`
+},
+{
+  id:'II-10', type:'pc', theme:'伝統的金融政策の波及プロセス',
+  qhtml:`<div class="q-text">日本銀行が政策金利の引下げを決定したとする。家計消費・投資、および企業の生産・投資に対してどのような政策効果が期待できるか、長期金利、資産価格、為替レートへの影響を含めて説明しなさい。</div>
+<div class="q-stem-block" style="margin-top:10px;">経済は流動性の罠に陥っていないと仮定する。</div>`,
+  isEssay: true,
+  answerHtml:`<div class="exp-text">政策金利の低下は、金利裁定等によって長期金利を低下させる。この長期金利の低下は、家計の消費・投資および企業の投資を促進する。また、長期金利の低下により、資産価格が上昇し、資産効果を通じた家計消費の増加を生じさせる。さらに、長期金利の低下は、当該国の為替レートを減価させ、外需を増加させる。これらの総需要の拡大によって、企業の生産が増加する。</div>`,
+  expHtml:`
+<div class="exp-section">
+  <div class="exp-section-title">伝統的金融政策の波及プロセス（全体像）</div>
+  <table class="exp-table">
+    <tr><th>波及経路</th><th>メカニズム</th><th>影響する変数</th></tr>
+    <tr><td>金利経路</td><td>長期金利↓→設備投資・住宅投資コスト低下</td><td>企業投資↑・住宅投資↑</td></tr>
+    <tr><td>資産価格経路</td><td>長期金利↓→株価・地価上昇→資産効果</td><td>家計消費↑</td></tr>
+    <tr><td>為替経路</td><td>長期金利↓→金利差縮小→円安→輸出財の競争力向上</td><td>輸出↑・外需↑</td></tr>
+    <tr><td>信用経路</td><td>企業の担保価値上昇→金融機関の貸出余力増加</td><td>投資↑</td></tr>
+  </table>
+</div>`
+},
+{
+  id:'II-11', type:'pc', theme:'配当割引モデル（定率成長型）',
+  qhtml:`<div class="q-text">(1)　配当割引モデルを用いて、今期首の理論株価を求める式を示しなさい。（長期金利r、配当成長率g、リスク・プレミアムδ、今期末に得られる予想配当D）</div>
+<div class="q-sub-text" style="margin-top:10px;">(2)　他の要因を一定とすると、長期金利と理論株価はどのような関係にあるか、説明しなさい。</div>`,
+  isEssay: true,
+  answerHtml:`<div class="exp-text">(1)　理論株価 ＝ D / (r＋δ－g)<br><br>(2)　配当成長率g、リスク・プレミアムδ、予想配当Dを一定として、長期金利rの水準が高い（低い）ほど理論株価は低く（高く）なる。長期金利rが上昇（低下）すると理論株価は低下（上昇）する。</div>`,
+  expHtml:`
+<div class="exp-section">
+  <div class="exp-section-title">定率成長型配当割引モデル（ゴードン成長モデル）</div>
+  <div class="formula-box">P（理論株価） ＝ D / (k－g) ＝ D / (r＋δ－g)</div>
+  <table class="exp-table">
+    <tr><th>変数</th><th>変化</th><th>株価への影響</th></tr>
+    <tr><td>予想配当 D</td><td>↑</td><td class="c-up">株価 ↑</td></tr>
+    <tr><td>長期金利 r</td><td>↑</td><td class="c-down">株価 ↓</td></tr>
+    <tr><td>リスクプレミアム δ</td><td>↑</td><td class="c-down">株価 ↓</td></tr>
+    <tr><td>配当成長率 g</td><td>↑</td><td class="c-up">株価 ↑</td></tr>
+  </table>
+</div>`
+},
+{
+  id:'II-12', type:'pc', theme:'業績悪化時の株価上昇',
+  qhtml:`<div class="q-text">企業業績の悪化が予想され、1株あたりの利益の減少が見込まれているにも関わらず、株式市場において株価が上昇することがある。このような状況が生じる原因として、どのようなことが考えられるか、配当割引モデルを用いて説明しなさい。</div>`,
+  isEssay: true,
+  answerHtml:`<div class="exp-text">配当割引モデルにおいて割引率は、利子率とリスクプレミアムの合計とされている。企業業績が悪化すると配当が減少し株価は低下する。一方、金融政策が緩和的に運営されると利子率が低下し、割引現在価値合計は増大して株価は上昇する。企業業績が悪化する状況では金融緩和が実施される可能性が高く、金融緩和による株価上昇の効果が業績悪化による株価下落の効果を上回る場合、株価は上昇する。</div>`,
+  expHtml:`
+<div class="exp-section">
+  <div class="exp-section-title">2つの効果の相殺</div>
+  <table class="exp-table">
+    <tr><th>要因</th><th>方向</th><th>株価への影響</th></tr>
+    <tr><td>企業業績悪化 → 予想配当D↓</td><td>株価↓要因</td><td class="c-down">株価 ↓</td></tr>
+    <tr><td>金融緩和 → 利子率r↓</td><td>株価↑要因</td><td class="c-up">株価 ↑</td></tr>
+  </table>
+  <div class="tip-box"><strong>株価が上昇する条件：</strong>金融緩和による利子率低下の効果（分母の減少）が、企業業績悪化による配当減少の効果（分子の減少）を上回る場合、株価は上昇します。</div>
+</div>`
+},
+{
+  id:'II-13', type:'pc', theme:'物価上昇と理論株価',
+  qhtml:`<div class="q-text">物価上昇率が恒久的に2％ポイント高まり、割引率と配当成長率がともに2％ポイント上昇したとする。配当割引モデルにおける理論株価は変化するか、式を示して説明しなさい。</div>`,
+  isEssay: true,
+  answerHtml:`<div class="exp-text">株価＝D/(r－g)において、割引率が2%ポイント上昇し、配当成長率も2%ポイント高まると、分母(r－g)の値は変化しない。また分子Dも変化しない。このため、配当割引モデルによる理論株価は、物価上昇前後で変化しない。</div>`,
+  expHtml:`
+<div class="exp-section">
+  <div class="exp-section-title">数値例で確認</div>
+  <div class="formula-box">P ＝ D / (r－g)（リスクプレミアムがゼロの場合）</div>
+  <table class="exp-table">
+    <tr><th></th><th>物価上昇前</th><th>物価上昇後（+2%pt）</th></tr>
+    <tr><td>割引率 r</td><td>5%</td><td>7%</td></tr>
+    <tr><td>配当成長率 g</td><td>3%</td><td>5%</td></tr>
+    <tr><td>r－g（分母）</td><td>2%</td><td>2%（変化なし）</td></tr>
+    <tr><td><strong>理論株価 P</strong></td><td>D/0.02</td><td class="c-ok">D/0.02（変化なし）</td></tr>
+  </table>
+  <div class="tip-box"><strong>直感的な理解：</strong>インフレによって将来配当の名目額は増えますが（成長率g↑）、割り引く率（r）も同じだけ増えます。結果として分母(r－g)は変化せず、株価は変わりません（フィッシャー効果的な考え方）。</div>
+</div>`
+},
+{
+  id:'章末2.1', type:'ex', theme:'章末問題2.1（フィッシャー方程式・フォワードガイダンス・IS-LM）',
+  qhtml:`<div class="q-text">次の問1〜問3に答えなさい。</div>
+<div class="q-sub-text" style="margin-top:12px;"><strong>問1</strong></div>
+<div class="q-sub-item">(1)　「フィッシャー方程式」に基づいて、（事前の）実質金利を名目金利と予想物価上昇率で示す関係式を示しなさい。</div>
+<div class="q-sub-item" style="margin-top:6px;">(2)　予想物価上昇率の上昇による実質金利の変化は、どのような経路を通してGDPに影響を与えるか、考えられる波及経路を2つ挙げて簡潔に説明しなさい。</div>
+<div class="q-sub-text" style="margin-top:12px;"><strong>問2</strong>　「フォワードガイダンス」とは、一般的にどのような政策か簡潔に説明しなさい。</div>
+<div class="q-sub-text" style="margin-top:12px;"><strong>問3</strong></div>
+<div class="q-sub-item">(1)　中央銀行が金融緩和政策を実施した場合について、IS-LM分析で説明しなさい（各軸・曲線の名称、シフト方向、均衡点の移動を明示）。</div>
+<div class="q-sub-item" style="margin-top:6px;">(2)　名目賃金率が硬直的な場合の総需要・総供給分析で、金融緩和政策の効果を説明しなさい。</div>`,
+  isEssay: true,
+  answerHtml:`<div class="exp-text"><strong>問1(1)</strong>　（事前の）実質金利 ＝ 名目金利 ― 予想物価上昇率<br><br><strong>問1(2)</strong><br>①　実質金利の低下は設備投資を増加させ、総需要を増加させるため、GDPが増加する。<br>②　実質金利の低下は円を減価させ、輸出を増加させ、総需要を増加させるため、GDPが増加する。<br><br><strong>問2</strong>　中央銀行が政策目標の実現まで、もしくはある期間、金融緩和政策を継続することをコミットメントする政策。<br><br><strong>問3(1)</strong>　縦軸：金利、横軸：GDP。右下がり：IS曲線、右上がり：LM曲線。金融緩和後、LM曲線が右下方にシフトし、均衡点E₀からE₁に移動。GDPは増加し、金利は低下する。<br><br><strong>問3(2)</strong>　縦軸：物価、横軸：GDP。右下がり：AD曲線、右上がり：AS曲線。金融緩和後、AD曲線が右上方にシフトし、均衡点E₀からE₁に移動。GDPは増加し、物価は上昇する。</div>`,
+  expHtml:`
+<div class="exp-section">
+  <div class="exp-section-title">問1　フィッシャー方程式</div>
+  <div class="formula-box">（事前の）実質金利 ＝ 名目金利 ― 予想物価上昇率</div>
+  <table class="exp-table">
+    <tr><th>波及経路</th><th>メカニズム</th></tr>
+    <tr><td>①投資・消費経路</td><td>実質金利↓→設備投資・住宅投資コスト低下→総需要↑→GDP↑</td></tr>
+    <tr><td>②為替経路</td><td>実質金利↓→円安→輸出財の価格競争力↑→輸出↑→総需要↑→GDP↑</td></tr>
+  </table>
+</div>
+<div class="exp-section">
+  <div class="exp-section-title">問3(1)　IS-LM分析と問3(2)　AD-AS分析</div>
+  <table class="exp-table">
+    <tr><th></th><th>IS-LM分析</th><th>AD-AS分析</th></tr>
+    <tr><td>縦軸</td><td>金利</td><td>物価</td></tr>
+    <tr><td>横軸</td><td>GDP</td><td>GDP</td></tr>
+    <tr><td>シフトする曲線</td><td>LM曲線→右下方シフト</td><td>AD曲線→右上方シフト</td></tr>
+    <tr><td>GDP</td><td class="c-up">増加</td><td class="c-up">増加</td></tr>
+    <tr><td>金利/物価</td><td class="c-down">金利 低下</td><td class="c-up">物価 上昇</td></tr>
+  </table>
+</div>`
+},
+{
+  id:'章末2.2', type:'ex', theme:'章末問題2.2（マイナス金利・為替レート・介入）',
+  qhtml:`<div class="q-text">次の問1〜問4に答えなさい。</div>
+<div class="q-sub-text" style="margin-top:12px;"><strong>問1</strong>　マイナス金利政策について</div>
+<div class="q-sub-item">(1)　マイナス金利政策が実施されるとイールドカーブはどのような形になるか、純粋期待仮説に基づいて答えなさい。</div>
+<div class="q-sub-item" style="margin-top:6px;">(2)　マイナス金利政策の効果を1つ挙げて説明しなさい。</div>
+<div class="q-sub-item" style="margin-top:6px;">(3)　マイナス金利政策のデメリットを1つ挙げて説明しなさい。</div>
+<div class="q-sub-text" style="margin-top:12px;"><strong>問2</strong>　金融緩和政策の拡大にも関わらず株価が下落することがある理由について、「リスクフリーレート」と「リスクプレミアム」に言及して説明しなさい。</div>
+<div class="q-sub-text" style="margin-top:12px;"><strong>問3</strong></div>
+<div class="q-sub-item">(1)　実質実効為替レートとは何かを説明しなさい。</div>
+<div class="q-sub-item" style="margin-top:6px;">(2)　名目実効為替レートと実質実効為替レートは、どのような要因によって乖離するか説明しなさい。</div>
+<div class="q-sub-text" style="margin-top:12px;"><strong>問4</strong>　1,000億円のドル売り円買いの「非不胎化介入」または「不胎化介入」を実施した場合について（政府・日銀を統合した「政府勘定」と民間金融機関のバランスシートへの影響を答えなさい）。</div>`,
+  isEssay: true,
+  answerHtml:`<div class="exp-text"><strong>問1(1)</strong>　マイナス金利政策は、イールドカーブの起点をマイナスに引き下げ、イールドカーブ全体を下方にシフトさせる。<br><br><strong>問1(2)</strong>　民間銀行にとって当座預金にマイナス金利が付利されることで、貸出に振り向けるインセンティブになり、実体経済への信用供与拡大が期待される。<br><br><strong>問1(3)</strong>　民間金融機関が保有する債券を日銀に売却するインセンティブが低下し、量的緩和をスムーズに運営できなくなる可能性がある。<br><br><strong>問2</strong>　金融緩和はリスクフリーレートを低下させ株価↑要因となる。しかし、企業収益悪化予想によるリスクプレミアムの上昇がリスクフリーレートの低下を上回れば、株価は下落する。<br><br><strong>問3(1)</strong>　実質為替レートは名目為替レートを両国の物価で調整したもの。実効為替レートは貿易相手諸国の為替レートを貿易ウェイトで加重平均したもの。<br><br><strong>問3(2)</strong>　貿易相手国のインフレ率と日本のインフレ率が同じような状況の場合、名目実効為替レートと実質実効為替レートの乖離幅が小さくなる。<br><br><strong>問4(政府勘定)</strong>　非不胎化介入：外貨▲1,000億円、日銀当預▲1,000億円。不胎化介入：外貨▲1,000億円、T-Bill＋1,000億円。<br><strong>問4(民間金融機関)</strong>　非不胎化介入：外貨＋1,000億円、日銀当預▲1,000億円。不胎化介入：外貨＋1,000億円、T-Bill▲1,000億円。</div>`,
+  expHtml:`
+<div class="exp-section">
+  <div class="exp-section-title">問4　為替介入のバランスシートへの影響</div>
+  <table class="exp-table">
+    <tr><th>介入種別</th><th>政府勘定（統合）の変化</th><th>民間金融機関の変化</th></tr>
+    <tr><td>非不胎化介入<br>（円買い・ドル売り）</td><td>外貨▲1,000億円<br>日銀当預▲1,000億円</td><td>外貨＋1,000億円<br>日銀当預▲1,000億円</td></tr>
+    <tr><td>不胎化介入<br>（円買い・ドル売り）</td><td>外貨▲1,000億円<br>T-Bill＋1,000億円</td><td>外貨＋1,000億円<br>T-Bill▲1,000億円</td></tr>
+  </table>
+  <div class="note-box"><strong>不胎化と非不胎化の違い：</strong>非不胎化→マネタリーベース変化あり。不胎化→日銀がT-Billの買いオペを同時実施してマネタリーベースを元に戻す（当座預金は変化なし）。</div>
+</div>`
+},
+{
+  id:'章末2.3', type:'ex', theme:'章末問題2.3（QQE・ポートフォリオ・長期金利・イールドカーブ）',
+  qhtml:`<div class="q-text">次の問1〜問4に答えなさい。</div>
+<div class="q-sub-text" style="margin-top:12px;"><strong>問1</strong></div>
+<div class="q-sub-item">(1)　2006年3月に量的緩和政策を解除して以降、金融市場調節の操作目標として何を採用していましたか。</div>
+<div class="q-sub-item" style="margin-top:6px;">(2)　2013年4月に導入された「量的・質的金融緩和」では、金融市場調節の操作目標として何を採用していますか。</div>
+<div class="q-sub-text" style="margin-top:12px;"><strong>問2</strong></div>
+<div class="q-sub-item">(1)　「ポートフォリオ・リバランス効果」について簡単に説明しなさい。</div>
+<div class="q-sub-item" style="margin-top:6px;">(2)　日銀当座預金残高が積み上がることをもって「ポートフォリオ・リバランス効果が出ていない」との指摘が適切でない場合はどのような場合か説明しなさい。</div>
+<div class="q-sub-text" style="margin-top:12px;"><strong>問3</strong></div>
+<div class="q-sub-item">(1)　財政赤字ファイナンスへの疑念により長期金利はどのように推移すると考えられるか説明しなさい。</div>
+<div class="q-sub-item" style="margin-top:6px;">(2)　その長期金利の動向が日本経済に与える影響について2点を挙げて説明しなさい。</div>
+<div class="q-sub-text" style="margin-top:12px;"><strong>問4</strong></div>
+<div class="q-sub-item">(1)　中期国債の利回りがマイナス金利となっている背景について述べなさい。</div>
+<div class="q-sub-item" style="margin-top:6px;">(2)　短中期ゾーン（6年物まで）は低位水平、中長期ゾーンでは右上がりとなる理由を、純粋期待仮説に基づいて説明しなさい。</div>`,
+  isEssay: true,
+  answerHtml:`<div class="exp-text"><strong>問1(1)</strong>　無担保コールレート・オーバーナイト物<br><strong>問1(2)</strong>　マネタリーベース<br><br><strong>問2(1)</strong>　民間保有のポートフォリオのリスクを中央銀行のオペレーションによって減少させると、民間が一定のリスク許容度の範囲内で収益を最大化しようとする結果、新たなリスクテイクを行うことである。<br><br><strong>問2(2)</strong>　金融機関がリスク性資産を購入した場合、購入代金は別の金融機関の日銀当座預金残高に振り替わるため、金融システム全体としてみた日銀当座預金残高は変化しないため、残高だけで判断することは適切でない。<br><br><strong>問3(1)</strong>　財政規律に対する信認の低下をもたらすため、リスクプレミアムの増大を通じて、長期金利を急上昇させるおそれがある。<br><br><strong>問3(2)</strong>　①政府の利払費が急増して財政の持続可能性が大きく低下する。②国債を大量に保有する金融機関が金利上昇（国債価格下落）によって巨額の損失を余儀なくされ、金融システム不安が発生する懸念がある。<br><br><strong>問4(1)</strong>　日銀が大量の国債を買い上げているため、マイナス金利でも日銀に売却して利鞘が稼げると期待できる状況になったこと。<br><br><strong>問4(2)</strong>　短中期ゾーンがゼロ%水準でフラットなのは、今後5〜6年は低金利政策が継続されると市場が予想していることを意味する。中長期ゾーンが右上がりなのは、5〜6年後以降に経済成長と物価が上昇すると市場が予想していることを示している。</div>`,
+  expHtml:`
+<div class="exp-section">
+  <div class="exp-section-title">問1　操作目標の変遷</div>
+  <table class="exp-table">
+    <tr><th>時期</th><th>政策</th><th>操作目標</th></tr>
+    <tr><td>2006年3月〜2013年3月</td><td>量的緩和解除後</td><td class="c-ok"><strong>無担保コールレート・オーバーナイト物</strong></td></tr>
+    <tr><td>2013年4月〜</td><td>量的・質的金融緩和</td><td class="c-ok"><strong>マネタリーベース</strong></td></tr>
+  </table>
+</div>
+<div class="exp-section">
+  <div class="exp-section-title">問3　財政ファイナンス疑念と長期金利急上昇の影響</div>
+  <table class="exp-table">
+    <tr><th>影響①</th><td>政府の利払費急増→財政持続可能性低下</td></tr>
+    <tr><th>影響②</th><td>金融機関の国債評価損→金融システム不安</td></tr>
+  </table>
+</div>`
+},
+{
+  id:'章末2.4', type:'ex', theme:'章末問題2.4（マネタリーベース・貨幣乗数・フィッシャー・IS-LM）',
+  qhtml:`<div class="q-text">次の問1〜問4に答えなさい。</div>
+<div class="q-sub-text" style="margin-top:12px;"><strong>問1</strong>　空欄①〜⑤にあてはまる適切な語句を答えなさい。</div>
+<div class="q-stem-block" style="margin-top:8px;">貨幣乗数は、（　①　）と（　②　）の比率である。（　①　）＝流通現金＋（　③　）。M3＝現金通貨＋（　④　）＋準通貨＋譲渡性預金。貨幣乗数の値は、（　②　）の現預金比率が上昇するとき（　⑤　）し、預金準備率が上昇するとき低下する。</div>
+<div class="q-sub-text" style="margin-top:12px;"><strong>問2</strong>　2013年と2020年において、マネタリーベースの伸び率とマネーストック伸び率の関係にどうしてこのような違いが生じているのか、理由を2つ挙げて説明しなさい。</div>
+<div class="q-sub-text" style="margin-top:12px;"><strong>問3</strong></div>
+<div class="q-sub-item">(1)　「フィッシャー方程式」にもとづいて、（事前の）実質金利を名目金利と予想物価上昇率で示す関係式を示しなさい。</div>
+<div class="q-sub-item" style="margin-top:6px;">(2)　予想物価上昇率の上昇による実質金利の変化は、どのような経路を通してGDPに影響を与えるか、2つ挙げて説明しなさい。</div>
+<div class="q-sub-text" style="margin-top:12px;"><strong>問4</strong>　中央銀行が金融緩和政策を実施した場合のIS-LM分析を行い、GDPと金利の変化を説明しなさい。</div>`,
+  isEssay: true,
+  answerHtml:`<div class="exp-text"><strong>問1</strong>　①マネタリーベース　②マネーストック　③日銀当座預金　④預金通貨　⑤低下<br><br><strong>問2</strong><br>①　2013年においては、マネタリーベースの増加に対して、貨幣乗数の値が低下したが、2020年においては、マネタリーベースの増加に対して、貨幣乗数の値が安定または上昇したため。<br>②　2013年においてはマネタリーベースの増加に対して貸出の増加が十分に起こらなかったが、2020年においてはマネタリーベースの増加に伴って貸出も十分に増加したため。<br><br><strong>問3(1)</strong>　（事前の）実質金利 ＝ 名目金利 ― 予想物価上昇率<br><br><strong>問3(2)</strong><br>①　実質金利の低下は設備投資を増加させ、総需要を増加させるため、GDPが増加する。<br>②　実質金利の低下は円を減価させ、輸出を増加させるため、GDPが増加する。<br><br><strong>問4</strong>　金融緩和→貨幣供給↑→LM曲線が右下方にシフト→均衡点E₀からE₁へ移動。GDPは増加し、金利は低下する。</div>`,
+  expHtml:`
+<div class="exp-section">
+  <div class="exp-section-title">問1　空欄の答え</div>
+  <table class="exp-table">
+    <tr><th>空欄</th><th>答え</th><th>補足説明</th></tr>
+    <tr><td>①</td><td class="c-ok">マネタリーベース</td><td>日銀が直接コントロール。流通現金＋日銀当座預金</td></tr>
+    <tr><td>②</td><td class="c-ok">マネーストック</td><td>経済全体に供給されている通貨の総量</td></tr>
+    <tr><td>③</td><td class="c-ok">日銀当座預金</td><td>マネタリーベース＝流通現金＋日銀当座預金</td></tr>
+    <tr><td>④</td><td class="c-ok">預金通貨</td><td>要求払預金（当座・普通・貯蓄等）</td></tr>
+    <tr><td>⑤</td><td class="c-ok">低下</td><td>現預金比率α↑→信用創造抑制→乗数↓</td></tr>
+  </table>
+</div>
+<div class="exp-section">
+  <div class="exp-section-title">問2　2013年と2020年の違い</div>
+  <div class="formula-box">マネーストック(M) ＝ 貨幣乗数(m) × マネタリーベース(H)</div>
+  <table class="exp-table">
+    <tr><th>時期</th><th>マネタリーベース</th><th>貨幣乗数</th><th>マネーストック</th><th>背景</th></tr>
+    <tr><td>2013年（QQE導入）</td><td>大幅に↑</td><td class="c-down">大幅に↓</td><td>それほど↑せず</td><td>銀行貸出の伸び低調</td></tr>
+    <tr><td>2020年（コロナ禍）</td><td>↑</td><td class="c-up">安定〜↑</td><td>大幅に↑</td><td>政府のコロナ支援で企業の借入急増</td></tr>
+  </table>
+</div>`
+}
+];
+
+let cur = 0;
+const st = QS.map(() => ({ done: false, ok: false }));
+
+function buildList() {
+  const ul = document.getElementById('q-list');
+  ul.innerHTML = '';
+  const n = QS.length;
+  document.getElementById('s-total').textContent = n;
+  document.getElementById('s-n-total').textContent = n;
+  const nok = st.filter(s=>s.ok).length;
+  const nng = st.filter(s=>s.done&&!s.ok).length;
+  document.getElementById('s-n-ok').textContent = nok;
+  document.getElementById('s-n-ng').textContent = nng;
+  QS.forEach((q,i) => {
+    const s = st[i];
+    const li = document.createElement('li');
+    let cls = s.done ? (s.ok?'done-ok':'done-ng') : '';
+    if(i===cur) cls += ' active';
+    li.className = cls;
+    li.onclick = ()=>goQ(i);
+    const mark = s.done ? (s.ok?'✓':'✗') : '';
+    li.innerHTML = `<span class="q-no">${String(i+1).padStart(2,'0')}</span>
+      <span class="q-label"><div class="q-theme-text">${q.id}</div><div class="q-theme-text" style="font-size:11px;color:#888;">${q.theme}</div></span>
+      <span class="q-type-badge ${q.type==='pc'?'badge-pc':'badge-ex'}">${q.type==='pc'?'PC':'章末'}</span>
+      <span class="q-mark">${mark}</span>`;
+    ul.appendChild(li);
+  });
+  const pct = ((cur+1)/QS.length*100).toFixed(1);
+  document.getElementById('prog-fill').style.width = pct+'%';
+  document.getElementById('nav-pos').textContent = `${cur+1} / ${QS.length}`;
+  document.getElementById('btn-prev').disabled = cur===0;
+  document.getElementById('btn-next').disabled = cur===QS.length-1;
+  const allDone = st.every(s=>s.done);
+  const sw = document.getElementById('score-wrap');
+  if(allDone){
+    sw.classList.add('show');
+    document.getElementById('sc-total').textContent = QS.length;
+    document.getElementById('sc-ok').textContent = nok;
+    document.getElementById('sc-pct').textContent = Math.round(nok/QS.length*100)+'%';
+  } else { sw.classList.remove('show'); }
+}
+
+function render() {
+  const q = QS[cur];
+  const s = st[cur];
+  const area = document.getElementById('q-area');
+  const typeLabel = q.type==='pc' ? 'Point Check' : '章末問題';
+  const typeCls   = q.type==='pc' ? 'type-pc' : 'type-ex';
+  let resHtml = '';
+  if(s.done) {
+    resHtml = `<div class="result-box ok-box show">
+      <div class="result-verdict ok">✓　解答例</div>
+      <div class="result-text">以下の解答・解説を確認してください</div>
+    </div>`;
+  }
+  const actHtml = `<div class="q-actions">
+    ${!s.done ? `<button class="btn-submit" onclick="submitEssay()">解答を確認する</button>` : `<button class="btn-retry" onclick="resetQ()">やり直す</button>`}
+  </div>`;
+  const expCls = s.done ? 'exp-card show' : 'exp-card';
+  area.innerHTML = `
+<div class="q-card">
+  <div class="q-card-top">
+    <span class="q-badge">Question ${String(cur+1).padStart(2,'0')}</span>
+    <span class="q-card-theme">${q.theme}</span>
+    <span class="q-card-type ${typeCls}">${typeLabel} ${q.id}</span>
+  </div>
+  <div class="q-card-body">${q.qhtml}</div>
+  ${resHtml}
+  ${actHtml}
+</div>
+<div class="${expCls}">
+  <div class="exp-head"><div class="exp-head-icon">📖</div>解答・解説</div>
+  <div class="exp-body">
+    <div class="exp-section">
+      <div class="exp-section-title">解答例</div>
+      ${q.answerHtml}
+    </div>
+    ${q.expHtml}
+  </div>
+</div>`;
+  buildList();
+}
+
+function submitEssay() {
+  st[cur].done = true;
+  st[cur].ok = true;
+  render();
+  setTimeout(()=>{
+    const rb = document.querySelector('.result-box.show');
+    if(rb) rb.scrollIntoView({behavior:'smooth',block:'nearest'});
+  },100);
+}
+
+function resetQ() {
+  st[cur] = { done:false, ok:false };
+  render();
+}
+
+function goQ(i) {
+  if(i<0||i>=QS.length) return;
+  cur = i;
+  render();
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+function go(i){ goQ(i); }
+
+render();
+</script>
+</body>
+</html>
