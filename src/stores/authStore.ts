@@ -15,12 +15,13 @@ export const useAuthStore = create<AuthState>((set) => ({
   loading: true,
 
   initialize: async () => {
-    const { data: { session } } = await supabase.auth.getSession()
-    set({ user: session?.user ?? null, loading: false })
-
+    // リスナーを先に登録し、OAuthリダイレクト後のイベントを取りこぼさない
     supabase.auth.onAuthStateChange((_event, session) => {
-      set({ user: session?.user ?? null })
+      set({ user: session?.user ?? null, loading: false })
     })
+
+    // getSession() が INITIAL_SESSION イベントを発火し、上のリスナーが処理する
+    await supabase.auth.getSession()
   },
 
   signInWithGoogle: async () => {
