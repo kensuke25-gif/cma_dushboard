@@ -61,7 +61,7 @@ export default function PomodoroTimer() {
   const [seconds, setSeconds] = useState(25 * 60)
   const [running, setRunning] = useState(false)
   const [sets, setSets] = useState(0)
-  const [notifGranted, setNotifGranted] = useState(Notification?.permission === 'granted')
+  const [notifGranted, setNotifGranted] = useState('Notification' in window && Notification.permission === 'granted')
 
   // バックグラウンド対応: 終了予定時刻を保持
   const endTimeRef = useRef<number | null>(null)
