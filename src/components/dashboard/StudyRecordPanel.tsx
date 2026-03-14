@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useStudyStore } from '../../stores/studyStore'
 
 export const SUBJECTS = ['証券分析', '財務分析', '市場分析', '職業行為・倫理基準'] as const
 
@@ -7,16 +8,6 @@ export const subjectBadgeColors: Record<string, string> = {
   '財務分析': 'bg-[rgba(96,165,250,0.2)] text-[#93c5fd]',
   '市場分析': 'bg-[rgba(167,139,250,0.3)] text-[#c4b5fd]',
   '職業行為・倫理基準': 'bg-[rgba(45,212,191,0.2)] text-[#5eead4]',
-}
-
-export type StudyRecord = {
-  id: number
-  subject: string
-  content: string
-  minutes: number
-  nextAction: string
-  recordedAt: string
-  date: string
 }
 
 export function formatMinutes(minutes: number): string {
@@ -31,10 +22,10 @@ export function formatMinutes(minutes: number): string {
 type Props = {
   isOpen: boolean
   onClose: () => void
-  onSave: (record: StudyRecord) => void
 }
 
-export default function StudyRecordModal({ isOpen, onClose, onSave }: Props) {
+export default function StudyRecordModal({ isOpen, onClose }: Props) {
+  const addRecord = useStudyStore(s => s.addRecord)
   const [subject, setSubject] = useState<string>(SUBJECTS[0])
   const [content, setContent] = useState('')
   const [timeValue, setTimeValue] = useState('')
@@ -43,14 +34,14 @@ export default function StudyRecordModal({ isOpen, onClose, onSave }: Props) {
 
   if (!isOpen) return null
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     const num = parseFloat(timeValue)
     if (!content.trim() || isNaN(num) || num <= 0) return
     const minutes = timeUnit === 'hour' ? Math.round(num * 60) : Math.round(num)
     const now = new Date()
-    const recordedAt = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`
+    const recorded_at = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`
     const date = `${now.getMonth() + 1}/${now.getDate()}`
-    onSave({ id: Date.now(), subject, content: content.trim(), minutes, nextAction: nextAction.trim(), recordedAt, date })
+    await addRecord({ subject, content: content.trim(), minutes, next_action: nextAction.trim(), recorded_at, date })
     setContent('')
     setTimeValue('')
     setNextAction('')

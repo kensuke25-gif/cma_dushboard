@@ -1,5 +1,6 @@
-import { useState } from 'react'
+import { useEffect } from 'react'
 import { Star, ExternalLink, FileText } from 'lucide-react'
+import { useStudyStore } from '../stores/studyStore'
 
 type Item = {
   id: number
@@ -53,10 +54,8 @@ const ITEMS: Item[] = [
   { id: 33, chapter: '第IV章 ミクロ経済学', name: '情報の経済学', description: '逆選択、モラルハザード、エージェンシー問題', problemUrl: '#', explanationUrl: '#' },
 ]
 
-// 章ごとにグループ化
 const chapters = [...new Set(ITEMS.map(item => item.chapter))]
 
-// 章ごとのローカル行インデックス（偶奇のための）
 function getItemsGrouped(): { chapter: string; items: Item[] }[] {
   return chapters.map(chapter => ({
     chapter,
@@ -65,22 +64,15 @@ function getItemsGrouped(): { chapter: string; items: Item[] }[] {
 }
 
 export default function Items() {
-  const [weakItems, setWeakItems] = useState<Set<number>>(new Set())
+  const { weakItems, fetchWeakItems, toggleWeakItem } = useStudyStore()
+
+  useEffect(() => { fetchWeakItems() }, [fetchWeakItems])
+
   const grouped = getItemsGrouped()
-
-  const toggleWeak = (id: number) => {
-    setWeakItems(prev => {
-      const next = new Set(prev)
-      next.has(id) ? next.delete(id) : next.add(id)
-      return next
-    })
-  }
-
   const weakCount = weakItems.size
 
   return (
     <div className="max-w-5xl mx-auto px-6 py-6">
-      {/* ページタイトル */}
       <div className="flex items-center justify-between mb-5">
         <div>
           <h2 className="text-base font-semibold text-white">市場分析 学習項目</h2>
@@ -93,9 +85,7 @@ export default function Items() {
         )}
       </div>
 
-      {/* テーブル */}
       <div className="rounded-[20px] border border-[#2a2a4a] overflow-hidden">
-        {/* テーブルヘッダー */}
         <div className="grid grid-cols-[1fr_auto_auto_auto] bg-[#111125] border-b border-[#2a2a4a] px-4 py-2.5">
           <span className="text-xs text-[#9090bb] font-medium">項目名</span>
           <span className="text-xs text-[#9090bb] font-medium w-12 text-center">苦手</span>
@@ -103,15 +93,12 @@ export default function Items() {
           <span className="text-xs text-[#9090bb] font-medium w-12 text-center">解説</span>
         </div>
 
-        {/* 章ごとのグループ */}
         {grouped.map(({ chapter, items }) => (
           <div key={chapter}>
-            {/* 章ヘッダー */}
             <div className="px-4 py-2 bg-[#111125] border-b border-[#2a2a4a] border-l-4 border-l-[#7c4dff] flex items-center">
               <span className="text-xs font-semibold text-[#9090bb] tracking-wide">{chapter}</span>
             </div>
 
-            {/* 項目行 */}
             {items.map((item, rowIndex) => (
               <div
                 key={item.id}
@@ -119,7 +106,6 @@ export default function Items() {
                   rowIndex % 2 === 0 ? 'bg-[#1e1e3a]' : 'bg-[#16162a]'
                 }`}
               >
-                {/* 項目名 */}
                 <div className="pr-4 min-w-0">
                   <p className="text-sm text-[#c8c8e8] font-medium leading-snug">{item.name}</p>
                   {item.description && (
@@ -127,10 +113,9 @@ export default function Items() {
                   )}
                 </div>
 
-                {/* 苦手マーク */}
                 <div className="w-12 flex justify-center">
                   <button
-                    onClick={() => toggleWeak(item.id)}
+                    onClick={() => toggleWeakItem(item.id)}
                     title={weakItems.has(item.id) ? '苦手マーク解除' : '苦手マーク登録'}
                     className="p-1 rounded-lg hover:bg-[#252540] transition-colors"
                   >
@@ -145,35 +130,17 @@ export default function Items() {
                   </button>
                 </div>
 
-                {/* 問題集ボタン */}
                 <div className="w-12 flex justify-center">
-                  <a
-                    href={item.problemUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    title="問題集を開く"
-                    className="p-1 rounded-lg hover:bg-[#252540] transition-colors group"
-                  >
-                    <ExternalLink
-                      className="w-4 h-4 text-[#8888aa] group-hover:text-[#7c4dff] transition-colors"
-                      strokeWidth={1.5}
-                    />
+                  <a href={item.problemUrl} target="_blank" rel="noopener noreferrer"
+                    title="問題集を開く" className="p-1 rounded-lg hover:bg-[#252540] transition-colors group">
+                    <ExternalLink className="w-4 h-4 text-[#8888aa] group-hover:text-[#7c4dff] transition-colors" strokeWidth={1.5} />
                   </a>
                 </div>
 
-                {/* 解説ボタン */}
                 <div className="w-12 flex justify-center">
-                  <a
-                    href={item.explanationUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    title="解説を開く"
-                    className="p-1 rounded-lg hover:bg-[#252540] transition-colors group"
-                  >
-                    <FileText
-                      className="w-4 h-4 text-[#8888aa] group-hover:text-[#7c4dff] transition-colors"
-                      strokeWidth={1.5}
-                    />
+                  <a href={item.explanationUrl} target="_blank" rel="noopener noreferrer"
+                    title="解説を開く" className="p-1 rounded-lg hover:bg-[#252540] transition-colors group">
+                    <FileText className="w-4 h-4 text-[#8888aa] group-hover:text-[#7c4dff] transition-colors" strokeWidth={1.5} />
                   </a>
                 </div>
               </div>
