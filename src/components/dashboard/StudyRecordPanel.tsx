@@ -1,20 +1,25 @@
 import { useState } from 'react'
 
+export const SUBJECTS = ['証券分析', '財務分析', '市場分析', '職業行為・倫理基準'] as const
+
+export const subjectBadgeColors: Record<string, string> = {
+  '証券分析': 'bg-blue-900/50 text-blue-300',
+  '財務分析': 'bg-orange-900/50 text-orange-300',
+  '市場分析': 'bg-violet-900/50 text-violet-300',
+  '職業行為・倫理基準': 'bg-teal-900/50 text-teal-300',
+}
+
 export type StudyRecord = {
   id: number
+  subject: string
   content: string
   minutes: number
   nextAction: string
   recordedAt: string
+  date: string
 }
 
-type Props = {
-  isOpen: boolean
-  onClose: () => void
-  onSave: (record: StudyRecord) => void
-}
-
-function formatMinutes(minutes: number): string {
+export function formatMinutes(minutes: number): string {
   if (minutes >= 60) {
     const h = Math.floor(minutes / 60)
     const m = minutes % 60
@@ -23,9 +28,14 @@ function formatMinutes(minutes: number): string {
   return `${minutes}分`
 }
 
-export { formatMinutes }
+type Props = {
+  isOpen: boolean
+  onClose: () => void
+  onSave: (record: StudyRecord) => void
+}
 
 export default function StudyRecordModal({ isOpen, onClose, onSave }: Props) {
+  const [subject, setSubject] = useState<string>(SUBJECTS[0])
   const [content, setContent] = useState('')
   const [timeValue, setTimeValue] = useState('')
   const [timeUnit, setTimeUnit] = useState<'min' | 'hour'>('min')
@@ -39,7 +49,8 @@ export default function StudyRecordModal({ isOpen, onClose, onSave }: Props) {
     const minutes = timeUnit === 'hour' ? Math.round(num * 60) : Math.round(num)
     const now = new Date()
     const recordedAt = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`
-    onSave({ id: Date.now(), content: content.trim(), minutes, nextAction: nextAction.trim(), recordedAt })
+    const date = `${now.getMonth() + 1}/${now.getDate()}`
+    onSave({ id: Date.now(), subject, content: content.trim(), minutes, nextAction: nextAction.trim(), recordedAt, date })
     setContent('')
     setTimeValue('')
     setNextAction('')
@@ -48,11 +59,8 @@ export default function StudyRecordModal({ isOpen, onClose, onSave }: Props) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      {/* バックドロップ */}
       <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
-      {/* モーダル本体 */}
       <div className="relative w-full max-w-md bg-zinc-800 rounded-2xl border border-zinc-700 p-6 shadow-2xl">
-        {/* ヘッダー */}
         <div className="flex items-center justify-between mb-5">
           <h3 className="text-base font-semibold text-white">学習を記録</h3>
           <button
@@ -63,14 +71,23 @@ export default function StudyRecordModal({ isOpen, onClose, onSave }: Props) {
           </button>
         </div>
 
-        {/* フォーム */}
         <div className="flex flex-col gap-4">
+          <div>
+            <label className="text-xs text-zinc-400 mb-1.5 block">科目</label>
+            <select
+              value={subject}
+              onChange={e => setSubject(e.target.value)}
+              className="w-full bg-zinc-700 border border-zinc-600 rounded-xl px-3 py-2.5 text-sm text-zinc-100 focus:outline-none focus:border-orange-500 transition-colors"
+            >
+              {SUBJECTS.map(s => <option key={s} value={s}>{s}</option>)}
+            </select>
+          </div>
           <div>
             <label className="text-xs text-zinc-400 mb-1.5 block">何をしたか</label>
             <textarea
               value={content}
               onChange={e => setContent(e.target.value)}
-              placeholder="例：証券分析 DCFモデルの復習"
+              placeholder="例：DCFモデルの復習、問題演習10問"
               rows={2}
               className="w-full bg-zinc-700 border border-zinc-600 rounded-xl px-3 py-2.5 text-sm text-zinc-100 placeholder-zinc-500 resize-none focus:outline-none focus:border-orange-500 transition-colors"
             />
@@ -114,31 +131,6 @@ export default function StudyRecordModal({ isOpen, onClose, onSave }: Props) {
           </button>
         </div>
       </div>
-    </div>
-  )
-}
-
-// 記録リスト表示用コンポーネント（ProgressSection内で使用）
-export function RecordList({ records }: { records: StudyRecord[] }) {
-  if (records.length === 0) return null
-  return (
-    <div className="flex flex-col gap-2">
-      {records.slice(0, 3).map(r => (
-        <div key={r.id} className="bg-zinc-700/50 rounded-xl p-3">
-          <div className="flex items-start justify-between gap-2 mb-1">
-            <span className="text-xs text-zinc-100 font-medium leading-snug">{r.content}</span>
-            <span className="text-xs text-zinc-500 shrink-0">{r.recordedAt}</span>
-          </div>
-          <div className="flex items-center gap-3">
-            <span className="text-xs text-orange-400 font-medium">{formatMinutes(r.minutes)}</span>
-            {r.nextAction && (
-              <span className="text-xs text-zinc-400">
-                <span className="text-zinc-600">次→</span> {r.nextAction}
-              </span>
-            )}
-          </div>
-        </div>
-      ))}
     </div>
   )
 }

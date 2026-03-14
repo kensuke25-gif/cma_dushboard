@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer, type PieLabelRenderProps } from 'recharts'
-import StudyRecordModal, { RecordList, type StudyRecord } from './StudyRecordPanel'
+import StudyRecordModal, { type StudyRecord } from './StudyRecordPanel'
 
 type Period = 'today' | 'week' | 'month'
 
@@ -89,23 +89,23 @@ const customTooltipStyle = {
   fontSize: '12px',
 }
 
-export default function StudyStats() {
+type Props = {
+  records: StudyRecord[]
+  onSaveRecord: (record: StudyRecord) => void
+}
+
+export default function StudyStats({ records: _records, onSaveRecord }: Props) {
   const [period, setPeriod] = useState<Period>('today')
   const [isModalOpen, setIsModalOpen] = useState(false)
-  const [records, setRecords] = useState<StudyRecord[]>([])
 
   const stats = periodStats[period]
   const data = timeBreakdown[period]
-
-  const handleSave = (record: StudyRecord) => {
-    setRecords(prev => [record, ...prev])
-  }
 
   return (
     <div className="flex flex-col gap-4">
       {/* 学習時間レポートカード */}
       <div className="bg-zinc-800 rounded-xl border border-zinc-700 p-5">
-        {/* ヘッダー: タイトル + 記録ボタン + 期間タブ */}
+        {/* ヘッダー */}
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-sm font-semibold text-white">学習時間レポート</h2>
           <div className="flex items-center gap-2">
@@ -157,10 +157,13 @@ export default function StudyStats() {
                   data={data}
                   cx="50%"
                   cy="50%"
+                  startAngle={90}
+                  endAngle={-270}
                   outerRadius={60}
-                  paddingAngle={3}
+                  paddingAngle={0}
                   dataKey="value"
-                  strokeWidth={0}
+                  stroke="#27272a"
+                  strokeWidth={2}
                   label={renderCustomLabel}
                   labelLine={{ stroke: '#52525b', strokeWidth: 1 }}
                 >
@@ -188,19 +191,11 @@ export default function StudyStats() {
         ))}
       </div>
 
-      {/* 直近の学習記録 */}
-      {records.length > 0 && (
-        <div className="bg-zinc-800 rounded-xl border border-zinc-700 p-5">
-          <h2 className="text-sm font-semibold text-white mb-3">直近の学習記録</h2>
-          <RecordList records={records} />
-        </div>
-      )}
-
       {/* 記録モーダル */}
       <StudyRecordModal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
-        onSave={handleSave}
+        onSave={onSaveRecord}
       />
     </div>
   )

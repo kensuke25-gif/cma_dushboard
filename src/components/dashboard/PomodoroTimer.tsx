@@ -70,7 +70,7 @@ export default function PomodoroTimer() {
 
       {/* ドーナツリング */}
       <div className="relative w-48 h-48 mx-auto mb-4">
-        <PieChart width={192} height={192}>
+        <PieChart width={192} height={192} margin={{ top: 0, right: 0, bottom: 0, left: 0 }}>
           <Pie
             data={ringData}
             cx={96}
