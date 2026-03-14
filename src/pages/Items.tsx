@@ -63,6 +63,11 @@ function getItemsGrouped(): { chapter: string; items: Item[] }[] {
   }))
 }
 
+// 組み込み問題集HTML（publicディレクトリに配置）
+const BUILTIN_QUIZ_URLS: Record<string, string> = {
+  '第II章 金融経済': `${import.meta.env.BASE_URL}quiz/chapter2-finance.html`,
+}
+
 function chapterProblemKey(chapter: string) { return `chapter:${chapter}` }
 function itemExplanationKey(itemId: number) { return `item:${itemId}` }
 
@@ -107,7 +112,11 @@ export default function Items() {
 
   function getLink(key: string): string | null {
     const url = links[key]
-    return url && url !== '#' ? url : null
+    if (url && url !== '#') return url
+    // 組み込みURLをフォールバックとして使用
+    const chapter = key.startsWith('chapter:') ? key.slice('chapter:'.length) : null
+    if (chapter && BUILTIN_QUIZ_URLS[chapter]) return BUILTIN_QUIZ_URLS[chapter]
+    return null
   }
 
   function handleLinkClick(key: string, label: string) {
