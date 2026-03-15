@@ -118,19 +118,21 @@ export const useQuizStore = create<QuizState>((set, get) => ({
   },
 
   countExisting: async (subject, field) => {
-    const { count } = await supabase
+    const { count, error } = await supabase
       .from('quiz_questions')
       .select('id', { count: 'exact', head: true })
       .eq('subject', subject)
       .eq('field', field)
+    if (error) throw new Error(error.message)
     return count ?? 0
   },
 
   uploadQuestions: async (subject, field, rawQuestions) => {
     // 既存の同subject+fieldを削除してから再INSERT
-    await supabase.from('quiz_questions')
+    const { error: delError } = await supabase.from('quiz_questions')
       .delete().eq('subject', subject).eq('field', field)
-    await supabase.from('quiz_questions').insert(
+    if (delError) throw new Error(delError.message)
+    const { error: insError } = await supabase.from('quiz_questions').insert(
       rawQuestions.map(q => ({
         subject,
         field,
@@ -140,5 +142,6 @@ export const useQuizStore = create<QuizState>((set, get) => ({
         explanation: q.explanation ?? null,
       }))
     )
+    if (insError) throw new Error(insError.message)
   },
 }))

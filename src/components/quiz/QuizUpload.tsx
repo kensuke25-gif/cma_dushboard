@@ -78,8 +78,13 @@ export default function QuizUpload() {
       setExistingCount(count)
       setParsed({ subject, field, questions: data.questions })
       setState('parsed')
-    } catch {
-      setError('JSONのパースに失敗しました。ファイルの形式を確認してください')
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : '不明なエラー'
+      if (msg.includes('relation') || msg.includes('does not exist') || msg.includes('テーブル')) {
+        setError('Supabase にテーブルが存在しません。Dashboard → SQL Editor でマイグレーションSQLを実行してください。')
+      } else {
+        setError(`エラー: ${msg}`)
+      }
     }
   }
 
@@ -108,8 +113,13 @@ export default function QuizUpload() {
     try {
       await uploadQuestions(parsed.subject, parsed.field, parsed.questions)
       setState('success')
-    } catch {
-      setError('アップロードに失敗しました。Supabase の接続を確認してください')
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : '不明なエラー'
+      if (msg.includes('relation') || msg.includes('does not exist')) {
+        setError('Supabase にテーブルが存在しません。Dashboard → SQL Editor でマイグレーションSQLを実行してください。')
+      } else {
+        setError(`アップロードに失敗しました: ${msg}`)
+      }
       setState('error')
     }
   }
