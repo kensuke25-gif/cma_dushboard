@@ -1,47 +1,6 @@
-import { useState, useEffect, useRef, useCallback } from 'react'
+import { useState } from 'react'
 import { PieChart, Pie, Cell } from 'recharts'
-
-const MODES = {
-  focus: { label: '集中', minutes: 25, ringColor: '#7c4dff', textColor: 'text-[#a78bfa]' },
-  short: { label: '休憩', minutes: 5, ringColor: '#22c55e', textColor: 'text-green-400' },
-  long: { label: '長休憩', minutes: 15, ringColor: '#3b82f6', textColor: 'text-blue-400' },
-}
-
-function playBeep(type: 'finish' | 'tick') {
-  try {
-    const ctx = new AudioContext()
-    const oscillator = ctx.createOscillator()
-    const gain = ctx.createGain()
-    oscillator.connect(gain)
-    gain.connect(ctx.destination)
-
-    if (type === 'finish') {
-      // 3回鳴らす
-      const beeps = [0, 0.4, 0.8]
-      beeps.forEach(offset => {
-        const osc = ctx.createOscillator()
-        const g = ctx.createGain()
-        osc.connect(g)
-        g.connect(ctx.destination)
-        osc.frequency.value = 880
-        osc.type = 'sine'
-        g.gain.setValueAtTime(0.5, ctx.currentTime + offset)
-        g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + offset + 0.35)
-        osc.start(ctx.currentTime + offset)
-        osc.stop(ctx.currentTime + offset + 0.35)
-      })
-    } else {
-      oscillator.frequency.value = 440
-      oscillator.type = 'sine'
-      gain.gain.setValueAtTime(0.2, ctx.currentTime)
-      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.1)
-      oscillator.start()
-      oscillator.stop(ctx.currentTime + 0.1)
-    }
-  } catch {
-    // AudioContext非対応の場合は無視
-  }
-}
+import { usePomodoroStore, MODES } from '../../stores/pomodoroStore'
 
 async function requestNotificationPermission() {
   if (!('Notification' in window)) return false
@@ -51,81 +10,35 @@ async function requestNotificationPermission() {
   return result === 'granted'
 }
 
-function sendNotification(title: string, body: string) {
-  if (!('Notification' in window) || Notification.permission !== 'granted') return
-  new Notification(title, { body, icon: '/favicon.ico', silent: true })
+function playTickBeep() {
+  try {
+    const ctx = new AudioContext()
+    const oscillator = ctx.createOscillator()
+    const gain = ctx.createGain()
+    oscillator.connect(gain)
+    gain.connect(ctx.destination)
+    oscillator.frequency.value = 440
+    oscillator.type = 'sine'
+    gain.gain.setValueAtTime(0.2, ctx.currentTime)
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.1)
+    oscillator.start()
+    oscillator.stop(ctx.currentTime + 0.1)
+  } catch { /* ignore */ }
 }
 
 export default function PomodoroTimer() {
-  const [mode, setMode] = useState<'focus' | 'short' | 'long'>('focus')
-  const [seconds, setSeconds] = useState(25 * 60)
-  const [running, setRunning] = useState(false)
-  const [sets, setSets] = useState(0)
-  const [notifGranted, setNotifGranted] = useState('Notification' in window && Notification.permission === 'granted')
-
-  // バックグラウンド対応: 終了予定時刻を保持
-  const endTimeRef = useRef<number | null>(null)
-  const intervalRef = useRef<number | null>(null)
-
-  // モード変更時にリセット
-  useEffect(() => {
-    setSeconds(MODES[mode].minutes * 60)
-    setRunning(false)
-    endTimeRef.current = null
-  }, [mode])
-
-  const handleFinish = useCallback(() => {
-    setRunning(false)
-    endTimeRef.current = null
-    if (mode === 'focus') {
-      setSets(n => n + 1)
-      playBeep('finish')
-      sendNotification('ポモドーロ完了！', '25分の集中お疲れ様でした。休憩しましょう。')
-    } else {
-      playBeep('finish')
-      sendNotification('休憩終了', '次のセッションを始めましょう！')
-    }
-  }, [mode])
-
-  // タイマーループ（timestamp基準）
-  useEffect(() => {
-    if (running) {
-      // スタート時に終了予定時刻をセット
-      if (endTimeRef.current === null) {
-        endTimeRef.current = Date.now() + seconds * 1000
-      }
-
-      intervalRef.current = window.setInterval(() => {
-        const remaining = Math.round((endTimeRef.current! - Date.now()) / 1000)
-        if (remaining <= 0) {
-          setSeconds(0)
-          handleFinish()
-        } else {
-          setSeconds(remaining)
-        }
-      }, 500) // 500msで更新してズレを最小化
-    } else {
-      if (intervalRef.current) clearInterval(intervalRef.current)
-      // 一時停止時は残り時間をリセットしてendTimeを破棄
-      endTimeRef.current = null
-    }
-    return () => { if (intervalRef.current) clearInterval(intervalRef.current) }
-  }, [running, handleFinish])
+  const { mode, seconds, running, sets, setMode, startToggle, reset } = usePomodoroStore()
+  const [notifGranted, setNotifGranted] = useState(
+    'Notification' in window && Notification.permission === 'granted'
+  )
 
   const handleStart = async () => {
     if (!running && !notifGranted) {
       const granted = await requestNotificationPermission()
       setNotifGranted(granted)
     }
-    // endTimeを現在の残り秒数から再計算
-    endTimeRef.current = Date.now() + seconds * 1000
-    setRunning(r => !r)
-  }
-
-  const handleReset = () => {
-    setRunning(false)
-    endTimeRef.current = null
-    setSeconds(MODES[mode].minutes * 60)
+    if (!running) playTickBeep()
+    startToggle()
   }
 
   const mm = String(Math.floor(seconds / 60)).padStart(2, '0')
@@ -215,7 +128,7 @@ export default function PomodoroTimer() {
           {running ? '一時停止' : 'スタート'}
         </button>
         <button
-          onClick={handleReset}
+          onClick={reset}
           className="px-5 py-2 rounded-full border border-[#3a3a5c] text-[#8888aa] hover:text-[#c8c8e8] hover:border-[#7c4dff] text-sm transition-colors"
         >
           リセット
