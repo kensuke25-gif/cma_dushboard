@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import Layout from './components/Layout'
 import Dashboard from './pages/Dashboard'
 import Items from './pages/Items'
+import Quiz from './pages/Quiz'
 import Login from './pages/Login'
 import { useAuthStore } from './stores/authStore'
 
@@ -66,6 +67,7 @@ export default function App() {
         >
           <Route path="/" element={<Dashboard />} />
           <Route path="/items" element={<Items />} />
+          <Route path="/quiz" element={<Quiz />} />
         </Route>
       </Routes>
     </BrowserRouter>
