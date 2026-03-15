@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { CheckCircle, XCircle, Clock, Trophy, RotateCcw, ChevronDown, ChevronUp, AlertCircle } from 'lucide-react'
+import { CheckCircle, XCircle, Clock, Trophy, RotateCcw, Home, ChevronDown, ChevronUp, AlertCircle } from 'lucide-react'
 import type { QuizQuestion } from '../../stores/quizStore'
 import { useQuizStore } from '../../stores/quizStore'
 import { useStudyStore } from '../../stores/studyStore'
@@ -17,6 +17,7 @@ type Props = {
   answers: AnswerRecord[]
   durationSeconds: number
   onRestart: () => void
+  onRetry: () => void
 }
 
 function formatDuration(seconds: number): string {
@@ -26,7 +27,7 @@ function formatDuration(seconds: number): string {
   return `${m}分${s > 0 ? ` ${s}秒` : ''}`
 }
 
-export default function QuizResult({ subject, field, weakMode, answers, durationSeconds, onRestart }: Props) {
+export default function QuizResult({ subject, field, weakMode, answers, durationSeconds, onRestart, onRetry }: Props) {
   const [saving, setSaving] = useState(true)
   const [saved, setSaved] = useState(false)
   const [saveError, setSaveError] = useState(false)
@@ -114,34 +115,42 @@ export default function QuizResult({ subject, field, weakMode, answers, duration
         </div>
       </div>
 
+      {/* 保存ステータス */}
+      <div className={`flex items-center justify-center gap-2 py-3 mb-4 rounded-xl border text-sm font-medium ${
+        saveError
+          ? 'border-red-500/50 bg-red-900/20 text-red-300'
+          : saved
+          ? 'border-green-600/50 bg-green-700/20 text-green-300'
+          : 'border-[#2a2a4a] bg-[#111125] text-[#8888aa]'
+      }`}>
+        {saving ? (
+          <>
+            <div className="w-4 h-4 border-2 border-[#5a5a7a] border-t-[#8888aa] rounded-full animate-spin" />
+            保存中...
+          </>
+        ) : saved ? (
+          <><CheckCircle className="w-4 h-4" />記録済み</>
+        ) : saveError ? (
+          <><AlertCircle className="w-4 h-4" />保存失敗</>
+        ) : null}
+      </div>
+
       {/* ボタン行 */}
       <div className="flex gap-3 mb-8">
         <button
-          onClick={onRestart}
+          onClick={onRetry}
           className="flex-1 flex items-center justify-center gap-2 py-3.5 rounded-xl border border-[#2a2a4a] text-[#c8c8e8] hover:border-[#3a3a5c] transition-all text-sm font-medium"
         >
           <RotateCcw className="w-4 h-4" />
           もう一度
         </button>
-        {/* 保存ステータス */}
-        <div className={`flex-1 flex items-center justify-center gap-2 py-3.5 rounded-xl border text-sm font-medium ${
-          saveError
-            ? 'border-red-500/50 bg-red-900/20 text-red-300'
-            : saved
-            ? 'border-green-600/50 bg-green-700/20 text-green-300'
-            : 'border-[#2a2a4a] bg-[#111125] text-[#8888aa]'
-        }`}>
-          {saving ? (
-            <>
-              <div className="w-4 h-4 border-2 border-[#5a5a7a] border-t-[#8888aa] rounded-full animate-spin" />
-              保存中...
-            </>
-          ) : saved ? (
-            <><CheckCircle className="w-4 h-4" />記録済み</>
-          ) : saveError ? (
-            <><AlertCircle className="w-4 h-4" />保存失敗</>
-          ) : null}
-        </div>
+        <button
+          onClick={onRestart}
+          className="flex-1 flex items-center justify-center gap-2 py-3.5 rounded-xl border border-[#2a2a4a] text-[#c8c8e8] hover:border-[#3a3a5c] transition-all text-sm font-medium"
+        >
+          <Home className="w-4 h-4" />
+          新しいクイズを選ぶ
+        </button>
       </div>
 
       {/* 問題ごとの正誤一覧 */}

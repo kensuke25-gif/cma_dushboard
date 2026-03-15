@@ -34,14 +34,20 @@ export default function Quiz() {
 
   const startTimeRef = useRef<number | null>(null)
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null)
+  const pausedMsRef = useRef(0)
+  const hiddenAtRef = useRef<number | null>(null)
 
   const { questions, weakQuestionIds } = useQuizStore()
 
   function startTimer() {
+    pausedMsRef.current = 0
+    hiddenAtRef.current = null
     startTimeRef.current = Date.now()
     timerRef.current = setInterval(() => {
       if (startTimeRef.current !== null) {
-        setDurationSeconds(Math.floor((Date.now() - startTimeRef.current) / 1000))
+        const totalPaused = pausedMsRef.current +
+          (hiddenAtRef.current !== null ? Date.now() - hiddenAtRef.current : 0)
+        setDurationSeconds(Math.max(0, Math.floor((Date.now() - startTimeRef.current - totalPaused) / 1000)))
       }
     }, 1000)
   }
@@ -52,7 +58,9 @@ export default function Quiz() {
       timerRef.current = null
     }
     if (startTimeRef.current !== null) {
-      setDurationSeconds(Math.floor((Date.now() - startTimeRef.current) / 1000))
+      const totalPaused = pausedMsRef.current +
+        (hiddenAtRef.current !== null ? Date.now() - hiddenAtRef.current : 0)
+      setDurationSeconds(Math.max(0, Math.floor((Date.now() - startTimeRef.current - totalPaused) / 1000)))
       startTimeRef.current = null
     }
   }
@@ -60,6 +68,21 @@ export default function Quiz() {
   useEffect(() => {
     return () => { if (timerRef.current) clearInterval(timerRef.current) }
   }, [])
+
+  // 画面非表示中は学習時間を一時停止（ポモドーロは継続）
+  useEffect(() => {
+    if (phase !== 'answering') return
+    function handleVisibilityChange() {
+      if (document.visibilityState === 'hidden') {
+        hiddenAtRef.current = Date.now()
+      } else if (hiddenAtRef.current !== null) {
+        pausedMsRef.current += Date.now() - hiddenAtRef.current
+        hiddenAtRef.current = null
+      }
+    }
+    document.addEventListener('visibilitychange', handleVisibilityChange)
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange)
+  }, [phase])
 
   function handleStart(cfg: QuizConfig) {
     setConfig(cfg)
@@ -94,6 +117,26 @@ export default function Quiz() {
       setCurrentIndex(nextIndex)
       setAnswered(false)
     }
+  }
+
+  function handleAbandon() {
+    stopTimer()
+    setPhase('result')
+  }
+
+  function handleRetry() {
+    if (!config) return
+    const pool = config.weakMode
+      ? questions.filter(q => weakQuestionIds.has(q.id))
+      : questions
+    const shuffled = [...pool].sort(() => Math.random() - 0.5)
+    setQuestionList(shuffled.slice(0, config.count))
+    setCurrentIndex(0)
+    setAnswers([])
+    setAnswered(false)
+    setDurationSeconds(0)
+    setPhase('answering')
+    startTimer()
   }
 
   function handleRestart() {
@@ -157,12 +200,22 @@ export default function Quiz() {
                 onAnswer={handleAnswer}
               />
               {answered && (
-                <div className="max-w-2xl mx-auto px-4 pb-8">
+                <div className="max-w-2xl mx-auto px-4 pb-4">
                   <button
                     onClick={handleNext}
                     className="w-full py-4 rounded-xl bg-[#7c4dff] text-white font-semibold text-base hover:bg-[#6a3de8] active:scale-95 transition-all"
                   >
                     {currentIndex + 1 >= questionList.length ? '結果を見る' : '次の問題'}
+                  </button>
+                </div>
+              )}
+              {answers.length > 0 && !answered && (
+                <div className="max-w-2xl mx-auto px-4 pb-8">
+                  <button
+                    onClick={handleAbandon}
+                    className="w-full py-3 rounded-xl border border-[#2a2a4a] text-[#8888aa] hover:border-red-500/50 hover:text-red-400 transition-all text-sm"
+                  >
+                    中断して結果を見る
                   </button>
                 </div>
               )}
@@ -177,6 +230,7 @@ export default function Quiz() {
               answers={answers}
               durationSeconds={durationSeconds}
               onRestart={handleRestart}
+              onRetry={handleRetry}
             />
           )}
         </>
