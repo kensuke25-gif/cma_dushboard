@@ -1,6 +1,17 @@
 import { create } from 'zustand'
 import { supabase } from '../lib/supabase'
 
+export type QuizSession = {
+  id: string
+  subject: string
+  field: string | null
+  is_weak_mode: boolean
+  total_questions: number
+  correct_count: number
+  duration_seconds: number
+  created_at: string
+}
+
 export type QuizQuestion = {
   id: string        // Supabase UUID
   subject: string
@@ -37,9 +48,11 @@ type SaveSessionParams = {
 interface QuizState {
   questions: QuizQuestion[]
   weakQuestionIds: Set<string>
+  sessions: QuizSession[]
   loading: boolean
   fetchQuestions: (subject: string, field: string | null) => Promise<void>
   fetchWeakQuestions: () => Promise<void>
+  fetchSessions: () => Promise<void>
   toggleWeakQuestion: (questionId: string) => Promise<void>
   saveSession: (params: SaveSessionParams) => Promise<void>
   getSubjects: () => Promise<string[]>
@@ -51,6 +64,7 @@ interface QuizState {
 export const useQuizStore = create<QuizState>((set, get) => ({
   questions: [],
   weakQuestionIds: new Set(),
+  sessions: [],
   loading: false,
 
   getSubjects: async () => {
@@ -115,6 +129,15 @@ export const useQuizStore = create<QuizState>((set, get) => ({
         answers.map(a => ({ session_id: session.id, ...a }))
       )
     }
+  },
+
+  fetchSessions: async () => {
+    const { data } = await supabase
+      .from('quiz_sessions')
+      .select('*')
+      .order('created_at', { ascending: false })
+      .limit(20)
+    set({ sessions: (data ?? []) as QuizSession[] })
   },
 
   countExisting: async (subject, field) => {
