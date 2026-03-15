@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { Outlet, NavLink } from 'react-router-dom'
-import { LayoutDashboard, BookOpen, Brain, LogOut, Menu, X } from 'lucide-react'
+import { LayoutDashboard, BookOpen, Brain, BarChart2, LogOut, Menu, X } from 'lucide-react'
 import { useAuthStore } from '../stores/authStore'
 import { usePomodoroStore, MODES, registerFinishCallback, type PomodoroMode } from '../stores/pomodoroStore'
 
@@ -8,6 +8,7 @@ const tabs = [
   { to: '/', label: 'Dashboard', Icon: LayoutDashboard, exact: true },
   { to: '/items', label: '項目', Icon: BookOpen, exact: false },
   { to: '/quiz', label: 'クイズ', Icon: Brain, exact: false },
+  { to: '/analytics', label: 'レポート', Icon: BarChart2, exact: false },
 ]
 
 // ---- 音・通知（PomodoroTimer から移動） ----
