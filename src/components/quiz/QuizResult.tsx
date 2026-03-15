@@ -1,5 +1,5 @@
-import { useState } from 'react'
-import { CheckCircle, XCircle, Clock, Trophy, RotateCcw, Save, ChevronDown, ChevronUp } from 'lucide-react'
+import { useState, useEffect } from 'react'
+import { CheckCircle, XCircle, Clock, Trophy, RotateCcw, ChevronDown, ChevronUp, AlertCircle } from 'lucide-react'
 import type { QuizQuestion } from '../../stores/quizStore'
 import { useQuizStore } from '../../stores/quizStore'
 import { useStudyStore } from '../../stores/studyStore'
@@ -27,8 +27,9 @@ function formatDuration(seconds: number): string {
 }
 
 export default function QuizResult({ subject, field, weakMode, answers, durationSeconds, onRestart }: Props) {
-  const [saving, setSaving] = useState(false)
+  const [saving, setSaving] = useState(true)
   const [saved, setSaved] = useState(false)
+  const [saveError, setSaveError] = useState(false)
   const [expandedIndex, setExpandedIndex] = useState<number | null>(null)
 
   const { saveSession } = useQuizStore()
@@ -38,44 +39,50 @@ export default function QuizResult({ subject, field, weakMode, answers, duration
   const total = answers.length
   const rate = Math.round((correct / total) * 100)
 
-  async function handleSave() {
-    if (saving || saved) return
-    setSaving(true)
-
-    const now = new Date()
-    const recorded_at = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`
-    const date = `${now.getMonth() + 1}/${now.getDate()}`
-    const minutes = Math.max(1, Math.round(durationSeconds / 60))
-    const fieldLabel = field ?? '全分野'
-    const modeLabel = weakMode ? '【苦手】' : ''
-
-    await Promise.all([
-      addRecord({
-        subject,
-        content: `${modeLabel}クイズ: ${fieldLabel} ${correct}/${total}問正解（${rate}%）`,
-        minutes,
-        next_action: '',
-        recorded_at,
-        date,
-      }),
-      saveSession({
-        subject,
-        field,
-        is_weak_mode: weakMode,
-        total_questions: total,
-        correct_count: correct,
-        duration_seconds: durationSeconds,
-        answers: answers.map(a => ({
-          question_key: a.question.id,
-          selected_answer: a.selectedOriginalIndex,
-          is_correct: a.isCorrect,
-        })),
-      }),
-    ])
-
-    setSaving(false)
-    setSaved(true)
-  }
+  useEffect(() => {
+    let cancelled = false
+    async function autoSave() {
+      const now = new Date()
+      const recorded_at = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`
+      const date = `${now.getMonth() + 1}/${now.getDate()}`
+      const minutes = Math.max(1, Math.round(durationSeconds / 60))
+      const fieldLabel = field ?? '全分野'
+      const modeLabel = weakMode ? '【苦手】' : ''
+      try {
+        await Promise.all([
+          addRecord({
+            subject,
+            content: `${modeLabel}小テスト: ${subject} ${fieldLabel} ${correct}/${total}問正解（${rate}%）`,
+            minutes,
+            next_action: '',
+            recorded_at,
+            date,
+          }),
+          saveSession({
+            subject,
+            field,
+            is_weak_mode: weakMode,
+            total_questions: total,
+            correct_count: correct,
+            duration_seconds: durationSeconds,
+            answers: answers.map(a => ({
+              question_key: a.question.id,
+              selected_answer: a.selectedOriginalIndex,
+              is_correct: a.isCorrect,
+            })),
+          }),
+        ])
+        if (!cancelled) setSaved(true)
+      } catch {
+        if (!cancelled) setSaveError(true)
+      } finally {
+        if (!cancelled) setSaving(false)
+      }
+    }
+    autoSave()
+    return () => { cancelled = true }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   return (
     <div className="max-w-2xl mx-auto px-4 py-8">
@@ -107,7 +114,7 @@ export default function QuizResult({ subject, field, weakMode, answers, duration
         </div>
       </div>
 
-      {/* ボタン */}
+      {/* ボタン行 */}
       <div className="flex gap-3 mb-8">
         <button
           onClick={onRestart}
@@ -116,19 +123,25 @@ export default function QuizResult({ subject, field, weakMode, answers, duration
           <RotateCcw className="w-4 h-4" />
           もう一度
         </button>
-        <button
-          onClick={handleSave}
-          disabled={saving || saved}
-          className={`flex-1 flex items-center justify-center gap-2 py-3.5 rounded-xl text-sm font-semibold transition-all ${
-            saved
-              ? 'bg-green-700/30 border border-green-600/50 text-green-300 cursor-default'
-              : saving
-              ? 'bg-[#252540] text-[#4a4a6a] cursor-wait'
-              : 'bg-[#7c4dff] text-white hover:bg-[#6a3de8] active:scale-95'
-          }`}
-        >
-          {saved ? <><CheckCircle className="w-4 h-4" />記録済み</> : saving ? '保存中...' : <><Save className="w-4 h-4" />学習記録に保存</>}
-        </button>
+        {/* 保存ステータス */}
+        <div className={`flex-1 flex items-center justify-center gap-2 py-3.5 rounded-xl border text-sm font-medium ${
+          saveError
+            ? 'border-red-500/50 bg-red-900/20 text-red-300'
+            : saved
+            ? 'border-green-600/50 bg-green-700/20 text-green-300'
+            : 'border-[#2a2a4a] bg-[#111125] text-[#8888aa]'
+        }`}>
+          {saving ? (
+            <>
+              <div className="w-4 h-4 border-2 border-[#5a5a7a] border-t-[#8888aa] rounded-full animate-spin" />
+              保存中...
+            </>
+          ) : saved ? (
+            <><CheckCircle className="w-4 h-4" />記録済み</>
+          ) : saveError ? (
+            <><AlertCircle className="w-4 h-4" />保存失敗</>
+          ) : null}
+        </div>
       </div>
 
       {/* 問題ごとの正誤一覧 */}

@@ -4,6 +4,7 @@ import QuizSetup, { type QuizConfig } from '../components/quiz/QuizSetup'
 import QuizQuestion from '../components/quiz/QuizQuestion'
 import QuizResult from '../components/quiz/QuizResult'
 import QuizUpload from '../components/quiz/QuizUpload'
+import QuizHistory from '../components/quiz/QuizHistory'
 import { useQuizStore, type QuizQuestion as Question } from '../stores/quizStore'
 import { useAuthStore } from '../stores/authStore'
 
@@ -144,10 +145,12 @@ export default function Quiz() {
       {(tab === 'quiz' || !isAdmin) && (
         <>
           {phase === 'setup' && <QuizSetup onStart={handleStart} />}
+          {phase === 'setup' && <QuizHistory />}
 
           {phase === 'answering' && questionList.length > 0 && (
             <div>
               <QuizQuestion
+                key={currentIndex}
                 question={questionList[currentIndex]}
                 questionIndex={currentIndex}
                 totalQuestions={questionList.length}

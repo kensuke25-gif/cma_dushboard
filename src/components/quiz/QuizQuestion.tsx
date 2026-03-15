@@ -17,6 +17,7 @@ type ShuffledOption = {
 
 export default function QuizQuestion({ question, questionIndex, totalQuestions, onAnswer }: Props) {
   const [selected, setSelected] = useState<number | null>(null) // shuffled index
+  const [confirmed, setConfirmed] = useState(false)
   const { weakQuestionIds, toggleWeakQuestion } = useQuizStore()
 
   const shuffled = useMemo<ShuffledOption[]>(() => {
@@ -31,19 +32,27 @@ export default function QuizQuestion({ question, questionIndex, totalQuestions, 
   }, [question.id])
 
   const correctShuffledIndex = shuffled.findIndex(o => o.originalIndex === question.correct_answer)
-  const answered = selected !== null
+  const answered = confirmed
   const isCorrect = answered && selected === correctShuffledIndex
   const isWeak = weakQuestionIds.has(question.id)
 
   function handleSelect(shuffledIndex: number) {
-    if (answered) return
+    if (confirmed) return
     setSelected(shuffledIndex)
-    onAnswer(shuffled[shuffledIndex].originalIndex, shuffledIndex === correctShuffledIndex)
+  }
+
+  function handleConfirm() {
+    if (selected === null || confirmed) return
+    setConfirmed(true)
+    onAnswer(shuffled[selected].originalIndex, selected === correctShuffledIndex)
   }
 
   function optionStyle(shuffledIndex: number): string {
     const base = 'w-full text-left py-4 px-4 rounded-xl border text-sm transition-all '
-    if (!answered) {
+    if (!confirmed) {
+      if (shuffledIndex === selected) {
+        return base + 'border-[#7c4dff] bg-[#7c4dff]/20 text-white'
+      }
       return base + 'border-[#2a2a4a] bg-[#111125] text-[#c8c8e8] hover:border-[#7c4dff]/60 hover:bg-[#7c4dff]/10 active:scale-[0.98]'
     }
     if (shuffledIndex === correctShuffledIndex) {
@@ -53,6 +62,19 @@ export default function QuizQuestion({ question, questionIndex, totalQuestions, 
       return base + 'border-red-500 bg-red-900/30 text-red-300'
     }
     return base + 'border-[#2a2a4a] bg-[#111125] text-[#4a4a6a]'
+  }
+
+  function badgeStyle(shuffledIndex: number): string {
+    const base = 'shrink-0 inline-flex items-center justify-center w-6 h-6 rounded-full text-xs font-bold border '
+    if (!confirmed) {
+      if (shuffledIndex === selected) {
+        return base + 'border-[#7c4dff] text-[#7c4dff]'
+      }
+      return base + 'border-[#3a3a5c] text-[#8888aa]'
+    }
+    if (shuffledIndex === correctShuffledIndex) return base + 'border-green-500 text-green-300'
+    if (shuffledIndex === selected) return base + 'border-red-500 text-red-300'
+    return base + 'border-[#2a2a4a] text-[#4a4a6a]'
   }
 
   return (
@@ -77,16 +99,11 @@ export default function QuizQuestion({ question, questionIndex, totalQuestions, 
       </div>
 
       {/* 選択肢 */}
-      <div className="space-y-3 mb-6">
+      <div className="space-y-3 mb-4">
         {shuffled.map((opt, i) => (
           <button key={i} onClick={() => handleSelect(i)} className={optionStyle(i)}>
             <span className="flex items-start gap-3">
-              <span className={`shrink-0 inline-flex items-center justify-center w-6 h-6 rounded-full text-xs font-bold border ${
-                !answered ? 'border-[#3a3a5c] text-[#8888aa]'
-                : i === correctShuffledIndex ? 'border-green-500 text-green-300'
-                : i === selected ? 'border-red-500 text-red-300'
-                : 'border-[#2a2a4a] text-[#4a4a6a]'
-              }`}>
+              <span className={badgeStyle(i)}>
                 {String.fromCharCode(65 + i)}
               </span>
               <span className="leading-relaxed">{opt.text}</span>
@@ -94,6 +111,18 @@ export default function QuizQuestion({ question, questionIndex, totalQuestions, 
           </button>
         ))}
       </div>
+
+      {/* 回答するボタン（選択済み・未確認） */}
+      {selected !== null && !confirmed && (
+        <div className="mb-4">
+          <button
+            onClick={handleConfirm}
+            className="w-full py-4 rounded-xl bg-[#7c4dff] text-white font-semibold text-base hover:bg-[#6a3de8] active:scale-95 transition-all"
+          >
+            回答する
+          </button>
+        </div>
+      )}
 
       {/* 回答後の表示 */}
       {answered && (
