@@ -1,10 +1,11 @@
 import { Outlet, NavLink } from 'react-router-dom'
-import { LayoutDashboard, BookOpen, LogOut } from 'lucide-react'
+import { LayoutDashboard, BookOpen, Brain, LogOut } from 'lucide-react'
 import { useAuthStore } from '../stores/authStore'
 
 const tabs = [
   { to: '/', label: 'Dashboard', Icon: LayoutDashboard, exact: true },
   { to: '/items', label: '項目', Icon: BookOpen, exact: false },
+  { to: '/quiz', label: 'クイズ', Icon: Brain, exact: false },
 ]
 
 export default function Layout() {
