@@ -171,16 +171,9 @@ export default function Items() {
     setSaving(true)
     setSaveError(null)
 
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
-    if (authError || !user) {
-      setSaveError(`認証エラー: ${authError?.message ?? 'ユーザーが取得できません'}`)
-      setSaving(false)
-      return
-    }
-
     const { error: upsertError } = await supabase.from('item_links').upsert(
-      { user_id: user.id, link_key: modal.key, url, updated_at: new Date().toISOString() },
-      { onConflict: 'user_id,link_key' }
+      { link_key: modal.key, url, updated_at: new Date().toISOString() },
+      { onConflict: 'link_key' }
     )
 
     setSaving(false)
