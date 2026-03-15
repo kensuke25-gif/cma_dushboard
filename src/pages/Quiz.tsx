@@ -150,6 +150,7 @@ export default function Quiz() {
           {phase === 'answering' && questionList.length > 0 && (
             <div>
               <QuizQuestion
+                key={currentIndex}
                 question={questionList[currentIndex]}
                 questionIndex={currentIndex}
                 totalQuestions={questionList.length}
