@@ -1,0 +1,57 @@
+{
+  "_comment": [
+    "【使い方】",
+    "1. このファイルをコピーして public/questions/{科目}/{分野}.json として保存する",
+    "   例: public/questions/証券分析/マクロ経済学.json",
+    "",
+    "2. public/questions/index.json の該当科目の fields 配列に分野名を追記する",
+    "   例: { \"name\": \"証券分析\", \"fields\": [\"マクロ経済学\"] }",
+    "",
+    "3. commit & push するとクイズに反映される",
+    "",
+    "【フィールド説明】",
+    "subject       : 科目名（証券分析 / 財務分析 / 市場分析 / 職業行為・倫理基準）",
+    "field         : 分野名（index.json の fields と一致させること）",
+    "questions     : 問題の配列",
+    "  question    : 問題文（改行は \\n で表現可）",
+    "  options     : 選択肢の配列（2〜4個）",
+    "  correct_answer : 正解の選択肢番号（0始まり）",
+    "  explanation : 解説文（省略可、空文字列 \"\" でもよい）"
+  ],
+  "subject": "証券分析",
+  "field": "分野名をここに書く",
+  "questions": [
+    {
+      "question": "問題文をここに書いてください。\n複数行にする場合は \\n を使います。",
+      "options": [
+        "選択肢A",
+        "選択肢B",
+        "選択肢C",
+        "選択肢D"
+      ],
+      "correct_answer": 0,
+      "explanation": "解説文をここに書いてください。正解がAの場合は correct_answer を 0 にします（0始まり）。"
+    },
+    {
+      "question": "2問目の例（選択肢が3つの場合）",
+      "options": [
+        "選択肢A",
+        "選択肢B",
+        "選択肢C"
+      ],
+      "correct_answer": 1,
+      "explanation": "正解はBなので correct_answer は 1。解説は省略することもできます。"
+    },
+    {
+      "question": "3問目の例（解説なし）",
+      "options": [
+        "選択肢A",
+        "選択肢B",
+        "選択肢C",
+        "選択肢D"
+      ],
+      "correct_answer": 2,
+      "explanation": ""
+    }
+  ]
+}
