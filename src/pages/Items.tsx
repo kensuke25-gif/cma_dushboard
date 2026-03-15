@@ -56,6 +56,17 @@ const ITEMS: Item[] = [
 
 const chapters = [...new Set(ITEMS.map(item => item.chapter))]
 
+// iOS PWAでもSafariが確実に起動するanchorクリック方式
+function openExternalLink(url: string) {
+  const a = document.createElement('a')
+  a.href = url
+  a.target = '_blank'
+  a.rel = 'noopener noreferrer'
+  document.body.appendChild(a)
+  a.click()
+  document.body.removeChild(a)
+}
+
 function getItemsGrouped(): { chapter: string; items: Item[] }[] {
   return chapters.map(chapter => ({
     chapter,
@@ -140,7 +151,7 @@ export default function Items() {
   function handleLinkClick(key: string, label: string) {
     const url = getLink(key)
     if (url) {
-      window.open(url, '_blank', 'noopener,noreferrer')
+      openExternalLink(url)
     } else {
       setSaveError(null)
       setModal({ key, label, inputValue: '' })
@@ -185,7 +196,7 @@ export default function Items() {
     setLinks(next)
     saveCache(next)
 
-    window.open(url, '_blank', 'noopener,noreferrer')
+    openExternalLink(url)
     setModal(null)
   }
 
