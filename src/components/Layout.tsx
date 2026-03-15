@@ -81,11 +81,13 @@ export default function Layout() {
           fixed inset-y-0 left-0 z-50 w-[220px]
           bg-[#111125] border-r border-[#2a2a4a]
           flex flex-col
-          pt-[env(safe-area-inset-top)]
           transform transition-transform duration-200 ease-in-out
           ${sidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
         `}
       >
+        {/* iOSセーフエリア（ノッチ・Dynamic Island）のりしろ */}
+        <div className="shrink-0" style={{ height: 'env(safe-area-inset-top)' }} />
+
         {/* タイトル（ホームへのリンク） */}
         <NavLink
           to="/"
@@ -102,7 +104,8 @@ export default function Layout() {
         {/* モバイル: 閉じるボタン */}
         <button
           onClick={closeSidebar}
-          className="absolute top-4 right-3 p-1.5 rounded-lg text-[#8888aa] hover:text-white hover:bg-[#252540] transition-colors md:hidden"
+          style={{ top: 'calc(env(safe-area-inset-top) + 12px)' }}
+          className="absolute right-3 p-1.5 rounded-lg text-[#8888aa] hover:text-white hover:bg-[#252540] transition-colors md:hidden"
         >
           <X className="w-4 h-4" />
         </button>
@@ -192,7 +195,11 @@ export default function Layout() {
       <div className="md:pl-[220px] flex flex-col min-h-screen">
 
         {/* モバイル用スティッキートップバー */}
-        <header className="md:hidden sticky top-0 z-30 bg-[#111125] border-b border-[#2a2a4a] px-4 pt-[env(safe-area-inset-top)] min-h-14 flex items-center gap-3">
+        <header className="md:hidden sticky top-0 z-30 bg-[#111125] border-b border-[#2a2a4a]">
+          {/* iOSセーフエリア（ノッチ・Dynamic Island）のりしろ */}
+          <div style={{ height: 'env(safe-area-inset-top)' }} />
+          {/* ナビゲーション行 */}
+          <div className="px-4 h-14 flex items-center gap-3">
           <button
             onClick={() => setSidebarOpen(true)}
             className="p-1.5 rounded-lg text-[#8888aa] hover:text-white hover:bg-[#252540] transition-colors"
@@ -235,6 +242,7 @@ export default function Layout() {
           >
             <LogOut className="w-4 h-4" strokeWidth={1.5} />
           </button>
+          </div>{/* /ナビゲーション行 */}
         </header>
 
         <main className="flex-1">
