@@ -2,7 +2,7 @@ import { create } from 'zustand'
 import { supabase } from '../lib/supabase'
 
 export type QuizQuestion = {
-  id: string        // "{subject}:{field}:{index}" 形式
+  id: string        // Supabase UUID
   subject: string
   field: string
   question: string
@@ -18,13 +18,8 @@ type RawQuestion = {
   explanation?: string
 }
 
-type IndexSubject = {
-  name: string
-  fields: string[]
-}
-
 type QuizAnswer = {
-  question_key: string  // question.id と同値
+  question_key: string  // = question.id (UUID)
   selected_answer: number
   is_correct: boolean
 }
@@ -49,29 +44,8 @@ interface QuizState {
   saveSession: (params: SaveSessionParams) => Promise<void>
   getSubjects: () => Promise<string[]>
   getFields: (subject: string) => Promise<string[]>
-}
-
-// GitHub Pages の base path に対応（vite.config の base 設定を尊重）
-const BASE_PATH = `${import.meta.env.BASE_URL}questions`.replace(/\/\//g, '/')
-
-async function fetchIndex(): Promise<IndexSubject[]> {
-  const res = await fetch(`${BASE_PATH}/index.json`)
-  if (!res.ok) return []
-  const data = await res.json()
-  return (data.subjects ?? []) as IndexSubject[]
-}
-
-async function fetchFieldQuestions(subject: string, field: string): Promise<QuizQuestion[]> {
-  const url = `${BASE_PATH}/${encodeURIComponent(subject)}/${encodeURIComponent(field)}.json`
-  const res = await fetch(url)
-  if (!res.ok) return []
-  const data = await res.json()
-  return ((data.questions ?? []) as RawQuestion[]).map((q, i) => ({
-    ...q,
-    id: `${subject}:${field}:${i}`,
-    subject,
-    field,
-  }))
+  uploadQuestions: (subject: string, field: string, questions: RawQuestion[]) => Promise<void>
+  countExisting: (subject: string, field: string) => Promise<number>
 }
 
 export const useQuizStore = create<QuizState>((set, get) => ({
@@ -80,32 +54,24 @@ export const useQuizStore = create<QuizState>((set, get) => ({
   loading: false,
 
   getSubjects: async () => {
-    const subjects = await fetchIndex()
-    return subjects.map(s => s.name)
+    const { data } = await supabase.from('quiz_questions').select('subject')
+    return [...new Set((data ?? []).map((r: { subject: string }) => r.subject))]
   },
 
   getFields: async (subject) => {
-    const subjects = await fetchIndex()
-    return subjects.find(s => s.name === subject)?.fields ?? []
+    const { data } = await supabase
+      .from('quiz_questions')
+      .select('field')
+      .eq('subject', subject)
+    return [...new Set((data ?? []).map((r: { field: string }) => r.field))]
   },
 
   fetchQuestions: async (subject, field) => {
     set({ loading: true })
-    try {
-      if (field) {
-        const questions = await fetchFieldQuestions(subject, field)
-        set({ questions })
-      } else {
-        // 全分野をまとめてフェッチ
-        const subjects = await fetchIndex()
-        const fields = subjects.find(s => s.name === subject)?.fields ?? []
-        const results = await Promise.all(fields.map(f => fetchFieldQuestions(subject, f)))
-        set({ questions: results.flat() })
-      }
-    } catch {
-      set({ questions: [] })
-    }
-    set({ loading: false })
+    let query = supabase.from('quiz_questions').select('*').eq('subject', subject)
+    if (field) query = query.eq('field', field)
+    const { data } = await query
+    set({ questions: (data ?? []) as QuizQuestion[], loading: false })
   },
 
   fetchWeakQuestions: async () => {
@@ -149,5 +115,30 @@ export const useQuizStore = create<QuizState>((set, get) => ({
         answers.map(a => ({ session_id: session.id, ...a }))
       )
     }
+  },
+
+  countExisting: async (subject, field) => {
+    const { count } = await supabase
+      .from('quiz_questions')
+      .select('id', { count: 'exact', head: true })
+      .eq('subject', subject)
+      .eq('field', field)
+    return count ?? 0
+  },
+
+  uploadQuestions: async (subject, field, rawQuestions) => {
+    // 既存の同subject+fieldを削除してから再INSERT
+    await supabase.from('quiz_questions')
+      .delete().eq('subject', subject).eq('field', field)
+    await supabase.from('quiz_questions').insert(
+      rawQuestions.map(q => ({
+        subject,
+        field,
+        question: q.question,
+        options: q.options,
+        correct_answer: q.correct_answer,
+        explanation: q.explanation ?? null,
+      }))
+    )
   },
 }))
