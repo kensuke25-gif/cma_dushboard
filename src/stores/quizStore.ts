@@ -2,7 +2,7 @@ import { create } from 'zustand'
 import { supabase } from '../lib/supabase'
 
 export type QuizQuestion = {
-  id: string
+  id: string        // "{subject}:{field}:{index}" 形式
   subject: string
   field: string
   question: string
@@ -11,8 +11,20 @@ export type QuizQuestion = {
   explanation?: string
 }
 
+type RawQuestion = {
+  question: string
+  options: string[]
+  correct_answer: number
+  explanation?: string
+}
+
+type IndexSubject = {
+  name: string
+  fields: string[]
+}
+
 type QuizAnswer = {
-  question_id: string
+  question_key: string  // question.id と同値
   selected_answer: number
   is_correct: boolean
 }
@@ -39,46 +51,69 @@ interface QuizState {
   getFields: (subject: string) => Promise<string[]>
 }
 
+// GitHub Pages の base path に対応（vite.config の base 設定を尊重）
+const BASE_PATH = `${import.meta.env.BASE_URL}questions`.replace(/\/\//g, '/')
+
+async function fetchIndex(): Promise<IndexSubject[]> {
+  const res = await fetch(`${BASE_PATH}/index.json`)
+  if (!res.ok) return []
+  const data = await res.json()
+  return (data.subjects ?? []) as IndexSubject[]
+}
+
+async function fetchFieldQuestions(subject: string, field: string): Promise<QuizQuestion[]> {
+  const url = `${BASE_PATH}/${encodeURIComponent(subject)}/${encodeURIComponent(field)}.json`
+  const res = await fetch(url)
+  if (!res.ok) return []
+  const data = await res.json()
+  return ((data.questions ?? []) as RawQuestion[]).map((q, i) => ({
+    ...q,
+    id: `${subject}:${field}:${i}`,
+    subject,
+    field,
+  }))
+}
+
 export const useQuizStore = create<QuizState>((set, get) => ({
   questions: [],
   weakQuestionIds: new Set(),
   loading: false,
 
   getSubjects: async () => {
-    const { data, error } = await supabase
-      .from('quiz_questions')
-      .select('subject')
-    if (error || !data) return []
-    return [...new Set(data.map((r: { subject: string }) => r.subject))]
+    const subjects = await fetchIndex()
+    return subjects.map(s => s.name)
   },
 
-  getFields: async (subject: string) => {
-    const { data, error } = await supabase
-      .from('quiz_questions')
-      .select('field')
-      .eq('subject', subject)
-    if (error || !data) return []
-    return [...new Set(data.map((r: { field: string }) => r.field))]
+  getFields: async (subject) => {
+    const subjects = await fetchIndex()
+    return subjects.find(s => s.name === subject)?.fields ?? []
   },
 
   fetchQuestions: async (subject, field) => {
     set({ loading: true })
-    let query = supabase
-      .from('quiz_questions')
-      .select('*')
-      .eq('subject', subject)
-    if (field) query = query.eq('field', field)
-    const { data, error } = await query
-    if (!error && data) set({ questions: data as QuizQuestion[] })
+    try {
+      if (field) {
+        const questions = await fetchFieldQuestions(subject, field)
+        set({ questions })
+      } else {
+        // 全分野をまとめてフェッチ
+        const subjects = await fetchIndex()
+        const fields = subjects.find(s => s.name === subject)?.fields ?? []
+        const results = await Promise.all(fields.map(f => fetchFieldQuestions(subject, f)))
+        set({ questions: results.flat() })
+      }
+    } catch {
+      set({ questions: [] })
+    }
     set({ loading: false })
   },
 
   fetchWeakQuestions: async () => {
     const { data, error } = await supabase
       .from('quiz_weak_questions')
-      .select('question_id')
+      .select('question_key')
     if (!error && data) {
-      set({ weakQuestionIds: new Set(data.map((r: { question_id: string }) => r.question_id)) })
+      set({ weakQuestionIds: new Set(data.map((r: { question_key: string }) => r.question_key)) })
     }
   },
 
@@ -94,9 +129,9 @@ export const useQuizStore = create<QuizState>((set, get) => ({
     })
     if (isWeak) {
       await supabase.from('quiz_weak_questions').delete()
-        .eq('user_id', user.id).eq('question_id', questionId)
+        .eq('user_id', user.id).eq('question_key', questionId)
     } else {
-      await supabase.from('quiz_weak_questions').insert({ user_id: user.id, question_id: questionId })
+      await supabase.from('quiz_weak_questions').insert({ user_id: user.id, question_key: questionId })
     }
   },
 

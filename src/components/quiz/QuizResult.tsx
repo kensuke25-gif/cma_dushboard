@@ -66,7 +66,7 @@ export default function QuizResult({ subject, field, weakMode, answers, duration
         correct_count: correct,
         duration_seconds: durationSeconds,
         answers: answers.map(a => ({
-          question_id: a.question.id,
+          question_key: a.question.id,
           selected_answer: a.selectedOriginalIndex,
           is_correct: a.isCorrect,
         })),
