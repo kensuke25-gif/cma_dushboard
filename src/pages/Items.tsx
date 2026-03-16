@@ -11,7 +11,8 @@ type Item = {
   explanationUrl: string
 }
 
-const ITEMS: Item[] = [
+// ---- 市場分析 ----
+const SHIJO_ITEMS: Item[] = [
   // 第I章 マクロ経済学
   { id: 1, chapter: '第I章 マクロ経済学', name: '景気循環', description: '局面、景気動向指数、ビジネス・サーベイ', explanationUrl: '#' },
   { id: 2, chapter: '第I章 マクロ経済学', name: 'SNA統計と物価指標', description: '三面等価の原則、名目と実質、GDPデフレーター、実質GDI、成長率、消費者・企業物価指数', explanationUrl: '#' },
@@ -22,7 +23,6 @@ const ITEMS: Item[] = [
   { id: 7, chapter: '第I章 マクロ経済学', name: '経済成長の要因分解', description: '', explanationUrl: '#' },
   { id: 8, chapter: '第I章 マクロ経済学', name: '新古典派経済成長モデル（ソロー＝スワンモデル）', description: '', explanationUrl: '#' },
   { id: 9, chapter: '第I章 マクロ経済学', name: '財政赤字と公債残高の収束問題', description: '', explanationUrl: '#' },
-
   // 第II章 金融経済
   { id: 10, chapter: '第II章 金融経済', name: '金融政策のフレームワーク', description: '', explanationUrl: '#' },
   { id: 11, chapter: '第II章 金融経済', name: 'マネタリーベースとマネーストック', description: '', explanationUrl: '#' },
@@ -32,7 +32,6 @@ const ITEMS: Item[] = [
   { id: 15, chapter: '第II章 金融経済', name: '金融政策と運営ルール', description: 'テイラー・ルール、インフレ・ターゲティング', explanationUrl: '#' },
   { id: 16, chapter: '第II章 金融経済', name: '金融政策の動向', description: '量的緩和、マイナス金利、長短金利操作（イールドカーブ・コントロール）など', explanationUrl: '#' },
   { id: 17, chapter: '第II章 金融経済', name: '景気動向と株価', description: '株価決定モデル、PER、土地の理論価格', explanationUrl: '#' },
-
   // 第III章 国際金融論
   { id: 18, chapter: '第III章 国際金融論', name: '国際収支', description: '統計の体系', explanationUrl: '#' },
   { id: 19, chapter: '第III章 国際金融論', name: '経常収支', description: '金融収支との関係', explanationUrl: '#' },
@@ -42,7 +41,6 @@ const ITEMS: Item[] = [
   { id: 23, chapter: '第III章 国際金融論', name: '為替レート決定理論II（短期）', description: '金利平価説、ポートフォリオ・バランス・アプローチ', explanationUrl: '#' },
   { id: 24, chapter: '第III章 国際金融論', name: '為替介入とその効果', description: '', explanationUrl: '#' },
   { id: 25, chapter: '第III章 国際金融論', name: 'オープン・マクロ（IS-LM型小国モデル）', description: '', explanationUrl: '#' },
-
   // 第IV章 ミクロ経済学
   { id: 26, chapter: '第IV章 ミクロ経済学', name: '消費者の効用最大化', description: '所得効果と価格効果', explanationUrl: '#' },
   { id: 27, chapter: '第IV章 ミクロ経済学', name: '企業の利潤最大化', description: '', explanationUrl: '#' },
@@ -54,7 +52,23 @@ const ITEMS: Item[] = [
   { id: 33, chapter: '第IV章 ミクロ経済学', name: '情報の経済学', description: '逆選択、モラルハザード、エージェンシー問題', explanationUrl: '#' },
 ]
 
-const chapters = [...new Set(ITEMS.map(item => item.chapter))]
+// ---- 証券分析（項目追加予定） ----
+const SHOKEN_ITEMS: Item[] = []
+
+// ---- 財務分析（項目追加予定） ----
+const ZAIMU_ITEMS: Item[] = []
+
+// ---- 職業行為倫理基準（項目追加予定） ----
+const RINRI_ITEMS: Item[] = []
+
+type SubjectTab = '証券分析' | '財務分析' | '市場分析' | '職業行為倫理基準'
+
+const SUBJECT_TABS: { key: SubjectTab; short: string; items: Item[] }[] = [
+  { key: '証券分析',         short: '証券分析', items: SHOKEN_ITEMS },
+  { key: '財務分析',         short: '財務分析', items: ZAIMU_ITEMS },
+  { key: '市場分析',         short: '市場分析', items: SHIJO_ITEMS },
+  { key: '職業行為倫理基準', short: '倫理基準', items: RINRI_ITEMS },
+]
 
 // iOS PWAでもSafariが確実に起動するanchorクリック方式
 function openExternalLink(url: string) {
@@ -65,13 +79,6 @@ function openExternalLink(url: string) {
   document.body.appendChild(a)
   a.click()
   document.body.removeChild(a)
-}
-
-function getItemsGrouped(): { chapter: string; items: Item[] }[] {
-  return chapters.map(chapter => ({
-    chapter,
-    items: ITEMS.filter(item => item.chapter === chapter),
-  }))
 }
 
 // 組み込み問題集HTML（publicディレクトリに配置）
@@ -119,10 +126,10 @@ export default function Items() {
   const [saveError, setSaveError] = useState<string | null>(null)
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
   const [quiz2WeakCount, setQuiz2WeakCount] = useState(loadQuiz2WeakCount)
+  const [activeTab, setActiveTab] = useState<SubjectTab>('市場分析')
 
   useEffect(() => { fetchWeakItems() }, [fetchWeakItems])
 
-  // クイズページが localStorage を更新したら反映する
   useEffect(() => {
     const handler = (e: StorageEvent) => {
       if (e.key === 'cma_quiz2_weak') setQuiz2WeakCount(loadQuiz2WeakCount())
@@ -143,13 +150,19 @@ export default function Items() {
     })
   }, [])
 
-  const grouped = getItemsGrouped()
   const weakCount = weakItems.size
+
+  const currentTabData = SUBJECT_TABS.find(t => t.key === activeTab)!
+  const currentItems = currentTabData.items
+  const chapters = [...new Set(currentItems.map(item => item.chapter))]
+  const grouped = chapters.map(chapter => ({
+    chapter,
+    items: currentItems.filter(item => item.chapter === chapter),
+  }))
 
   function getLink(key: string): string | null {
     const url = links[key]
     if (url && url !== '#') return url
-    // 組み込みURLをフォールバックとして使用
     const chapter = key.startsWith('chapter:') ? key.slice('chapter:'.length) : null
     if (chapter && BUILTIN_QUIZ_URLS[chapter]) return BUILTIN_QUIZ_URLS[chapter]
     return null
@@ -258,10 +271,11 @@ export default function Items() {
 
   return (
     <div className="max-w-5xl mx-auto px-6 py-6">
-      <div className="flex items-center justify-between mb-5">
+      {/* ページヘッダー */}
+      <div className="flex items-center justify-between mb-4">
         <div>
-          <h2 className="text-base font-semibold text-white">市場分析 学習項目</h2>
-          <p className="text-xs text-[#8888aa] mt-0.5">全{ITEMS.length}項目</p>
+          <h2 className="text-base font-semibold text-white">学習項目</h2>
+          <p className="text-xs text-[#8888aa] mt-0.5">全{currentItems.length}項目</p>
         </div>
         {weakCount > 0 && (
           <span className="text-xs px-3 py-1 rounded-full bg-yellow-900/30 text-yellow-400 border border-yellow-800/40">
@@ -270,125 +284,153 @@ export default function Items() {
         )}
       </div>
 
-      <div className="rounded-[20px] border border-[#2a2a4a] overflow-hidden">
-        {/* Header */}
-        <div className="grid grid-cols-[1fr_auto_auto] bg-[#111125] border-b border-[#2a2a4a] px-4 py-2.5">
-          <span className="text-xs text-[#9090bb] font-medium">項目名</span>
-          <span className="text-xs text-[#9090bb] font-medium w-12 text-center">苦手</span>
-          <span className="text-xs text-[#9090bb] font-medium w-12 text-center">解説</span>
-        </div>
-
-        {grouped.map(({ chapter, items }) => {
-          const probKey = chapterProblemKey(chapter)
-          const probUrl = getLink(probKey)
-
-          return (
-            <div key={chapter}>
-              {/* Chapter header row with 問題集 button */}
-              <div className="px-4 py-2 bg-[#111125] border-b border-[#2a2a4a] border-l-4 border-l-[#7c4dff] flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <span className="text-xs font-semibold text-[#9090bb] tracking-wide">{chapter}</span>
-                  {chapter === '第II章 金融経済' && quiz2WeakCount > 0 && (
-                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-orange-900/30 text-orange-400 border border-orange-800/40 font-medium">
-                      苦手 {quiz2WeakCount}問
-                    </span>
-                  )}
-                </div>
-                <div className="flex items-center gap-1">
-                  {probUrl && (
-                    <button
-                      onClick={() => handleEdit(probKey, `${chapter} 問題集`)}
-                      title="リンクを編集"
-                      className="p-1 rounded-lg hover:bg-[#252540] transition-colors group"
-                    >
-                      <Pencil className="w-3 h-3 text-[#5a5a7a] group-hover:text-[#9090bb] transition-colors" strokeWidth={1.5} />
-                    </button>
-                  )}
-                  <button
-                    onClick={() => handleLinkClick(probKey, `${chapter} 問題集`)}
-                    title={probUrl ? '問題集を開く' : '問題集のリンクを設定'}
-                    className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium transition-colors ${
-                      probUrl
-                        ? 'bg-[#7c4dff]/20 text-[#7c4dff] hover:bg-[#7c4dff]/30'
-                        : 'bg-[#252540] text-[#5a5a7a] hover:bg-[#2e2e50] hover:text-[#9090bb]'
-                    }`}
-                  >
-                    <ExternalLink className="w-3 h-3" strokeWidth={1.5} />
-                    問題集
-                  </button>
-                </div>
-              </div>
-
-              {/* Item rows */}
-              {items.map((item, rowIndex) => {
-                const expKey = itemExplanationKey(item.id)
-                const expUrl = getLink(expKey)
-
-                return (
-                  <div
-                    key={item.id}
-                    className={`grid grid-cols-[1fr_auto_auto] px-4 py-3 border-b border-[#2a2a4a] items-center transition-colors hover:bg-[rgba(124,77,255,0.05)] ${
-                      rowIndex % 2 === 0 ? 'bg-[#1e1e3a]' : 'bg-[#16162a]'
-                    }`}
-                  >
-                    <div className="pr-4 min-w-0">
-                      <p className="text-sm text-[#c8c8e8] font-medium leading-snug">{item.name}</p>
-                      {item.description && (
-                        <p className="text-xs text-[#8888aa] mt-0.5 leading-relaxed">{item.description}</p>
-                      )}
-                    </div>
-
-                    <div className="w-12 flex justify-center">
-                      <button
-                        onClick={() => toggleWeakItem(item.id)}
-                        title={weakItems.has(item.id) ? '苦手マーク解除' : '苦手マーク登録'}
-                        className="p-1 rounded-lg hover:bg-[#252540] transition-colors"
-                      >
-                        <Star
-                          className={`w-4 h-4 transition-colors ${
-                            weakItems.has(item.id)
-                              ? 'fill-yellow-400 text-yellow-400'
-                              : 'text-[#3a3a5c] hover:text-[#8888aa]'
-                          }`}
-                          strokeWidth={1.5}
-                        />
-                      </button>
-                    </div>
-
-                    <div className="w-12 flex items-center justify-center gap-0.5">
-                      {expUrl && (
-                        <button
-                          onClick={() => handleEdit(expKey, `${item.name} 解説`)}
-                          title="リンクを編集"
-                          className="p-1 rounded-lg hover:bg-[#252540] transition-colors group"
-                        >
-                          <Pencil className="w-3 h-3 text-[#5a5a7a] group-hover:text-[#9090bb] transition-colors" strokeWidth={1.5} />
-                        </button>
-                      )}
-                      <button
-                        onClick={() => handleLinkClick(expKey, `${item.name} 解説`)}
-                        title={expUrl ? '解説を開く' : '解説のリンクを設定'}
-                        className="p-1 rounded-lg hover:bg-[#252540] transition-colors group"
-                      >
-                        <FileText
-                          className={`w-4 h-4 transition-colors ${
-                            expUrl
-                              ? 'text-[#7c4dff] group-hover:text-[#9d6fff]'
-                              : 'text-[#3a3a5c] group-hover:text-[#8888aa]'
-                          }`}
-                          strokeWidth={1.5}
-                        />
-                      </button>
-                    </div>
-                  </div>
-                )
-              })}
-            </div>
-          )
-        })}
+      {/* 科目タブ */}
+      <div className="grid grid-cols-4 gap-1 mb-5 p-1 bg-[#111125] rounded-xl border border-[#2a2a4a]">
+        {SUBJECT_TABS.map(({ key, short }) => (
+          <button
+            key={key}
+            onClick={() => setActiveTab(key)}
+            className={`py-2 rounded-lg font-medium transition-colors leading-tight text-center ${
+              activeTab === key
+                ? 'bg-[#7c4dff] text-white text-[10px] md:text-xs'
+                : 'text-[#8888aa] hover:text-[#c8c8e8] text-[10px] md:text-xs'
+            }`}
+          >
+            <span className="md:hidden">{short}</span>
+            <span className="hidden md:inline">{key}</span>
+          </button>
+        ))}
       </div>
 
-      {/* Link setting modal */}
+      {/* 項目なし（準備中）*/}
+      {currentItems.length === 0 && (
+        <div className="rounded-[20px] border border-[#2a2a4a] bg-[#111125] py-16 text-center">
+          <p className="text-sm text-[#8888aa]">このカテゴリの項目は準備中です</p>
+        </div>
+      )}
+
+      {/* 項目テーブル */}
+      {currentItems.length > 0 && (
+        <div className="rounded-[20px] border border-[#2a2a4a] overflow-hidden">
+          {/* Header */}
+          <div className="grid grid-cols-[1fr_auto_auto] bg-[#111125] border-b border-[#2a2a4a] px-4 py-2.5">
+            <span className="text-xs text-[#9090bb] font-medium">項目名</span>
+            <span className="text-xs text-[#9090bb] font-medium w-12 text-center">苦手</span>
+            <span className="text-xs text-[#9090bb] font-medium w-12 text-center">解説</span>
+          </div>
+
+          {grouped.map(({ chapter, items }) => {
+            const probKey = chapterProblemKey(chapter)
+            const probUrl = getLink(probKey)
+
+            return (
+              <div key={chapter}>
+                {/* Chapter header with 問題集 button */}
+                <div className="px-4 py-2 bg-[#111125] border-b border-[#2a2a4a] border-l-4 border-l-[#7c4dff] flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-semibold text-[#9090bb] tracking-wide">{chapter}</span>
+                    {chapter === '第II章 金融経済' && quiz2WeakCount > 0 && (
+                      <span className="text-[10px] px-2 py-0.5 rounded-full bg-orange-900/30 text-orange-400 border border-orange-800/40 font-medium">
+                        苦手 {quiz2WeakCount}問
+                      </span>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-1">
+                    {probUrl && (
+                      <button
+                        onClick={() => handleEdit(probKey, `${chapter} 問題集`)}
+                        title="リンクを編集"
+                        className="p-1 rounded-lg hover:bg-[#252540] transition-colors group"
+                      >
+                        <Pencil className="w-3 h-3 text-[#5a5a7a] group-hover:text-[#9090bb] transition-colors" strokeWidth={1.5} />
+                      </button>
+                    )}
+                    <button
+                      onClick={() => handleLinkClick(probKey, `${chapter} 問題集`)}
+                      title={probUrl ? '問題集を開く' : '問題集のリンクを設定'}
+                      className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium transition-colors ${
+                        probUrl
+                          ? 'bg-[#7c4dff]/20 text-[#7c4dff] hover:bg-[#7c4dff]/30'
+                          : 'bg-[#252540] text-[#5a5a7a] hover:bg-[#2e2e50] hover:text-[#9090bb]'
+                      }`}
+                    >
+                      <ExternalLink className="w-3 h-3" strokeWidth={1.5} />
+                      問題集
+                    </button>
+                  </div>
+                </div>
+
+                {/* Item rows */}
+                {items.map((item, rowIndex) => {
+                  const expKey = itemExplanationKey(item.id)
+                  const expUrl = getLink(expKey)
+
+                  return (
+                    <div
+                      key={item.id}
+                      className={`grid grid-cols-[1fr_auto_auto] px-4 py-3 border-b border-[#2a2a4a] items-center transition-colors hover:bg-[rgba(124,77,255,0.05)] ${
+                        rowIndex % 2 === 0 ? 'bg-[#1e1e3a]' : 'bg-[#16162a]'
+                      }`}
+                    >
+                      <div className="pr-4 min-w-0">
+                        <p className="text-sm text-[#c8c8e8] font-medium leading-snug">{item.name}</p>
+                        {item.description && (
+                          <p className="text-xs text-[#8888aa] mt-0.5 leading-relaxed">{item.description}</p>
+                        )}
+                      </div>
+
+                      <div className="w-12 flex justify-center">
+                        <button
+                          onClick={() => toggleWeakItem(item.id)}
+                          title={weakItems.has(item.id) ? '苦手マーク解除' : '苦手マーク登録'}
+                          className="p-1 rounded-lg hover:bg-[#252540] transition-colors"
+                        >
+                          <Star
+                            className={`w-4 h-4 transition-colors ${
+                              weakItems.has(item.id)
+                                ? 'fill-yellow-400 text-yellow-400'
+                                : 'text-[#3a3a5c] hover:text-[#8888aa]'
+                            }`}
+                            strokeWidth={1.5}
+                          />
+                        </button>
+                      </div>
+
+                      <div className="w-12 flex items-center justify-center gap-0.5">
+                        {expUrl && (
+                          <button
+                            onClick={() => handleEdit(expKey, `${item.name} 解説`)}
+                            title="リンクを編集"
+                            className="p-1 rounded-lg hover:bg-[#252540] transition-colors group"
+                          >
+                            <Pencil className="w-3 h-3 text-[#5a5a7a] group-hover:text-[#9090bb] transition-colors" strokeWidth={1.5} />
+                          </button>
+                        )}
+                        <button
+                          onClick={() => handleLinkClick(expKey, `${item.name} 解説`)}
+                          title={expUrl ? '解説を開く' : '解説のリンクを設定'}
+                          className="p-1 rounded-lg hover:bg-[#252540] transition-colors group"
+                        >
+                          <FileText
+                            className={`w-4 h-4 transition-colors ${
+                              expUrl
+                                ? 'text-[#7c4dff] group-hover:text-[#9d6fff]'
+                                : 'text-[#3a3a5c] group-hover:text-[#8888aa]'
+                            }`}
+                            strokeWidth={1.5}
+                          />
+                        </button>
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            )
+          })}
+        </div>
+      )}
+
+      {/* Link / File setting modal */}
       {modal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
           <div className="bg-[#1a1a30] border border-[#2a2a4a] rounded-2xl w-full max-w-md shadow-2xl">
@@ -398,10 +440,7 @@ export default function Items() {
                 <h3 className="text-sm font-semibold text-white">ファイルを設定</h3>
                 <p className="text-xs text-[#8888aa] mt-0.5 truncate max-w-[280px]">{modal.label}</p>
               </div>
-              <button
-                onClick={closeModal}
-                className="p-1.5 rounded-lg hover:bg-[#252540] transition-colors"
-              >
+              <button onClick={closeModal} className="p-1.5 rounded-lg hover:bg-[#252540] transition-colors">
                 <X className="w-4 h-4 text-[#8888aa]" strokeWidth={1.5} />
               </button>
             </div>
@@ -411,9 +450,7 @@ export default function Items() {
               <button
                 onClick={() => setModal(m => m ? { ...m, mode: 'file' } : m)}
                 className={`flex-1 py-2.5 text-xs font-medium transition-colors ${
-                  isFileMode
-                    ? 'text-[#7c4dff] border-b-2 border-[#7c4dff]'
-                    : 'text-[#8888aa] hover:text-[#c8c8e8]'
+                  isFileMode ? 'text-[#7c4dff] border-b-2 border-[#7c4dff]' : 'text-[#8888aa] hover:text-[#c8c8e8]'
                 }`}
               >
                 ファイルをアップロード
@@ -421,9 +458,7 @@ export default function Items() {
               <button
                 onClick={() => setModal(m => m ? { ...m, mode: 'url' } : m)}
                 className={`flex-1 py-2.5 text-xs font-medium transition-colors ${
-                  !isFileMode
-                    ? 'text-[#7c4dff] border-b-2 border-[#7c4dff]'
-                    : 'text-[#8888aa] hover:text-[#c8c8e8]'
+                  !isFileMode ? 'text-[#7c4dff] border-b-2 border-[#7c4dff]' : 'text-[#8888aa] hover:text-[#c8c8e8]'
                 }`}
               >
                 URLを入力
@@ -432,7 +467,6 @@ export default function Items() {
 
             <div className="px-5 py-4 space-y-4">
               {isFileMode ? (
-                /* File upload tab */
                 <div>
                   <input
                     id="file-upload"
@@ -445,10 +479,7 @@ export default function Items() {
                     <div className="flex items-center gap-3 p-3 bg-[#111125] border border-[#7c4dff]/40 rounded-xl">
                       <FileText className="w-4 h-4 text-[#7c4dff] shrink-0" strokeWidth={1.5} />
                       <span className="text-xs text-[#c8c8e8] flex-1 truncate">{selectedFile.name}</span>
-                      <button
-                        onClick={() => setSelectedFile(null)}
-                        className="p-0.5 rounded hover:bg-[#252540] transition-colors"
-                      >
+                      <button onClick={() => setSelectedFile(null)} className="p-0.5 rounded hover:bg-[#252540] transition-colors">
                         <X className="w-3.5 h-3.5 text-[#8888aa]" strokeWidth={1.5} />
                       </button>
                     </div>
@@ -458,19 +489,14 @@ export default function Items() {
                       className="flex flex-col items-center gap-2 p-6 border-2 border-dashed border-[#2a2a4a] rounded-xl cursor-pointer hover:border-[#7c4dff]/50 hover:bg-[#7c4dff]/5 transition-colors"
                     >
                       <Upload className="w-6 h-6 text-[#5a5a7a]" strokeWidth={1.5} />
-                      <span className="text-xs text-[#8888aa] text-center">
-                        クリックしてHTMLファイルを選択
-                      </span>
+                      <span className="text-xs text-[#8888aa] text-center">クリックしてHTMLファイルを選択</span>
                     </label>
                   )}
                   {links[modal.key] && (
-                    <p className="text-[11px] text-[#5a5a7a] mt-2">
-                      ※ アップロードすると既存のファイルが上書きされます
-                    </p>
+                    <p className="text-[11px] text-[#5a5a7a] mt-2">※ アップロードすると既存のファイルが上書きされます</p>
                   )}
                 </div>
               ) : (
-                /* URL input tab */
                 <div>
                   <label className="text-xs text-[#9090bb] font-medium block mb-1.5">URL</label>
                   <input
@@ -493,10 +519,7 @@ export default function Items() {
             )}
 
             <div className="px-5 pb-5 flex gap-2 justify-end">
-              <button
-                onClick={closeModal}
-                className="px-4 py-2 rounded-xl text-sm text-[#8888aa] hover:text-[#c8c8e8] hover:bg-[#252540] transition-colors"
-              >
+              <button onClick={closeModal} className="px-4 py-2 rounded-xl text-sm text-[#8888aa] hover:text-[#c8c8e8] hover:bg-[#252540] transition-colors">
                 キャンセル
               </button>
               <button
