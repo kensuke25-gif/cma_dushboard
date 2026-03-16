@@ -19,9 +19,9 @@ export default function Dashboard() {
   }
 
   return (
-    <div className="bg-[#1a1a2e]">
+    <div className="bg-[#1a1a2e] min-h-screen">
       {/* 更新ボタン */}
-      <div className="max-w-7xl mx-auto px-6 pt-4 flex justify-end">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 pt-3 flex justify-end">
         <button
           onClick={handleRefresh}
           disabled={refreshing}
@@ -33,15 +33,29 @@ export default function Dashboard() {
         </button>
       </div>
 
-      <div className="max-w-7xl mx-auto px-6 py-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        <div className="flex flex-col gap-6">
+      {/* メインレイアウト
+          - モバイル (< md): 1 列、全セクション縦積み
+          - タブレット (md〜xl): 2 列、RecentHistory は下段フル幅
+          - デスクトップ (xl+): 3 列横並び
+      */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-3 sm:py-4
+                      grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3
+                      gap-4 sm:gap-5 xl:gap-6">
+        {/* 列 1: 学習統計 */}
+        <div className="flex flex-col gap-4 sm:gap-5">
           <ProgressSection />
         </div>
-        <div className="flex flex-col gap-6">
+
+        {/* 列 2: 今日やること + ポモドーロ */}
+        <div className="flex flex-col gap-4 sm:gap-5">
           <TodayTasks />
           <PomodoroTimer />
         </div>
-        <div className="hidden lg:flex flex-col gap-6">
+
+        {/* 列 3: 最近の記録
+            タブレット: 2 列を占める（フル幅）
+            デスクトップ: 通常の 1 列 */}
+        <div className="md:col-span-2 xl:col-span-1 flex flex-col gap-4 sm:gap-5">
           <RecentHistory />
         </div>
       </div>

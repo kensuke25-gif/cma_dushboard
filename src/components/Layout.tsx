@@ -3,6 +3,7 @@ import { Outlet, NavLink, useLocation } from 'react-router-dom'
 import { LayoutDashboard, BookOpen, Brain, BarChart2, LogOut, Menu, X } from 'lucide-react'
 import { useAuthStore } from '../stores/authStore'
 import { usePomodoroStore, MODES, registerFinishCallback, type PomodoroMode } from '../stores/pomodoroStore'
+import { playTimerEndSound } from '../lib/sound'
 
 const tabs = [
   { to: '/', label: 'Dashboard', Icon: LayoutDashboard, exact: true },
@@ -11,26 +12,7 @@ const tabs = [
   { to: '/analytics', label: 'レポート', Icon: BarChart2, exact: false },
 ]
 
-// ---- 音・通知（PomodoroTimer から移動） ----
-
-function playBeep() {
-  try {
-    const ctx = new AudioContext()
-    const beeps = [0, 0.4, 0.8]
-    beeps.forEach(offset => {
-      const osc = ctx.createOscillator()
-      const g = ctx.createGain()
-      osc.connect(g)
-      g.connect(ctx.destination)
-      osc.frequency.value = 880
-      osc.type = 'sine'
-      g.gain.setValueAtTime(0.5, ctx.currentTime + offset)
-      g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + offset + 0.35)
-      osc.start(ctx.currentTime + offset)
-      osc.stop(ctx.currentTime + offset + 0.35)
-    })
-  } catch { /* AudioContext 非対応は無視 */ }
-}
+// ---- 通知 ----
 
 function sendNotification(title: string, body: string) {
   if (!('Notification' in window) || Notification.permission !== 'granted') return
@@ -52,7 +34,7 @@ export default function Layout() {
   // タイマー終了時コールバックを登録（初回のみ）
   useEffect(() => {
     registerFinishCallback((finishedMode: PomodoroMode) => {
-      playBeep()
+      playTimerEndSound()
       if (finishedMode === 'focus') {
         sendNotification('ポモドーロ完了！', '25分の集中お疲れ様でした。休憩しましょう。')
       } else {

@@ -3,12 +3,17 @@ import { supabase } from '../lib/supabase'
 
 export type Task = {
   id: string
-  title: string
+  title: string       // メモ（任意）
   subject: string
+  task_type: string   // 問題演習 / 過去問演習 / クイズ / インプット
   minutes: number
   done: boolean
   created_at?: string
 }
+
+// DB に task_type カラムが存在しない場合のデフォルト
+export const DEFAULT_TASK_TYPE = '問題演習'
+export const TASK_TYPES = ['問題演習', '過去問演習', 'クイズ', 'インプット'] as const
 
 type NewTask = Omit<Task, 'id' | 'created_at'>
 
@@ -22,6 +27,18 @@ interface TasksState {
   deleteTask: (id: string) => Promise<void>
 }
 
+function normalizeTask(raw: Record<string, unknown>): Task {
+  return {
+    id:        raw.id as string,
+    title:     (raw.title as string) ?? '',
+    subject:   (raw.subject as string) ?? '',
+    task_type: (raw.task_type as string) ?? DEFAULT_TASK_TYPE,
+    minutes:   (raw.minutes as number) ?? 25,
+    done:      (raw.done as boolean) ?? false,
+    created_at: raw.created_at as string | undefined,
+  }
+}
+
 export const useTasksStore = create<TasksState>((set, get) => ({
   tasks: [],
   loading: false,
@@ -32,7 +49,7 @@ export const useTasksStore = create<TasksState>((set, get) => ({
       .from('tasks')
       .select('*')
       .order('created_at', { ascending: true })
-    if (!error && data) set({ tasks: data as Task[] })
+    if (!error && data) set({ tasks: (data as Record<string, unknown>[]).map(normalizeTask) })
     set({ loading: false })
   },
 
@@ -44,14 +61,13 @@ export const useTasksStore = create<TasksState>((set, get) => ({
       .insert({ ...task, user_id: user.id })
       .select()
       .single()
-    if (!error && data) set(state => ({ tasks: [...state.tasks, data as Task] }))
+    if (!error && data) set(state => ({ tasks: [...state.tasks, normalizeTask(data as Record<string, unknown>)] }))
   },
 
   toggleTask: async (id) => {
     const task = get().tasks.find(t => t.id === id)
     if (!task) return
     const newDone = !task.done
-    // 楽観的更新
     set(state => ({ tasks: state.tasks.map(t => t.id === id ? { ...t, done: newDone } : t) }))
     await supabase.from('tasks').update({ done: newDone }).eq('id', id)
   },
@@ -63,16 +79,14 @@ export const useTasksStore = create<TasksState>((set, get) => ({
     const currentIds = get().tasks.map(t => t.id)
     const updatedIds = updatedTasks.map(t => t.id)
 
-    // 削除対象
     const toDelete = currentIds.filter(id => !updatedIds.includes(id))
     if (toDelete.length > 0) {
       await supabase.from('tasks').delete().in('id', toDelete)
     }
 
-    // 新規追加（id が uuid 形式でないものは新規）
     const uuidPattern = /^[0-9a-f-]{36}$/i
-    const toAdd = updatedTasks.filter(t => !uuidPattern.test(t.id))
-    const toUpdate = updatedTasks.filter(t => uuidPattern.test(t.id))
+    const toAdd    = updatedTasks.filter(t => !uuidPattern.test(t.id))
+    const toUpdate = updatedTasks.filter(t =>  uuidPattern.test(t.id))
 
     if (toAdd.length > 0) {
       const { data } = await supabase
@@ -80,21 +94,19 @@ export const useTasksStore = create<TasksState>((set, get) => ({
         .insert(toAdd.map(({ id: _id, ...rest }) => ({ ...rest, user_id: user.id })))
         .select()
       if (data) {
-        const addedTasks = data as Task[]
+        const addedTasks = (data as Record<string, unknown>[]).map(normalizeTask)
         set({ tasks: [...toUpdate, ...addedTasks] })
         return
       }
     }
 
-    // 既存タスクの更新
     await Promise.all(
       toUpdate.map(t => supabase.from('tasks').update({
-        title: t.title, subject: t.subject, minutes: t.minutes, done: t.done
+        title: t.title, subject: t.subject, task_type: t.task_type, minutes: t.minutes, done: t.done
       }).eq('id', t.id))
     )
 
     set({ tasks: updatedTasks.filter(t => uuidPattern.test(t.id)) })
-    // 再フェッチで状態を正規化
     await get().fetchTasks()
   },
 
