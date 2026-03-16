@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Star, ExternalLink, FileText, Pencil, X, ExternalLink as LinkIcon } from 'lucide-react'
+import { Star, ExternalLink, FileText, Pencil, X, Upload } from 'lucide-react'
 import { useStudyStore } from '../stores/studyStore'
 import { supabase } from '../lib/supabase'
 
@@ -82,6 +82,11 @@ const BUILTIN_QUIZ_URLS: Record<string, string> = {
 function chapterProblemKey(chapter: string) { return `chapter:${chapter}` }
 function itemExplanationKey(itemId: number) { return `item:${itemId}` }
 
+// link_key → Supabase Storage のファイル名に変換
+function linkKeyToFilename(key: string): string {
+  return key.replace(/[^a-zA-Z0-9\-_.]/g, '_') + '.html'
+}
+
 // localStorage をキャッシュとして使用（ロード中のちらつき防止）
 const LS_KEY = 'item_links_cache'
 function loadCache(): Record<string, string> {
@@ -95,6 +100,7 @@ type ModalState = {
   key: string
   label: string
   inputValue: string
+  mode: 'file' | 'url'
 }
 
 // クイズページの苦手マーク数を localStorage から読み取る
@@ -111,6 +117,7 @@ export default function Items() {
   const [modal, setModal] = useState<ModalState | null>(null)
   const [saving, setSaving] = useState(false)
   const [saveError, setSaveError] = useState<string | null>(null)
+  const [selectedFile, setSelectedFile] = useState<File | null>(null)
   const [quiz2WeakCount, setQuiz2WeakCount] = useState(loadQuiz2WeakCount)
 
   useEffect(() => { fetchWeakItems() }, [fetchWeakItems])
@@ -148,22 +155,26 @@ export default function Items() {
     return null
   }
 
+  function closeModal() {
+    setModal(null)
+    setSelectedFile(null)
+    setSaveError(null)
+  }
+
   function handleLinkClick(key: string, label: string) {
     const url = getLink(key)
     if (url) {
       openExternalLink(url)
     } else {
-      setSaveError(null)
-      setModal({ key, label, inputValue: '' })
+      setModal({ key, label, inputValue: '', mode: 'file' })
     }
   }
 
   function handleEdit(key: string, label: string) {
-    setSaveError(null)
-    setModal({ key, label, inputValue: links[key] ?? '' })
+    setModal({ key, label, inputValue: links[key] ?? '', mode: 'url' })
   }
 
-  async function handleSave() {
+  async function handleUrlSave() {
     if (!modal) return
     const url = modal.inputValue.trim()
     if (!url) return
@@ -184,14 +195,66 @@ export default function Items() {
       return
     }
 
-    // 保存成功 → 楽観的更新
     const next = { ...links, [modal.key]: url }
     setLinks(next)
     saveCache(next)
-
     openExternalLink(url)
-    setModal(null)
+    closeModal()
   }
+
+  async function handleUploadAndSave() {
+    if (!modal || !selectedFile) return
+
+    setSaving(true)
+    setSaveError(null)
+
+    const filename = linkKeyToFilename(modal.key)
+    const { error: uploadError } = await supabase.storage
+      .from('item-files')
+      .upload(filename, selectedFile, { contentType: 'text/html', upsert: true })
+
+    if (uploadError) {
+      console.error('[storage upload]', uploadError)
+      setSaveError(`アップロードエラー: ${uploadError.message}`)
+      setSaving(false)
+      return
+    }
+
+    const { data: { publicUrl } } = supabase.storage
+      .from('item-files')
+      .getPublicUrl(filename)
+
+    const { error: upsertError } = await supabase.from('item_links').upsert(
+      { link_key: modal.key, url: publicUrl, updated_at: new Date().toISOString() },
+      { onConflict: 'link_key' }
+    )
+
+    setSaving(false)
+
+    if (upsertError) {
+      console.error('[item_links upsert]', upsertError)
+      setSaveError(`保存エラー: ${upsertError.message}`)
+      return
+    }
+
+    const next = { ...links, [modal.key]: publicUrl }
+    setLinks(next)
+    saveCache(next)
+    openExternalLink(publicUrl)
+    closeModal()
+  }
+
+  function handleSave() {
+    if (!modal) return
+    if (modal.mode === 'file') {
+      handleUploadAndSave()
+    } else {
+      handleUrlSave()
+    }
+  }
+
+  const isFileMode = modal?.mode === 'file'
+  const saveDisabled = saving || (isFileMode ? !selectedFile : !modal?.inputValue.trim())
 
   return (
     <div className="max-w-5xl mx-auto px-6 py-6">
@@ -329,58 +392,98 @@ export default function Items() {
       {modal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
           <div className="bg-[#1a1a30] border border-[#2a2a4a] rounded-2xl w-full max-w-md shadow-2xl">
+            {/* Modal header */}
             <div className="flex items-center justify-between px-5 pt-5 pb-4 border-b border-[#2a2a4a]">
               <div>
-                <h3 className="text-sm font-semibold text-white">リンクを設定</h3>
+                <h3 className="text-sm font-semibold text-white">ファイルを設定</h3>
                 <p className="text-xs text-[#8888aa] mt-0.5 truncate max-w-[280px]">{modal.label}</p>
               </div>
               <button
-                onClick={() => setModal(null)}
+                onClick={closeModal}
                 className="p-1.5 rounded-lg hover:bg-[#252540] transition-colors"
               >
                 <X className="w-4 h-4 text-[#8888aa]" strokeWidth={1.5} />
               </button>
             </div>
 
-            <div className="px-5 py-4 space-y-4">
-              {/* Google Drive hint */}
-              <div className="bg-[#111125] border border-[#2a2a4a] rounded-xl p-3 flex items-start gap-3">
-                <div className="mt-0.5 text-[#7c4dff]">
-                  <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
-                    <path d="M6.28 3h11.44l4.28 7-4.28 7H6.28L2 10z" opacity=".3"/>
-                    <path d="M12 3 6.28 3 2 10l4.28 7h5.72L7.72 10zm0 0 5.72 0 4.28 7-4.28 7H12l4.28-7z"/>
-                  </svg>
-                </div>
-                <div>
-                  <p className="text-xs text-[#c8c8e8] font-medium">PDFをアップロードする場合</p>
-                  <p className="text-xs text-[#8888aa] mt-0.5 leading-relaxed">
-                    Google DriveにPDFをアップロードして「リンクを知っている全員が閲覧可」に設定し、共有リンクを貼り付けてください。
-                  </p>
-                  <a
-                    href="https://drive.google.com"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1 text-xs text-[#7c4dff] hover:text-[#9d6fff] mt-1.5 transition-colors"
-                  >
-                    <LinkIcon className="w-3 h-3" strokeWidth={1.5} />
-                    Google Driveを開く
-                  </a>
-                </div>
-              </div>
+            {/* Tabs */}
+            <div className="flex border-b border-[#2a2a4a]">
+              <button
+                onClick={() => setModal(m => m ? { ...m, mode: 'file' } : m)}
+                className={`flex-1 py-2.5 text-xs font-medium transition-colors ${
+                  isFileMode
+                    ? 'text-[#7c4dff] border-b-2 border-[#7c4dff]'
+                    : 'text-[#8888aa] hover:text-[#c8c8e8]'
+                }`}
+              >
+                ファイルをアップロード
+              </button>
+              <button
+                onClick={() => setModal(m => m ? { ...m, mode: 'url' } : m)}
+                className={`flex-1 py-2.5 text-xs font-medium transition-colors ${
+                  !isFileMode
+                    ? 'text-[#7c4dff] border-b-2 border-[#7c4dff]'
+                    : 'text-[#8888aa] hover:text-[#c8c8e8]'
+                }`}
+              >
+                URLを入力
+              </button>
+            </div>
 
-              {/* URL input */}
-              <div>
-                <label className="text-xs text-[#9090bb] font-medium block mb-1.5">URL</label>
-                <input
-                  type="url"
-                  value={modal.inputValue}
-                  onChange={e => setModal(m => m ? { ...m, inputValue: e.target.value } : m)}
-                  onKeyDown={e => { if (e.key === 'Enter') handleSave() }}
-                  placeholder="https://drive.google.com/... または任意のURL"
-                  autoFocus
-                  className="w-full bg-[#111125] border border-[#2a2a4a] rounded-xl px-3 py-2.5 text-sm text-[#c8c8e8] placeholder-[#4a4a6a] focus:outline-none focus:border-[#7c4dff] transition-colors"
-                />
-              </div>
+            <div className="px-5 py-4 space-y-4">
+              {isFileMode ? (
+                /* File upload tab */
+                <div>
+                  <input
+                    id="file-upload"
+                    type="file"
+                    accept=".html,text/html"
+                    className="hidden"
+                    onChange={e => setSelectedFile(e.target.files?.[0] ?? null)}
+                  />
+                  {selectedFile ? (
+                    <div className="flex items-center gap-3 p-3 bg-[#111125] border border-[#7c4dff]/40 rounded-xl">
+                      <FileText className="w-4 h-4 text-[#7c4dff] shrink-0" strokeWidth={1.5} />
+                      <span className="text-xs text-[#c8c8e8] flex-1 truncate">{selectedFile.name}</span>
+                      <button
+                        onClick={() => setSelectedFile(null)}
+                        className="p-0.5 rounded hover:bg-[#252540] transition-colors"
+                      >
+                        <X className="w-3.5 h-3.5 text-[#8888aa]" strokeWidth={1.5} />
+                      </button>
+                    </div>
+                  ) : (
+                    <label
+                      htmlFor="file-upload"
+                      className="flex flex-col items-center gap-2 p-6 border-2 border-dashed border-[#2a2a4a] rounded-xl cursor-pointer hover:border-[#7c4dff]/50 hover:bg-[#7c4dff]/5 transition-colors"
+                    >
+                      <Upload className="w-6 h-6 text-[#5a5a7a]" strokeWidth={1.5} />
+                      <span className="text-xs text-[#8888aa] text-center">
+                        クリックしてHTMLファイルを選択
+                      </span>
+                    </label>
+                  )}
+                  {links[modal.key] && (
+                    <p className="text-[11px] text-[#5a5a7a] mt-2">
+                      ※ アップロードすると既存のファイルが上書きされます
+                    </p>
+                  )}
+                </div>
+              ) : (
+                /* URL input tab */
+                <div>
+                  <label className="text-xs text-[#9090bb] font-medium block mb-1.5">URL</label>
+                  <input
+                    type="url"
+                    value={modal.inputValue}
+                    onChange={e => setModal(m => m ? { ...m, inputValue: e.target.value } : m)}
+                    onKeyDown={e => { if (e.key === 'Enter') handleSave() }}
+                    placeholder="https://drive.google.com/... または任意のURL"
+                    autoFocus
+                    className="w-full bg-[#111125] border border-[#2a2a4a] rounded-xl px-3 py-2.5 text-sm text-[#c8c8e8] placeholder-[#4a4a6a] focus:outline-none focus:border-[#7c4dff] transition-colors"
+                  />
+                </div>
+              )}
             </div>
 
             {saveError && (
@@ -391,17 +494,19 @@ export default function Items() {
 
             <div className="px-5 pb-5 flex gap-2 justify-end">
               <button
-                onClick={() => setModal(null)}
+                onClick={closeModal}
                 className="px-4 py-2 rounded-xl text-sm text-[#8888aa] hover:text-[#c8c8e8] hover:bg-[#252540] transition-colors"
               >
                 キャンセル
               </button>
               <button
                 onClick={handleSave}
-                disabled={!modal.inputValue.trim() || saving}
+                disabled={saveDisabled}
                 className="px-4 py-2 rounded-xl text-sm font-medium bg-[#7c4dff] text-white hover:bg-[#6a3de8] disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
               >
-                {saving ? '保存中…' : '保存して開く'}
+                {saving
+                  ? (isFileMode ? 'アップロード中…' : '保存中…')
+                  : (isFileMode ? 'アップロードして開く' : '保存して開く')}
               </button>
             </div>
           </div>
