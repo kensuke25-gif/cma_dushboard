@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Star, ExternalLink, FileText, Pencil, X, Upload } from 'lucide-react'
+import { Star, ExternalLink, FileText, Pencil, X, Upload, Loader2, ChevronLeft } from 'lucide-react'
 import { useStudyStore } from '../stores/studyStore'
 import { supabase } from '../lib/supabase'
 
@@ -178,6 +178,8 @@ export default function Items() {
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
   const [quiz2WeakCount, setQuiz2WeakCount] = useState(loadQuiz2WeakCount)
   const [activeTab, setActiveTab] = useState<SubjectTab>('市場分析')
+  const [htmlViewer, setHtmlViewer] = useState<{ title: string; content: string } | null>(null)
+  const [htmlLoading, setHtmlLoading] = useState(false)
 
   useEffect(() => { fetchWeakItems() }, [fetchWeakItems])
 
@@ -225,10 +227,31 @@ export default function Items() {
     setSaveError(null)
   }
 
+  // Supabase Storage の HTML は CDN が Content-Type を上書きして文字化けするため
+  // fetch してアプリ内 iframe (srcdoc) で表示する。外部URL は従来通り外部ブラウザで開く。
+  async function openLink(url: string, label: string) {
+    const isStorageUrl = url.includes('/storage/v1/object/public/item-files/')
+    if (!isStorageUrl) {
+      openExternalLink(url)
+      return
+    }
+    setHtmlLoading(true)
+    try {
+      const res = await fetch(url)
+      const text = await res.text()
+      setHtmlViewer({ title: label, content: text })
+    } catch (e) {
+      console.error('[html fetch]', e)
+      openExternalLink(url)
+    } finally {
+      setHtmlLoading(false)
+    }
+  }
+
   function handleLinkClick(key: string, label: string) {
     const url = getLink(key)
     if (url) {
-      openExternalLink(url)
+      openLink(url, label)
     } else {
       setModal({ key, label, inputValue: '', mode: 'file' })
     }
@@ -262,8 +285,8 @@ export default function Items() {
     const next = { ...links, [modal.key]: url }
     setLinks(next)
     saveCache(next)
-    openExternalLink(url)
     closeModal()
+    await openLink(url, modal.label)
   }
 
   async function handleUploadAndSave() {
@@ -304,8 +327,8 @@ export default function Items() {
     const next = { ...links, [modal.key]: publicUrl }
     setLinks(next)
     saveCache(next)
-    openExternalLink(publicUrl)
     closeModal()
+    await openLink(publicUrl, modal.label)
   }
 
   function handleSave() {
@@ -478,6 +501,40 @@ export default function Items() {
               </div>
             )
           })}
+        </div>
+      )}
+
+      {/* HTML ビューア（Supabase Storage のファイルを文字化けなく表示） */}
+      {htmlViewer && (
+        <div className="fixed inset-0 z-50 flex flex-col bg-[#1a1a2e]">
+          {/* ヘッダー */}
+          <div
+            className="flex items-center gap-2 px-4 py-3 bg-[#111125] border-b border-[#2a2a4a] shrink-0"
+            style={{ paddingTop: 'calc(env(safe-area-inset-top, 0px) + 12px)' }}
+          >
+            <button
+              onClick={() => setHtmlViewer(null)}
+              className="flex items-center gap-1 px-2 py-1.5 rounded-lg text-[#8888aa] hover:text-white hover:bg-[#252540] transition-colors text-xs"
+            >
+              <ChevronLeft className="w-4 h-4" strokeWidth={1.5} />
+              戻る
+            </button>
+            <span className="text-sm font-medium text-white truncate flex-1">{htmlViewer.title}</span>
+          </div>
+          {/* コンテンツ */}
+          <iframe
+            srcDoc={htmlViewer.content}
+            className="flex-1 w-full border-none bg-white"
+            sandbox="allow-scripts allow-same-origin"
+            title={htmlViewer.title}
+          />
+        </div>
+      )}
+
+      {/* HTML ロード中スピナー */}
+      {htmlLoading && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+          <Loader2 className="w-8 h-8 text-[#7c4dff] animate-spin" />
         </div>
       )}
 
