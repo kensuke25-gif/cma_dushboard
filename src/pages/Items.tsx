@@ -178,7 +178,7 @@ export default function Items() {
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
   const [quiz2WeakCount, setQuiz2WeakCount] = useState(loadQuiz2WeakCount)
   const [activeTab, setActiveTab] = useState<SubjectTab>('市場分析')
-  const [htmlViewer, setHtmlViewer] = useState<{ title: string; blobUrl: string } | null>(null)
+  const [htmlViewer, setHtmlViewer] = useState<{ title: string; content: string } | null>(null)
   const [htmlLoading, setHtmlLoading] = useState(false)
 
   useEffect(() => { fetchWeakItems() }, [fetchWeakItems])
@@ -227,13 +227,9 @@ export default function Items() {
     setSaveError(null)
   }
 
-  function closeHtmlViewer() {
-    if (htmlViewer) URL.revokeObjectURL(htmlViewer.blobUrl)
-    setHtmlViewer(null)
-  }
-
   // .html URL はすべてビューアで表示する（Supabase Storage・ビルトイン問わず）
-  // res.text() はサーバーの charset 宣言に依存するため arrayBuffer() + Blob で UTF-8 を強制する
+  // arrayBuffer() + TextDecoder('utf-8') でサーバーのcharset宣言を無視して強制UTF-8デコード
+  // srcDoc はHTML5仕様で常にUTF-8が保証されるため iOS Safari を含む全環境で文字化けしない
   async function openLink(url: string, label: string) {
     const isHtmlUrl = /\.html(\?.*)?$/i.test(url)
     if (!isHtmlUrl) {
@@ -244,9 +240,8 @@ export default function Items() {
     try {
       const res = await fetch(url)
       const buffer = await res.arrayBuffer()
-      const blob = new Blob([buffer], { type: 'text/html; charset=utf-8' })
-      const blobUrl = URL.createObjectURL(blob)
-      setHtmlViewer({ title: label, blobUrl })
+      const content = new TextDecoder('utf-8').decode(buffer)
+      setHtmlViewer({ title: label, content })
     } catch (e) {
       console.error('[html fetch]', e)
       openExternalLink(url)
@@ -520,7 +515,7 @@ export default function Items() {
             style={{ paddingTop: 'calc(env(safe-area-inset-top, 0px) + 12px)' }}
           >
             <button
-              onClick={closeHtmlViewer}
+              onClick={() => setHtmlViewer(null)}
               className="flex items-center gap-1 px-2 py-1.5 rounded-lg text-[#8888aa] hover:text-white hover:bg-[#252540] transition-colors text-xs"
             >
               <ChevronLeft className="w-4 h-4" strokeWidth={1.5} />
@@ -530,7 +525,7 @@ export default function Items() {
           </div>
           {/* コンテンツ */}
           <iframe
-            src={htmlViewer.blobUrl}
+            srcDoc={htmlViewer.content}
             className="flex-1 w-full border-none bg-white"
             sandbox="allow-scripts allow-same-origin"
             title={htmlViewer.title}
