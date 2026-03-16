@@ -20,7 +20,7 @@ const TASK_TYPE_COLORS: Record<string, string> = {
 }
 
 export default function TodayTasks() {
-  const { tasks, loading, fetchTasks, addTask, toggleTask, saveTasks } = useTasksStore()
+  const { tasks, loading, fetchTasks, toggleTask, saveTasks } = useTasksStore()
   const [isEditOpen, setIsEditOpen] = useState(false)
   const [editingTasks, setEditingTasks] = useState<EditingTask[]>([])
 
@@ -51,24 +51,11 @@ export default function TodayTasks() {
   }
 
   const handleSave = async () => {
-    const validTasks = editingTasks.filter(t => t.subject.trim())
-    const isNew = (id: string) => id.startsWith('new-')
-
-    for (const t of validTasks.filter(t => isNew(t.id))) {
-      await addTask({
-        title: t.title.trim(),
-        subject: t.subject,
-        task_type: t.task_type,
-        minutes: parseInt(t.minutes) || 25,
-        done: false,
-      })
-    }
-
-    const existingEdited = validTasks
-      .filter(t => !isNew(t.id))
+    const validTasks = editingTasks
+      .filter(t => t.subject.trim())
       .map(t => ({ ...t, minutes: parseInt(t.minutes) || 25 } as Task))
-    await saveTasks(existingEdited)
-
+    // saveTasks が新規(non-UUID id)・更新・削除をまとめて処理する
+    await saveTasks(validTasks)
     setIsEditOpen(false)
   }
 
