@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
-import { Outlet, NavLink } from 'react-router-dom'
+import { Outlet, NavLink, useLocation } from 'react-router-dom'
 import { LayoutDashboard, BookOpen, Brain, BarChart2, LogOut, Menu, X } from 'lucide-react'
 import { useAuthStore } from '../stores/authStore'
 import { usePomodoroStore, MODES, registerFinishCallback, type PomodoroMode } from '../stores/pomodoroStore'
@@ -44,6 +44,7 @@ export default function Layout() {
   const user = useAuthStore(s => s.user)
   const signOut = useAuthStore(s => s.signOut)
   const { running, tick, mode, seconds } = usePomodoroStore()
+  const location = useLocation()
 
   const avatarUrl = user?.user_metadata?.avatar_url as string | undefined
   const name = (user?.user_metadata?.full_name ?? user?.email ?? '') as string
@@ -250,6 +251,24 @@ export default function Layout() {
           <Outlet />
         </main>
       </div>
+
+      {/* フローティングポモドーロタイマー（Dashboard以外で実行中に表示） */}
+      {running && location.pathname !== '/' && (
+        <NavLink
+          to="/"
+          title="Dashboardでタイマーを確認"
+          className="fixed bottom-6 right-6 z-40 flex items-center gap-2 px-4 py-2.5 rounded-full bg-[#1a1a30]/95 border border-[#7c4dff]/50 shadow-xl backdrop-blur-sm hover:border-[#7c4dff] hover:bg-[#252545] transition-colors"
+        >
+          <span
+            className="w-2 h-2 rounded-full animate-pulse shrink-0"
+            style={{ backgroundColor: MODES[mode].ringColor }}
+          />
+          <span className={`text-sm font-bold tabular-nums ${MODES[mode].textColor}`}>
+            {mm}:{ss}
+          </span>
+          <span className="text-xs text-[#8888aa]">{MODES[mode].label}</span>
+        </NavLink>
+      )}
     </div>
   )
 }
