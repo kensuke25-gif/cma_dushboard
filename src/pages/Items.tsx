@@ -178,7 +178,7 @@ export default function Items() {
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
   const [quiz2WeakCount, setQuiz2WeakCount] = useState(loadQuiz2WeakCount)
   const [activeTab, setActiveTab] = useState<SubjectTab>('市場分析')
-  const [htmlViewer, setHtmlViewer] = useState<{ title: string; content: string } | null>(null)
+  const [htmlViewer, setHtmlViewer] = useState<{ title: string; blobUrl: string } | null>(null)
   const [htmlLoading, setHtmlLoading] = useState(false)
 
   useEffect(() => { fetchWeakItems() }, [fetchWeakItems])
@@ -227,19 +227,26 @@ export default function Items() {
     setSaveError(null)
   }
 
-  // Supabase Storage の HTML は CDN が Content-Type を上書きして文字化けするため
-  // fetch してアプリ内 iframe (srcdoc) で表示する。外部URL は従来通り外部ブラウザで開く。
+  function closeHtmlViewer() {
+    if (htmlViewer) URL.revokeObjectURL(htmlViewer.blobUrl)
+    setHtmlViewer(null)
+  }
+
+  // .html URL はすべてビューアで表示する（Supabase Storage・ビルトイン問わず）
+  // res.text() はサーバーの charset 宣言に依存するため arrayBuffer() + Blob で UTF-8 を強制する
   async function openLink(url: string, label: string) {
-    const isStorageUrl = url.includes('/storage/v1/object/public/item-files/')
-    if (!isStorageUrl) {
+    const isHtmlUrl = /\.html(\?.*)?$/i.test(url)
+    if (!isHtmlUrl) {
       openExternalLink(url)
       return
     }
     setHtmlLoading(true)
     try {
       const res = await fetch(url)
-      const text = await res.text()
-      setHtmlViewer({ title: label, content: text })
+      const buffer = await res.arrayBuffer()
+      const blob = new Blob([buffer], { type: 'text/html; charset=utf-8' })
+      const blobUrl = URL.createObjectURL(blob)
+      setHtmlViewer({ title: label, blobUrl })
     } catch (e) {
       console.error('[html fetch]', e)
       openExternalLink(url)
@@ -513,7 +520,7 @@ export default function Items() {
             style={{ paddingTop: 'calc(env(safe-area-inset-top, 0px) + 12px)' }}
           >
             <button
-              onClick={() => setHtmlViewer(null)}
+              onClick={closeHtmlViewer}
               className="flex items-center gap-1 px-2 py-1.5 rounded-lg text-[#8888aa] hover:text-white hover:bg-[#252540] transition-colors text-xs"
             >
               <ChevronLeft className="w-4 h-4" strokeWidth={1.5} />
@@ -523,7 +530,7 @@ export default function Items() {
           </div>
           {/* コンテンツ */}
           <iframe
-            srcDoc={htmlViewer.content}
+            src={htmlViewer.blobUrl}
             className="flex-1 w-full border-none bg-white"
             sandbox="allow-scripts allow-same-origin"
             title={htmlViewer.title}
