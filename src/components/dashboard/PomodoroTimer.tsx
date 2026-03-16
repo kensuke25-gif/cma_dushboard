@@ -115,7 +115,7 @@ export default function PomodoroTimer() {
       </div>
 
       {/* ドーナツリング */}
-      <div className="relative w-44 h-44 sm:w-48 sm:h-48 mx-auto mb-3 sm:mb-4">
+      <div className="relative w-44 h-44 sm:w-48 sm:h-48 mx-auto mb-3 sm:mb-4 flex items-center justify-center">
         <PieChart width={176} height={176} margin={{ top: 0, right: 0, bottom: 0, left: 0 }}>
           <Pie
             data={ringData}

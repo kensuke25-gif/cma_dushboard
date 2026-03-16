@@ -6,33 +6,40 @@ export default function RecentHistory() {
 
   return (
     <div className="bg-[#1e1e3a] rounded-[20px] border border-[#2a2a4a] p-5 flex flex-col">
-      <h2 className="text-sm font-semibold text-white mb-4">直近の学習履歴</h2>
+      <h2 className="text-sm font-semibold text-white mb-3">直近の学習履歴</h2>
       {records.length === 0 ? (
         <p className="text-xs text-[#8888aa] text-center py-8">まだ記録がありません</p>
       ) : (
-        <div className="flex flex-col gap-3 overflow-y-auto">
-          {records.slice(0, 10).map(r => (
-            <div key={r.id} className="bg-[#252540] rounded-[20px] p-3">
-              <div className="flex items-center justify-between mb-2">
-                <span
-                  className={`text-xs px-2 py-0.5 rounded-full ${subjectBadgeColors[r.subject] ?? 'bg-[#252540] text-[#8888aa]'}`}
-                >
-                  {r.subject}
-                </span>
-                <div className="flex items-center gap-2 text-xs text-[#8888aa]">
-                  <span>{r.date}</span>
-                  <span>{r.recorded_at}</span>
-                </div>
-              </div>
-              <p className="text-sm text-[#c8c8e8] leading-snug mb-1">{r.content}</p>
-              <p className="text-xs text-[#7c4dff] font-medium">{formatMinutes(r.minutes)}</p>
-              {r.next_action && (
-                <p className="text-xs text-[#8888aa] mt-1">
-                  <span className="text-[#8888aa]">次→</span> {r.next_action}
-                </p>
-              )}
-            </div>
-          ))}
+        <div className="overflow-x-auto">
+          <table className="w-full text-xs">
+            <thead>
+              <tr className="border-b border-[#2a2a4a]">
+                <th className="text-left text-[#9090bb] font-medium pb-2 pr-3 whitespace-nowrap">科目</th>
+                <th className="text-left text-[#9090bb] font-medium pb-2 pr-2 whitespace-nowrap">日付</th>
+                <th className="text-left text-[#9090bb] font-medium pb-2 pr-2">内容</th>
+                <th className="text-right text-[#9090bb] font-medium pb-2 whitespace-nowrap">時間</th>
+              </tr>
+            </thead>
+            <tbody>
+              {records.slice(0, 10).map(r => (
+                <tr key={r.id} className="border-b border-[#1e1e3a] hover:bg-[#252540]/50 transition-colors">
+                  <td className="py-1.5 pr-3 align-top">
+                    <span className={`text-[10px] px-1.5 py-0.5 rounded-full whitespace-nowrap ${subjectBadgeColors[r.subject] ?? 'bg-[#252540] text-[#8888aa]'}`}>
+                      {r.subject}
+                    </span>
+                  </td>
+                  <td className="py-1.5 pr-2 text-[#8888aa] whitespace-nowrap align-top">{r.date}</td>
+                  <td className="py-1.5 pr-2 text-[#c8c8e8] align-top">
+                    <p className="line-clamp-1 leading-snug">{r.content}</p>
+                    {r.next_action && (
+                      <p className="text-[10px] text-[#6a6a8a] line-clamp-1 mt-0.5">→ {r.next_action}</p>
+                    )}
+                  </td>
+                  <td className="py-1.5 text-right text-[#7c4dff] font-medium whitespace-nowrap align-top">{formatMinutes(r.minutes)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
       )}
     </div>

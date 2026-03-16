@@ -18,8 +18,8 @@ const SUBJECT_COLORS: Record<string, string> = {
   '職業行為・倫理基準': '#2dd4bf',
 }
 
-// ── 試験日設定（CMA 2次試験 2026年10月25日） ──────────────
-const EXAM_DATE = new Date(2026, 9, 25) // 月は 0-indexed
+// ── 試験日設定（CMA 2次試験 2026年6月7日） ──────────────
+const EXAM_DATE = new Date(2026, 5, 7) // 月は 0-indexed
 
 function calcDaysUntilExam(): number {
   const today = new Date()
