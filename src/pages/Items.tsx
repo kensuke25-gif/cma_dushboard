@@ -52,8 +52,59 @@ const SHIJO_ITEMS: Item[] = [
   { id: 33, chapter: '第IV章 ミクロ経済学', name: '情報の経済学', description: '逆選択、モラルハザード、エージェンシー問題', explanationUrl: '#' },
 ]
 
-// ---- 証券分析（項目追加予定） ----
-const SHOKEN_ITEMS: Item[] = []
+// ---- 証券分析 ----
+const SHOKEN_ITEMS: Item[] = [
+  // 第I章 株式価値評価と株式ポートフォリオ戦略
+  { id: 101, chapter: '第I章 株式価値評価と株式ポートフォリオ戦略', name: 'シングル・ファクター・モデル', description: 'ポートフォリオの収益率 / 平均・分散アプローチ / 資本資産評価モデル（CAPM）/ マーケット・モデル', explanationUrl: '#' },
+  { id: 102, chapter: '第I章 株式価値評価と株式ポートフォリオ戦略', name: 'マルチファクター・モデル', description: 'マルチファクター・モデルの基本 / APT（裁定価格理論）', explanationUrl: '#' },
+  { id: 103, chapter: '第I章 株式価値評価と株式ポートフォリオ戦略', name: '株式ポートフォリオの運用', description: '効率的市場仮説 / ベンチマーク / パッシブ運用 / アクティブ運用 / スマートベータ', explanationUrl: '#' },
+  { id: 104, chapter: '第I章 株式価値評価と株式ポートフォリオ戦略', name: '株式価値評価モデル', description: '配当割引モデル（DDM）/ フリーキャッシュフロー割引モデル / 残余利益モデル', explanationUrl: '#' },
+  { id: 105, chapter: '第I章 株式価値評価と株式ポートフォリオ戦略', name: '売買執行のリスクとコスト', description: '取引システムと執行方法 / 取引コストとその分析 / 投資スタイルと執行コスト', explanationUrl: '#' },
+  // 第II章 債券分析と債券ポートフォリオ戦略
+  { id: 106, chapter: '第II章 債券分析と債券ポートフォリオ戦略', name: '債券投資分析の基本ツール', description: '債券投資のリスクと債券価格 / 債券投資の利回り / イールド・カーブの変化 / デュレーション・コンベクシティ / コーラブル債 / MBS / 変動利付債 / インフレ連動債', explanationUrl: '#' },
+  { id: 107, chapter: '第II章 債券分析と債券ポートフォリオ戦略', name: '債券ポートフォリオの運用', description: 'ラダー型ポートフォリオ / アクティブ運用 / パッシブ運用 / セミ・アクティブ戦略', explanationUrl: '#' },
+  // 第III章 デリバティブ分析と投資戦略
+  { id: 108, chapter: '第III章 デリバティブ分析と投資戦略', name: 'オプション取引', description: '', explanationUrl: '#' },
+  { id: 109, chapter: '第III章 デリバティブ分析と投資戦略', name: '先渡（先物）取引', description: '', explanationUrl: '#' },
+  { id: 110, chapter: '第III章 デリバティブ分析と投資戦略', name: '債券先物取引', description: '', explanationUrl: '#' },
+  { id: 111, chapter: '第III章 デリバティブ分析と投資戦略', name: '金利デリバティブ', description: '金利先渡契約（FRA）/ 金利スワップ / 通貨スワップ / 金利オプション', explanationUrl: '#' },
+  { id: 112, chapter: '第III章 デリバティブ分析と投資戦略', name: 'デリバティブを用いたポートフォリオのリスク管理', description: '', explanationUrl: '#' },
+  // 第IV章 投資政策とアセット・アロケーション
+  { id: 113, chapter: '第IV章 投資政策とアセット・アロケーション', name: 'ストラテジック・アセット・アロケーション', description: '', explanationUrl: '#' },
+  { id: 114, chapter: '第IV章 投資政策とアセット・アロケーション', name: '短期のアセット・アロケーション', description: '', explanationUrl: '#' },
+  { id: 115, chapter: '第IV章 投資政策とアセット・アロケーション', name: '長期投資とアセット・アロケーション', description: '', explanationUrl: '#' },
+  { id: 116, chapter: '第IV章 投資政策とアセット・アロケーション', name: '企業年金とALM（Asset Liability Management）', description: '', explanationUrl: '#' },
+  { id: 117, chapter: '第IV章 投資政策とアセット・アロケーション', name: 'リスク管理', description: '正規分布 / 確率計算 / 標準化と標準正規分布 / 期間の調整 / バリュー・アット・リスク（VaR）/ ショート・フォール・リスク', explanationUrl: '#' },
+  // 第V章 国際証券投資
+  { id: 118, chapter: '第V章 国際証券投資', name: '外国証券投資の基本ツール', description: '', explanationUrl: '#' },
+  { id: 119, chapter: '第V章 国際証券投資', name: '国際証券投資の諸論点', description: '', explanationUrl: '#' },
+  // 第VI章 オルタナティブ投資
+  { id: 120, chapter: '第VI章 オルタナティブ投資', name: 'オルタナティブ投資とは？', description: '', explanationUrl: '#' },
+  { id: 121, chapter: '第VI章 オルタナティブ投資', name: '証券化商品', description: '', explanationUrl: '#' },
+  { id: 122, chapter: '第VI章 オルタナティブ投資', name: 'ヘッジファンド', description: '', explanationUrl: '#' },
+  { id: 123, chapter: '第VI章 オルタナティブ投資', name: 'その他のオルタナティブ投資', description: '', explanationUrl: '#' },
+  // 第VII章 パフォーマンス評価
+  { id: 124, chapter: '第VII章 パフォーマンス評価', name: 'パフォーマンス収益率の測度', description: '', explanationUrl: '#' },
+  { id: 125, chapter: '第VII章 パフォーマンス評価', name: 'リスク調整後収益率測度', description: '', explanationUrl: '#' },
+  { id: 126, chapter: '第VII章 パフォーマンス評価', name: 'その他のパフォーマンス評価の方法', description: '', explanationUrl: '#' },
+  { id: 127, chapter: '第VII章 パフォーマンス評価', name: 'スタイル・マネジメント', description: '', explanationUrl: '#' },
+  // 第VIII章 信用リスク・モデル
+  { id: 128, chapter: '第VIII章 信用リスク・モデル', name: '信用リスクのある債券（債権）の評価', description: '', explanationUrl: '#' },
+  { id: 129, chapter: '第VIII章 信用リスク・モデル', name: '債券の格付けと格付け推移行列', description: '', explanationUrl: '#' },
+  { id: 130, chapter: '第VIII章 信用リスク・モデル', name: '財務諸表データに基づくデフォルト確率の推定', description: '', explanationUrl: '#' },
+  { id: 131, chapter: '第VIII章 信用リスク・モデル', name: '構造型モデル', description: '', explanationUrl: '#' },
+  { id: 132, chapter: '第VIII章 信用リスク・モデル', name: 'デフォルトの相関リスク', description: '', explanationUrl: '#' },
+  { id: 133, chapter: '第VIII章 信用リスク・モデル', name: 'クレジット・リスク・デリバティブ', description: '', explanationUrl: '#' },
+  // 第IX章 行動ファイナンス
+  { id: 134, chapter: '第IX章 行動ファイナンス', name: '市場の効率性とアノマリー', description: '', explanationUrl: '#' },
+  { id: 135, chapter: '第IX章 行動ファイナンス', name: '行動ファイナンスとは？', description: '', explanationUrl: '#' },
+  { id: 136, chapter: '第IX章 行動ファイナンス', name: '行動ファイナンスの代表事例', description: '', explanationUrl: '#' },
+  // 統計付録
+  { id: 137, chapter: '統計付録', name: '確率変数の加重和の期待値と分散', description: '', explanationUrl: '#' },
+  { id: 138, chapter: '統計付録', name: '正規分布', description: '', explanationUrl: '#' },
+  { id: 139, chapter: '統計付録', name: '回帰分析', description: '', explanationUrl: '#' },
+  { id: 140, chapter: '統計付録', name: '主成分分析', description: '', explanationUrl: '#' },
+]
 
 // ---- 財務分析（項目追加予定） ----
 const ZAIMU_ITEMS: Item[] = []
