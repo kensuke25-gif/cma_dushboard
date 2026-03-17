@@ -1,10 +1,12 @@
 import { useState, useRef, useEffect } from 'react'
-import { Brain, UploadCloud } from 'lucide-react'
+import { Brain, UploadCloud, List, Pencil } from 'lucide-react'
 import QuizSetup, { type QuizConfig } from '../components/quiz/QuizSetup'
 import QuizQuestion from '../components/quiz/QuizQuestion'
 import QuizResult from '../components/quiz/QuizResult'
 import QuizUpload from '../components/quiz/QuizUpload'
 import QuizHistory from '../components/quiz/QuizHistory'
+import QuizEditor from '../components/quiz/QuizEditor'
+import QuizBrowser from '../components/quiz/QuizBrowser'
 import { useQuizStore, type QuizQuestion as Question } from '../stores/quizStore'
 import { useAuthStore } from '../stores/authStore'
 
@@ -15,7 +17,8 @@ type AnswerRecord = {
 }
 
 type Phase = 'setup' | 'answering' | 'result'
-type Tab = 'quiz' | 'manage'
+type Tab = 'quiz' | 'browse' | 'manage'
+type ManageSubTab = 'upload' | 'edit'
 
 const ADMIN_EMAIL = import.meta.env.VITE_ADMIN_EMAIL as string | undefined
 
@@ -24,6 +27,7 @@ export default function Quiz() {
   const isAdmin = !!ADMIN_EMAIL && user?.email === ADMIN_EMAIL
 
   const [tab, setTab] = useState<Tab>('quiz')
+  const [manageSubTab, setManageSubTab] = useState<ManageSubTab>('upload')
   const [phase, setPhase] = useState<Phase>('setup')
   const [config, setConfig] = useState<QuizConfig | null>(null)
   const [questionList, setQuestionList] = useState<Question[]>([])
@@ -150,42 +154,55 @@ export default function Quiz() {
   }
 
   // クイズ中はタブを非表示
-  const showTabs = isAdmin && phase === 'setup'
+  const showTabs = phase === 'setup'
 
   return (
     <div className="min-h-[calc(100vh-112px)] bg-[#1a1a2e]">
-      {/* 管理者タブ（setup フェーズのみ表示） */}
+      {/* タブ（setup フェーズのみ表示） */}
       {showTabs && (
         <div className="max-w-2xl mx-auto px-4 pt-6">
           <div className="flex gap-1 p-1 bg-[#111125] rounded-xl border border-[#2a2a4a]">
             <button
               onClick={() => setTab('quiz')}
-              className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-medium transition-all ${
+              className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-lg text-sm font-medium transition-all ${
                 tab === 'quiz'
                   ? 'bg-[#7c4dff] text-white'
                   : 'text-[#8888aa] hover:text-[#c8c8e8]'
               }`}
             >
               <Brain className="w-4 h-4" />
-              クイズを受ける
+              クイズ
             </button>
             <button
-              onClick={() => setTab('manage')}
-              className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-medium transition-all ${
-                tab === 'manage'
+              onClick={() => setTab('browse')}
+              className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-lg text-sm font-medium transition-all ${
+                tab === 'browse'
                   ? 'bg-[#7c4dff] text-white'
                   : 'text-[#8888aa] hover:text-[#c8c8e8]'
               }`}
             >
-              <UploadCloud className="w-4 h-4" />
-              問題を管理
+              <List className="w-4 h-4" />
+              問題を閲覧
             </button>
+            {isAdmin && (
+              <button
+                onClick={() => setTab('manage')}
+                className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-lg text-sm font-medium transition-all ${
+                  tab === 'manage'
+                    ? 'bg-[#7c4dff] text-white'
+                    : 'text-[#8888aa] hover:text-[#c8c8e8]'
+                }`}
+              >
+                <UploadCloud className="w-4 h-4" />
+                管理
+              </button>
+            )}
           </div>
         </div>
       )}
 
       {/* クイズタブ */}
-      {(tab === 'quiz' || !isAdmin) && (
+      {tab === 'quiz' && (
         <>
           {phase === 'setup' && <QuizSetup onStart={handleStart} />}
           {phase === 'setup' && <QuizHistory />}
@@ -234,9 +251,39 @@ export default function Quiz() {
         </>
       )}
 
+      {/* 問題閲覧タブ（全ユーザー） */}
+      {tab === 'browse' && phase === 'setup' && <QuizBrowser />}
+
       {/* 管理タブ（管理者のみ） */}
       {tab === 'manage' && isAdmin && phase === 'setup' && (
-        <QuizUpload />
+        <div className="max-w-2xl mx-auto px-4 pt-6">
+          {/* サブタブ */}
+          <div className="flex gap-1 p-1 bg-[#111125] rounded-xl border border-[#2a2a4a] mb-2">
+            <button
+              onClick={() => setManageSubTab('upload')}
+              className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-sm font-medium transition-all ${
+                manageSubTab === 'upload'
+                  ? 'bg-[#252540] text-[#c8c8e8]'
+                  : 'text-[#8888aa] hover:text-[#c8c8e8]'
+              }`}
+            >
+              <UploadCloud className="w-3.5 h-3.5" />
+              アップロード
+            </button>
+            <button
+              onClick={() => setManageSubTab('edit')}
+              className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-sm font-medium transition-all ${
+                manageSubTab === 'edit'
+                  ? 'bg-[#252540] text-[#c8c8e8]'
+                  : 'text-[#8888aa] hover:text-[#c8c8e8]'
+              }`}
+            >
+              <Pencil className="w-3.5 h-3.5" />
+              編集
+            </button>
+          </div>
+          {manageSubTab === 'upload' ? <QuizUpload /> : <QuizEditor />}
+        </div>
       )}
     </div>
   )
