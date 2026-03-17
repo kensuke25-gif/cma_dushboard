@@ -59,6 +59,9 @@ interface QuizState {
   getFields: (subject: string) => Promise<string[]>
   uploadQuestions: (subject: string, field: string, questions: RawQuestion[]) => Promise<void>
   countExisting: (subject: string, field: string) => Promise<number>
+  deleteQuestion: (id: string) => Promise<void>
+  addQuestion: (subject: string, field: string, q: RawQuestion) => Promise<QuizQuestion>
+  fetchAnswerStats: (questionIds: string[]) => Promise<Record<string, { total: number; correct: number }>>
 }
 
 export const useQuizStore = create<QuizState>((set, get) => ({
@@ -148,6 +151,38 @@ export const useQuizStore = create<QuizState>((set, get) => ({
       .eq('field', field)
     if (error) throw new Error(error.message)
     return count ?? 0
+  },
+
+  deleteQuestion: async (id) => {
+    await supabase.from('quiz_questions').delete().eq('id', id)
+    set(state => ({ questions: state.questions.filter(q => q.id !== id) }))
+  },
+
+  addQuestion: async (subject, field, q) => {
+    const { data, error } = await supabase
+      .from('quiz_questions')
+      .insert({ subject, field, question: q.question, options: q.options, correct_answer: q.correct_answer, explanation: q.explanation ?? null })
+      .select()
+      .single()
+    if (error) throw new Error(error.message)
+    const added = data as QuizQuestion
+    set(state => ({ questions: [...state.questions, added] }))
+    return added
+  },
+
+  fetchAnswerStats: async (questionIds) => {
+    if (questionIds.length === 0) return {}
+    const { data } = await supabase
+      .from('quiz_answers')
+      .select('question_key, is_correct')
+      .in('question_key', questionIds)
+    const stats: Record<string, { total: number; correct: number }> = {}
+    for (const row of (data ?? []) as { question_key: string; is_correct: boolean }[]) {
+      if (!stats[row.question_key]) stats[row.question_key] = { total: 0, correct: 0 }
+      stats[row.question_key].total++
+      if (row.is_correct) stats[row.question_key].correct++
+    }
+    return stats
   },
 
   uploadQuestions: async (subject, field, rawQuestions) => {
