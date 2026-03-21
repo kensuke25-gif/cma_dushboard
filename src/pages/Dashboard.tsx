@@ -4,6 +4,7 @@ import PomodoroTimer from '../components/dashboard/PomodoroTimer'
 import TodayTasks from '../components/dashboard/TodayTasks'
 import ProgressSection from '../components/dashboard/ProgressSection'
 import RecentHistory from '../components/dashboard/RecentHistory'
+import StreakBanner from '../components/problems/StreakBanner'
 import { useStudyStore } from '../stores/studyStore'
 
 export default function Dashboard() {
@@ -43,6 +44,7 @@ export default function Dashboard() {
                       gap-4 sm:gap-5 xl:gap-6">
         {/* 列 1: 学習統計 */}
         <div className="flex flex-col gap-4 sm:gap-5">
+          <StreakBanner />
           <ProgressSection />
         </div>
 

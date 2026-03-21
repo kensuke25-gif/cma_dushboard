@@ -8,6 +8,9 @@ import Analytics from './pages/Analytics'
 import ProblemPage from './pages/ProblemPage'
 import Login from './pages/Login'
 import { useAuthStore } from './stores/authStore'
+import { useProblemStore } from './stores/problemStore'
+import MathTestPage from './pages/MathTestPage'
+import QuizModePage from './pages/QuizModePage'
 
 class ErrorBoundary extends Component<{ children: ReactNode }, { hasError: boolean }> {
   state = { hasError: false }
@@ -33,8 +36,16 @@ class ErrorBoundary extends Component<{ children: ReactNode }, { hasError: boole
 }
 
 function AuthGuard({ children }: { children: ReactNode }) {
-  const user = useAuthStore(s => s.user)
+  const user    = useAuthStore(s => s.user)
   const loading = useAuthStore(s => s.loading)
+  const initializeProblems = useProblemStore(s => s.initialize)
+
+  // ログイン済みになったタイミングで問題データを初期化
+  useEffect(() => {
+    if (user) {
+      initializeProblems()
+    }
+  }, [user, initializeProblems])
 
   if (loading) {
     return (
@@ -72,6 +83,11 @@ export default function App() {
           <Route path="/quiz" element={<Quiz />} />
           <Route path="/analytics" element={<Analytics />} />
           <Route path="/problems/:subject" element={<ProblemPage />} />
+          <Route path="/math-test" element={<MathTestPage />} />
+          {/* 1問1ページ演習モード（科目全体） */}
+          <Route path="/quiz-mode/:subject" element={<QuizModePage />} />
+          {/* 1問1ページ演習モード（章指定） */}
+          <Route path="/quiz-mode/:subject/:chapterKey" element={<QuizModePage />} />
         </Route>
       </Routes>
     </BrowserRouter>
