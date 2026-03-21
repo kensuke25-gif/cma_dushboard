@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
-import { useParams } from 'react-router-dom'
+import { useParams, useNavigate } from 'react-router-dom'
 import { List, X } from 'lucide-react'
 import { SUBJECT_CONFIGS } from '../types/problem'
 import { useProblemStore } from '../stores/problemStore'
@@ -16,6 +16,7 @@ export default function ProblemPage() {
     getSubjectStats,
     getProblemsBySubject,
   } = useProblemStore()
+  const navigate = useNavigate()
   const [activeChapter, setActiveChapter] = useState<string>('')
   const [showTocModal, setShowTocModal] = useState(false)
   const observerRef = useRef<IntersectionObserver | null>(null)
@@ -126,17 +127,29 @@ export default function ProblemPage() {
               </p>
             )}
           </div>
-          {subjectStats && subjectStats.total > 0 && (
-            <div className="flex items-center gap-2 shrink-0">
-              <span className="text-xs px-2 py-1 rounded-lg bg-green-900/30 text-green-400 font-medium">
-                正解 {subjectStats.correct}
-              </span>
-              <span className="text-xs px-2 py-1 rounded-lg bg-[#252540] text-[#8888aa]">
-                未回答 {subjectStats.unanswered}
-              </span>
-              <span className="text-xs text-[#5a5a7a]">/{subjectStats.total}</span>
-            </div>
-          )}
+          <div className="flex items-center gap-2 shrink-0">
+            {subjectStats && subjectStats.total > 0 && (
+              <>
+                <span className="text-xs px-2 py-1 rounded-lg bg-green-900/30 text-green-400 font-medium">
+                  正解 {subjectStats.correct}
+                </span>
+                <span className="text-xs px-2 py-1 rounded-lg bg-[#252540] text-[#8888aa]">
+                  未回答 {subjectStats.unanswered}
+                </span>
+                <span className="text-xs text-[#5a5a7a]">/{subjectStats.total}</span>
+              </>
+            )}
+            <button
+              onClick={() => navigate(`/quiz-mode/${config.key}`)}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl
+                         bg-[#7c4dff]/20 border border-[#7c4dff]/40
+                         text-xs text-[#a78bfa] font-medium
+                         hover:bg-[#7c4dff]/30 transition-colors shrink-0"
+            >
+              <span>📝</span>
+              全問演習
+            </button>
+          </div>
         </div>
       </div>
 
@@ -177,6 +190,19 @@ export default function ProblemPage() {
                     <div className="w-1 h-4 rounded-full bg-[#7c4dff] shrink-0" />
                     <h2 className="text-sm font-semibold text-[#c8c8e8]">{chapterName}</h2>
                     <span className="text-xs text-[#5a5a7a]">{ps.length}問</span>
+                    <button
+                      onClick={() =>
+                        navigate(`/quiz-mode/${config.key}/${chapterKey}`)
+                      }
+                      className="ml-auto flex items-center gap-1 px-2.5 py-1 rounded-lg
+                                 bg-[#252540] border border-[#3a3a5c]
+                                 text-[10px] text-[#8888aa]
+                                 hover:text-[#a78bfa] hover:border-[#7c4dff]/40
+                                 transition-colors shrink-0"
+                    >
+                      <span>📝</span>
+                      演習する
+                    </button>
                   </div>
 
                   {/* 問題カード一覧 */}
