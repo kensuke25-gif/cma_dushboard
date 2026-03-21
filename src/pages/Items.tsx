@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
-import { Star, ExternalLink, FileText, Pencil, X, Upload, Loader2, ChevronLeft } from 'lucide-react'
+import { useNavigate } from 'react-router-dom'
+import { Star, BookOpen, FileText, Pencil, X, Upload, Loader2, ChevronLeft } from 'lucide-react'
 import { useStudyStore } from '../stores/studyStore'
 import { supabase } from '../lib/supabase'
 
@@ -121,6 +122,17 @@ const SUBJECT_TABS: { key: SubjectTab; short: string; items: Item[] }[] = [
   { key: '職業行為倫理基準', short: '倫理基準', items: RINRI_ITEMS },
 ]
 
+const SUBJECT_TO_PROBLEM_PATH: Record<SubjectTab, string> = {
+  '証券分析':         '/problems/securities',
+  '財務分析':         '/problems/finance',
+  '市場分析':         '/problems/market',
+  '職業行為倫理基準': '/problems/ethics',
+}
+
+function chapterToAnchorId(chapter: string): string {
+  return chapter.replace(/\s+/g, '-').replace(/[^\w-]/g, '_')
+}
+
 // iOS PWAでもSafariが確実に起動するanchorクリック方式
 function openExternalLink(url: string) {
   const a = document.createElement('a')
@@ -137,7 +149,6 @@ const BUILTIN_QUIZ_URLS: Record<string, string> = {
   '第II章 金融経済': `${import.meta.env.BASE_URL}quiz/chapter2-finance.html`,
 }
 
-function chapterProblemKey(chapter: string) { return `chapter:${chapter}` }
 function itemExplanationKey(itemId: number) { return `item:${itemId}` }
 
 // link_key → Supabase Storage のファイル名に変換
@@ -170,6 +181,7 @@ function loadQuiz2WeakCount(): number {
 }
 
 export default function Items() {
+  const navigate = useNavigate()
   const { weakItems, fetchWeakItems, toggleWeakItem } = useStudyStore()
   const [links, setLinks] = useState<Record<string, string>>(loadCache)
   const [modal, setModal] = useState<ModalState | null>(null)
@@ -396,9 +408,6 @@ export default function Items() {
           </div>
 
           {grouped.map(({ chapter, items }) => {
-            const probKey = chapterProblemKey(chapter)
-            const probUrl = getLink(probKey)
-
             return (
               <div key={chapter}>
                 {/* Chapter header with 問題集 button */}
@@ -412,25 +421,12 @@ export default function Items() {
                     )}
                   </div>
                   <div className="flex items-center gap-1">
-                    {probUrl && (
-                      <button
-                        onClick={() => handleEdit(probKey, `${chapter} 問題集`)}
-                        title="リンクを編集"
-                        className="p-1 rounded-lg hover:bg-[#252540] transition-colors group"
-                      >
-                        <Pencil className="w-3 h-3 text-[#5a5a7a] group-hover:text-[#9090bb] transition-colors" strokeWidth={1.5} />
-                      </button>
-                    )}
                     <button
-                      onClick={() => handleLinkClick(probKey, `${chapter} 問題集`)}
-                      title={probUrl ? '問題集を開く' : '問題集のリンクを設定'}
-                      className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium transition-colors ${
-                        probUrl
-                          ? 'bg-[#7c4dff]/20 text-[#7c4dff] hover:bg-[#7c4dff]/30'
-                          : 'bg-[#252540] text-[#5a5a7a] hover:bg-[#2e2e50] hover:text-[#9090bb]'
-                      }`}
+                      onClick={() => navigate(`${SUBJECT_TO_PROBLEM_PATH[activeTab]}#${chapterToAnchorId(chapter)}`)}
+                      title="問題集を開く"
+                      className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium transition-colors bg-[#7c4dff]/20 text-[#7c4dff] hover:bg-[#7c4dff]/30"
                     >
-                      <ExternalLink className="w-3 h-3" strokeWidth={1.5} />
+                      <BookOpen className="w-3 h-3" strokeWidth={1.5} />
                       問題集
                     </button>
                   </div>
