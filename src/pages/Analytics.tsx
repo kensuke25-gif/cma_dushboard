@@ -7,6 +7,10 @@ import {
   XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid,
 } from 'recharts'
 import { useStudyStore, type StudyRecord } from '../stores/studyStore'
+import SubjectHeatmap from '../components/problems/SubjectHeatmap'
+import StreakBanner    from '../components/problems/StreakBanner'
+import { useProblemStore } from '../stores/problemStore'
+import { SUBJECT_CONFIGS } from '../types/problem'
 
 const SUBJECT_COLORS: Record<string, string> = {
   '証券分析': '#7c4dff',
@@ -184,6 +188,31 @@ export default function Analytics() {
 
   const selectedDayRecords = selectedDate ? (recordsByDate[selectedDate] ?? []) : []
   const totalHours = Math.round(records.reduce((s, r) => s + r.minutes, 0) / 60 * 10) / 10
+
+  // 問題演習統計
+  const {
+    getSubjectStats,
+    loadingProblems,
+    problems: allProblems,
+  } = useProblemStore()
+
+  const problemSummary = useMemo(() => {
+    const subjects = SUBJECT_CONFIGS.map((cfg) => {
+      const s = getSubjectStats(cfg.key)
+      return {
+        name:      cfg.shortLabel,
+        accentHex: cfg.accentHex,
+        ...s,
+      }
+    })
+    const totalProblems  = subjects.reduce((s, x) => s + x.total,    0)
+    const totalAnswered  = subjects.reduce((s, x) => s + x.answered, 0)
+    const totalCorrect   = subjects.reduce((s, x) => s + x.correct,  0)
+    const overallAccuracy = totalAnswered > 0
+      ? Math.round((totalCorrect / totalAnswered) * 100)
+      : 0
+    return { subjects, totalProblems, totalAnswered, totalCorrect, overallAccuracy }
+  }, [getSubjectStats])
 
   function prevMonth() {
     setSelectedDate(null)
@@ -394,6 +423,176 @@ export default function Analytics() {
 
           </div>
         )}
+
+        {/* ========== 問題演習セクション ========== */}
+        <div className="mt-2 space-y-4">
+
+          {/* セクションタイトル */}
+          <div className="flex items-center gap-2 pt-2">
+            <div className="w-1 h-4 rounded-full bg-[#7c4dff]" />
+            <h2 className="text-sm font-semibold text-white">
+              問題演習統計
+            </h2>
+          </div>
+
+          {/* ストリークバナー */}
+          <StreakBanner />
+
+          {/* 問題データがない場合 */}
+          {allProblems.length === 0 && !loadingProblems && (
+            <div className="rounded-xl border border-[#2a2a4a] bg-[#111125]
+                            py-10 text-center">
+              <p className="text-sm text-[#8888aa]">
+                問題データがまだ登録されていません
+              </p>
+              <p className="text-xs text-[#5a5a7a] mt-1">
+                Supabase の problems テーブルにデータを追加してください
+              </p>
+            </div>
+          )}
+
+          {/* 問題データがある場合 */}
+          {allProblems.length > 0 && (
+            <>
+              {/* 演習サマリーカード */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+
+                {/* 全体サマリー */}
+                <ChartCard title="演習サマリー（全科目）">
+                  <div className="flex items-center gap-6">
+
+                    {/* ドーナツグラフ */}
+                    <div className="shrink-0">
+                      <ResponsiveContainer width={120} height={120}>
+                        <PieChart>
+                          <Pie
+                            data={[
+                              {
+                                name: '正解',
+                                value: problemSummary.totalCorrect,
+                                fill: '#22c55e',
+                              },
+                              {
+                                name: '不正解・部分',
+                                value: problemSummary.totalAnswered
+                                     - problemSummary.totalCorrect,
+                                fill: '#ef4444',
+                              },
+                              {
+                                name: '未回答',
+                                value: problemSummary.totalProblems
+                                     - problemSummary.totalAnswered,
+                                fill: '#252540',
+                              },
+                            ].filter((d) => d.value > 0)}
+                            cx="50%"
+                            cy="50%"
+                            innerRadius={35}
+                            outerRadius={55}
+                            dataKey="value"
+                            strokeWidth={0}
+                          >
+                            {[
+                              { fill: '#22c55e' },
+                              { fill: '#ef4444' },
+                              { fill: '#252540' },
+                            ].map((entry, index) => (
+                              <Cell key={index} fill={entry.fill} />
+                            ))}
+                          </Pie>
+                          <Tooltip contentStyle={tooltipStyle} />
+                        </PieChart>
+                      </ResponsiveContainer>
+                    </div>
+
+                    {/* 数値サマリー */}
+                    <div className="flex-1 space-y-2">
+                      <div>
+                        <p className="text-2xl font-bold text-white tabular-nums">
+                          {problemSummary.overallAccuracy}
+                          <span className="text-sm text-[#8888aa] font-normal">%</span>
+                        </p>
+                        <p className="text-xs text-[#8888aa]">全体正答率</p>
+                      </div>
+                      <div className="space-y-1 text-xs text-[#8888aa]">
+                        <p>
+                          回答済み:
+                          <span className="text-[#c8c8e8] ml-1 font-medium">
+                            {problemSummary.totalAnswered}
+                            <span className="text-[#5a5a7a]">
+                              /{problemSummary.totalProblems}問
+                            </span>
+                          </span>
+                        </p>
+                        <p>
+                          正解数:
+                          <span className="text-green-400 ml-1 font-medium">
+                            {problemSummary.totalCorrect}問
+                          </span>
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </ChartCard>
+
+                {/* 科目別正答率 横棒グラフ */}
+                <ChartCard title="科目別正答率">
+                  <ResponsiveContainer width="100%" height={160}>
+                    <BarChart
+                      data={problemSummary.subjects.filter((s) => s.answered > 0)}
+                      layout="vertical"
+                      margin={{ top: 0, right: 40, left: 0, bottom: 0 }}
+                    >
+                      <CartesianGrid
+                        strokeDasharray="3 3"
+                        stroke="#2a2a4a"
+                        horizontal={false}
+                      />
+                      <XAxis
+                        type="number"
+                        domain={[0, 100]}
+                        tick={{ fill: '#8888aa', fontSize: 10 }}
+                        unit="%"
+                      />
+                      <YAxis
+                        type="category"
+                        dataKey="name"
+                        tick={{ fill: '#8888aa', fontSize: 10 }}
+                        width={52}
+                      />
+                      <Tooltip
+                        contentStyle={tooltipStyle}
+                        formatter={(v) => [`${Number(v)}%`, '正答率']}
+                      />
+                      <Bar dataKey="accuracy" radius={[0, 4, 4, 0]}>
+                        {problemSummary.subjects
+                          .filter((s) => s.answered > 0)
+                          .map((s, i) => (
+                            <Cell key={i} fill={s.accentHex} />
+                          ))
+                        }
+                      </Bar>
+                    </BarChart>
+                  </ResponsiveContainer>
+                  {problemSummary.subjects.every((s) => s.answered === 0) && (
+                    <p className="text-center text-xs text-[#5a5a7a] py-4">
+                      まだ回答データがありません
+                    </p>
+                  )}
+                </ChartCard>
+
+              </div>
+
+              {/* 苦手分野ヒートマップ */}
+              <ChartCard title="苦手分野ヒートマップ">
+                <SubjectHeatmap />
+              </ChartCard>
+
+            </>
+          )}
+
+        </div>
+
       </div>
     </div>
   )
