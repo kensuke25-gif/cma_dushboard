@@ -13,9 +13,11 @@ export const sampleProblems: Problem[] = [
     subject: 'market',
     chapterKey: '_II_-____',
     chapterName: '第II章 金融経済',
-    year: 2023,
     questionNo: '第1問',
+    questionType: 'descriptive',
     points: 10,
+    difficulty: 2,
+    displayOrder: 0,
     questionText: `以下の設問に答えよ。
 
 現在、実質GDP成長率は潜在成長率（2.0%）を0.5%ポイント下回り、インフレ率は目標値（2.0%）を1.0%ポイント下回っている。テイラー・ルールを以下の式で定義するとき、政策金利の目安を求めよ。
@@ -34,6 +36,7 @@ export const sampleProblems: Problem[] = [
          = **0.75%**
 
 景気後退局面かつデフレ圧力がある場合、テイラー・ルールは低い政策金利を示す。この値が0%を下回る場合には、非伝統的金融政策（量的緩和、マイナス金利等）の活用が検討される。`,
+    explanation: '（解説は後で追加）',
     tags: ['テイラールール', '金融政策', '計算問題'],
   },
   {
@@ -41,9 +44,11 @@ export const sampleProblems: Problem[] = [
     subject: 'market',
     chapterKey: '_II_-____',
     chapterName: '第II章 金融経済',
-    year: 2022,
     questionNo: '第2問',
+    questionType: 'descriptive',
     points: 10,
+    difficulty: 2,
+    displayOrder: 1,
     questionText: `以下の設問に答えよ。
 
 中央銀行がマネタリーベース（MB）を10兆円から13兆円に増加させた。
@@ -63,6 +68,7 @@ export const sampleProblems: Problem[] = [
 （3）理由：
 　① **超過準備の積み上げ**：銀行が貸出に消極的で、超過準備を保有する場合、乗数は低下する（量的緩和下で顕著）。
 　② **現金保有志向の上昇**：不況・金融不安時に家計が現金を手元に置くと現金預金比率が上昇し、乗数が低下する。`,
+    explanation: '（解説は後で追加）',
     tags: ['マネタリーベース', '貨幣乗数', 'マネーストック', '計算問題'],
   },
   {
@@ -70,9 +76,11 @@ export const sampleProblems: Problem[] = [
     subject: 'market',
     chapterKey: '_II_-____',
     chapterName: '第II章 金融経済',
-    year: 2023,
     questionNo: '第3問',
+    questionType: 'descriptive',
     points: 10,
+    difficulty: 2,
+    displayOrder: 2,
     questionText: `イールドカーブの形状と金融政策・景気の関係について、以下の問いに答えよ。
 
 （1）純粋期待理論に基づき、現在の短期金利が1.0%、1年後の短期金利が2.0%と予想される場合、現在の2年物スポット金利（2年物利回り）を求めよ（小数点第2位まで）。
@@ -89,6 +97,7 @@ export const sampleProblems: Problem[] = [
 　① **景気後退懸念**：将来の短期金利低下（利下げ）期待が高まり、長期金利が短期金利を下回る。
 　② **中央銀行の引き締め局面**：政策金利（短期金利）が高止まりしており、インフレ抑制が優先されている。
 　③ **債券への安全資産需要**：将来の景気悪化を見越した投資家が長期債を買い、長期利回りが押し下げられる。`,
+    explanation: '（解説は後で追加）',
     tags: ['イールドカーブ', '純粋期待理論', '金利の期間構造', '計算問題'],
   },
 
@@ -98,9 +107,11 @@ export const sampleProblems: Problem[] = [
     subject: 'market',
     chapterKey: '_I_-______',
     chapterName: '第I章 マクロ経済学',
-    year: 2022,
     questionNo: '第1問',
+    questionType: 'descriptive',
     points: 10,
+    difficulty: 2,
+    displayOrder: 0,
     questionText: `45度線分析（単純ケインズモデル）に関する以下の問いに答えよ。
 
 消費関数: C = 50 + 0.8Y（Y: 国民所得、C: 消費）
@@ -123,6 +134,7 @@ export const sampleProblems: Problem[] = [
 （3）乗数効果が弱まる理由：
 　① **クラウディング・アウト**：財政支出拡大により国債発行が増え、金利上昇を通じて民間投資が抑制される。
 　② **リカードの中立命題**：家計が将来の増税を見越して現在の消費を抑制し、乗数効果が相殺される可能性がある。`,
+    explanation: '（解説は後で追加）',
     tags: ['乗数効果', '45度線分析', 'ケインズ', '計算問題'],
   },
   {
@@ -130,9 +142,11 @@ export const sampleProblems: Problem[] = [
     subject: 'market',
     chapterKey: '_I_-______',
     chapterName: '第I章 マクロ経済学',
-    year: 2023,
     questionNo: '第2問',
+    questionType: 'descriptive',
     points: 10,
+    difficulty: 2,
+    displayOrder: 1,
     questionText: `IS-LM分析と財政・金融政策の効果について以下の問いに答えよ。
 
 （1）財政政策の効果は、LM曲線の傾きによって異なる。LM曲線が垂直の場合と水平の場合それぞれについて、財政拡張政策の効果（GDP・金利への影響）を説明せよ。
@@ -154,6 +168,7 @@ export const sampleProblems: Problem[] = [
 　**金融政策の限界**：LM曲線が水平なため、金融拡張でLMをシフトさせても金利低下は生じず、投資刺激効果がない。
 
 　**財政政策の有効性**：IS曲線の右シフトが金利を上昇させないため、クラウディング・アウトが発生せず、財政乗数が完全に機能する。`,
+    explanation: '（解説は後で追加）',
     tags: ['IS-LM', '財政政策', '金融政策', '流動性の罠'],
   },
 
@@ -163,9 +178,11 @@ export const sampleProblems: Problem[] = [
     subject: 'securities',
     chapterKey: '_I_-__________________',
     chapterName: '第I章 株式価値評価と株式ポートフォリオ戦略',
-    year: 2023,
     questionNo: '第1問',
+    questionType: 'descriptive',
     points: 10,
+    difficulty: 2,
+    displayOrder: 0,
     questionText: `資本資産評価モデル（CAPM）に関する以下の設問に答えよ。
 
 市場リスクプレミアム: 6.0%
@@ -190,6 +207,7 @@ export const sampleProblems: Problem[] = [
 　① **単一期間モデル**：現実には複数期間にわたる意思決定が行われる。
 　② **完全市場・情報対称性**：現実には取引コスト・税・情報の非対称性が存在する。
 　③ **投資家は平均分散最適化**：現実には行動バイアス（過信、損失回避等）が意思決定に影響する。`,
+    explanation: '（解説は後で追加）',
     tags: ['CAPM', 'アルファ', 'ベータ', '計算問題'],
   },
   {
@@ -197,9 +215,11 @@ export const sampleProblems: Problem[] = [
     subject: 'securities',
     chapterKey: '_I_-__________________',
     chapterName: '第I章 株式価値評価と株式ポートフォリオ戦略',
-    year: 2022,
     questionNo: '第2問',
+    questionType: 'descriptive',
     points: 10,
+    difficulty: 2,
+    displayOrder: 1,
     questionText: `配当割引モデル（DDM）を用いた株式価値評価に関する以下の問いに答えよ。
 
 現在の1株当たり配当（D₀）: 200円
@@ -227,6 +247,7 @@ export const sampleProblems: Problem[] = [
 （3）DDMの適用：
 　**適した企業**：安定した配当を継続支払いする成熟企業（公益企業、大型銀行等）。配当政策が予測しやすく、成長率も安定。
 　**困難な企業**：①配当を支払わない成長株（IT企業等）、②業績変動が大きくキャッシュフローが不安定な企業、③自社株買いを優先する企業。`,
+    explanation: '（解説は後で追加）',
     tags: ['DDM', '配当割引モデル', 'ゴードン成長モデル', '計算問題'],
   },
 ]

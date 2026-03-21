@@ -1,6 +1,6 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
-import type { Problem, ProblemResult, SubjectKey } from '../types/problem'
+import type { Problem, ProblemResult, SubjectKey, SubjectStatsResult } from '../types/problem'
 
 type ResultRecord = Record<string, ProblemResult>  // key: problem.id
 
@@ -18,13 +18,7 @@ type ProblemStore = {
   getProblemsBySubject: (subject: SubjectKey) => Problem[]
 
   // 統計
-  getStats: (subject: SubjectKey) => {
-    total: number
-    correct: number
-    partial: number
-    incorrect: number
-    unanswered: number
-  }
+  getStats: (subject: SubjectKey) => SubjectStatsResult
 }
 
 export const useProblemStore = create<ProblemStore>()(
@@ -46,12 +40,18 @@ export const useProblemStore = create<ProblemStore>()(
       getStats: (subject) => {
         const problems = get().getProblemsBySubject(subject)
         const results = get().results
+        const correct = problems.filter((p) => results[p.id] === 'correct').length
+        const partial = problems.filter((p) => results[p.id] === 'partial').length
+        const incorrect = problems.filter((p) => results[p.id] === 'incorrect').length
+        const answered = correct + partial + incorrect
         return {
           total: problems.length,
-          correct: problems.filter((p) => results[p.id] === 'correct').length,
-          partial: problems.filter((p) => results[p.id] === 'partial').length,
-          incorrect: problems.filter((p) => results[p.id] === 'incorrect').length,
+          correct,
+          partial,
+          incorrect,
           unanswered: problems.filter((p) => !results[p.id]).length,
+          answered,
+          accuracy: answered > 0 ? Math.round((correct / answered) * 100) : 0,
         }
       },
     }),

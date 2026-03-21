@@ -44,9 +44,6 @@ export default function ProblemCard({ problem, result, onSetResult }: Props) {
     <div className="rounded-xl border border-[#2a2a4a] overflow-hidden">
       {/* カードヘッダー */}
       <div className="flex items-center gap-2 px-4 py-2.5 bg-[#111125] flex-wrap">
-        <span className="text-[10px] px-2 py-0.5 rounded-full bg-[#252540] text-[#8888aa] font-medium">
-          {problem.year}年
-        </span>
         <span className="text-[10px] px-2 py-0.5 rounded-full bg-[#7c4dff]/20 text-[#a78bfa] font-medium">
           {problem.questionNo}
         </span>
