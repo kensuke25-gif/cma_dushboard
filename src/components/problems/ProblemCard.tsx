@@ -5,7 +5,7 @@ import type { Problem, ProblemResult } from '../../types/problem'
 type Props = {
   problem: Problem
   result: ProblemResult
-  onSetResult: (result: ProblemResult) => void
+  onSetResult: (result: NonNullable<ProblemResult> | null) => void
 }
 
 type ResultButton = {
@@ -36,8 +36,9 @@ export default function ProblemCard({ problem, result, onSetResult }: Props) {
   const [showAnswer, setShowAnswer] = useState(false)
 
   function handleResultClick(value: 'correct' | 'partial' | 'incorrect') {
-    // 同じボタンをクリックしたら解除
-    onSetResult(result === value ? null : value)
+    // 既に同じ結果が選択済みの場合は何もしない（二重送信防止）
+    if (result === value) return
+    onSetResult(value)
   }
 
   return (
