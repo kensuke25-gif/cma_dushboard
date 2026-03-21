@@ -54,6 +54,30 @@ const REQUIRED_FIELDS = [
 ] as const
 const CHUNK_SIZE = 100
 
+// スネークケース / キャメルケース どちらでも受け取れるよう正規化
+function normalizeJsonProblem(raw: unknown): Problem {
+  const r = raw as Record<string, unknown>
+  return {
+    id:               String(r.id ?? ''),
+    subject:          (r.subject ?? '') as SubjectKey,
+    chapterKey:       String(r.chapterKey   ?? r.chapter_key   ?? ''),
+    chapterName:      String(r.chapterName  ?? r.chapter_name  ?? ''),
+    sectionName:      r.sectionName  != null ? String(r.sectionName)  : r.section_name  != null ? String(r.section_name)  : undefined,
+    questionNo:       String(r.questionNo   ?? r.question_no   ?? ''),
+    questionType:     ((r.questionType ?? r.question_type ?? 'descriptive') as 'descriptive'),
+    points:           Number(r.points ?? 0),
+    questionText:     String(r.questionText ?? r.question_text ?? ''),
+    hintText:         r.hintText        != null ? String(r.hintText)        : r.hint_text        != null ? String(r.hint_text)        : undefined,
+    answerText:       String(r.answerText   ?? r.answer_text   ?? ''),
+    explanation:      String(r.explanation  ?? ''),
+    relatedKnowledge: r.relatedKnowledge != null ? String(r.relatedKnowledge) : r.related_knowledge != null ? String(r.related_knowledge) : undefined,
+    tags:             Array.isArray(r.tags) ? r.tags.map(String) : [],
+    difficulty:       (Number(r.difficulty ?? 2) as 1 | 2 | 3),
+    source:           r.source != null ? String(r.source) : undefined,
+    displayOrder:     Number(r.displayOrder ?? r.display_order ?? 0),
+  }
+}
+
 // ===== CSVパーサー（RFC 4180準拠） =====
 function parseCSVLine(line: string): string[] {
   const result: string[] = []
@@ -170,7 +194,18 @@ export default function ImportPage() {
 
       if (type === 'json') {
         const raw = JSON.parse(text)
-        parsed = Array.isArray(raw) ? raw : [raw]
+        // フラット配列 or ラッパーオブジェクト（{ problems: [...] } 等）に対応
+        let arr: unknown[]
+        if (Array.isArray(raw)) {
+          arr = raw
+        } else if (raw && typeof raw === 'object') {
+          const nested = Object.values(raw as Record<string, unknown>).find(v => Array.isArray(v))
+          arr = nested ? (nested as unknown[]) : [raw]
+        } else {
+          arr = [raw]
+        }
+        // スネークケース → キャメルケース正規化
+        parsed = arr.map(normalizeJsonProblem)
       } else {
         parsed = parseCSV(text)
       }
