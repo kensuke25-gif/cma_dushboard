@@ -8,6 +8,7 @@ import Analytics from './pages/Analytics'
 import ProblemPage from './pages/ProblemPage'
 import Login from './pages/Login'
 import { useAuthStore } from './stores/authStore'
+import { useProblemStore } from './stores/problemStore'
 
 class ErrorBoundary extends Component<{ children: ReactNode }, { hasError: boolean }> {
   state = { hasError: false }
@@ -33,8 +34,16 @@ class ErrorBoundary extends Component<{ children: ReactNode }, { hasError: boole
 }
 
 function AuthGuard({ children }: { children: ReactNode }) {
-  const user = useAuthStore(s => s.user)
+  const user    = useAuthStore(s => s.user)
   const loading = useAuthStore(s => s.loading)
+  const initializeProblems = useProblemStore(s => s.initialize)
+
+  // ログイン済みになったタイミングで問題データを初期化
+  useEffect(() => {
+    if (user) {
+      initializeProblems()
+    }
+  }, [user, initializeProblems])
 
   if (loading) {
     return (

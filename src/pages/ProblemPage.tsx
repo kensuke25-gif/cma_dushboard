@@ -3,22 +3,22 @@ import { useParams } from 'react-router-dom'
 import { List, X } from 'lucide-react'
 import { SUBJECT_CONFIGS } from '../types/problem'
 import { useProblemStore } from '../stores/problemStore'
-import { sampleProblems } from '../data/sampleProblems'
 import ProblemCard from '../components/problems/ProblemCard'
 
 export default function ProblemPage() {
   const { subject } = useParams<{ subject: string }>()
   const config = SUBJECT_CONFIGS.find(c => c.key === subject)
 
-  const { problems, setProblems, results, setResult, getStats, getProblemsBySubject } = useProblemStore()
+  const {
+    loadingProblems,
+    stats,
+    submitResult,
+    getSubjectStats,
+    getProblemsBySubject,
+  } = useProblemStore()
   const [activeChapter, setActiveChapter] = useState<string>('')
   const [showTocModal, setShowTocModal] = useState(false)
   const observerRef = useRef<IntersectionObserver | null>(null)
-
-  // データが空の場合はサンプルをロード
-  useEffect(() => {
-    if (problems.length === 0) setProblems(sampleProblems)
-  }, [problems.length, setProblems])
 
   const filteredProblems = config ? getProblemsBySubject(config.key) : []
 
@@ -78,7 +78,7 @@ export default function ProblemPage() {
     }
   }
 
-  const stats = config ? getStats(config.key) : null
+  const subjectStats = config ? getSubjectStats(config.key) : null
 
   if (!config) {
     return (
@@ -126,15 +126,15 @@ export default function ProblemPage() {
               </p>
             )}
           </div>
-          {stats && stats.total > 0 && (
+          {subjectStats && subjectStats.total > 0 && (
             <div className="flex items-center gap-2 shrink-0">
               <span className="text-xs px-2 py-1 rounded-lg bg-green-900/30 text-green-400 font-medium">
-                正解 {stats.correct}
+                正解 {subjectStats.correct}
               </span>
               <span className="text-xs px-2 py-1 rounded-lg bg-[#252540] text-[#8888aa]">
-                未回答 {stats.unanswered}
+                未回答 {subjectStats.unanswered}
               </span>
-              <span className="text-xs text-[#5a5a7a]">/{stats.total}</span>
+              <span className="text-xs text-[#5a5a7a]">/{subjectStats.total}</span>
             </div>
           )}
         </div>
@@ -153,7 +153,12 @@ export default function ProblemPage() {
 
         {/* 問題エリア */}
         <main className="flex-1 min-w-0">
-          {filteredProblems.length === 0 ? (
+          {loadingProblems && (
+            <div className="flex justify-center py-20">
+              <div className="w-8 h-8 border-2 border-[#7c4dff] border-t-transparent rounded-full animate-spin" />
+            </div>
+          )}
+          {!loadingProblems && filteredProblems.length === 0 ? (
             <div className="rounded-2xl border border-[#2a2a4a] bg-[#111125] py-16 text-center">
               <p className="text-sm text-[#8888aa]">この科目の問題データが登録されていません</p>
               <p className="text-xs text-[#5a5a7a] mt-1">管理者による問題データのアップロードをお待ちください</p>
@@ -180,8 +185,10 @@ export default function ProblemPage() {
                       <ProblemCard
                         key={problem.id}
                         problem={problem}
-                        result={results[problem.id] ?? null}
-                        onSetResult={(r) => setResult(problem.id, r)}
+                        result={stats[problem.id]?.latestResult ?? null}
+                        onSetResult={(r) => {
+                          if (r !== null) submitResult(problem.id, r)
+                        }}
                       />
                     ))}
                   </div>
