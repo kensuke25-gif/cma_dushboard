@@ -11,6 +11,7 @@ import { useAuthStore } from './stores/authStore'
 import { useProblemStore } from './stores/problemStore'
 import MathTestPage from './pages/MathTestPage'
 import QuizModePage from './pages/QuizModePage'
+import ImportPage from './pages/ImportPage'
 
 class ErrorBoundary extends Component<{ children: ReactNode }, { hasError: boolean }> {
   state = { hasError: false }
@@ -88,6 +89,7 @@ export default function App() {
           <Route path="/quiz-mode/:subject" element={<QuizModePage />} />
           {/* 1問1ページ演習モード（章指定） */}
           <Route path="/quiz-mode/:subject/:chapterKey" element={<QuizModePage />} />
+          <Route path="/import" element={<ImportPage />} />
         </Route>
       </Routes>
     </BrowserRouter>
