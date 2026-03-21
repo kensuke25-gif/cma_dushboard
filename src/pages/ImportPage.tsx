@@ -272,16 +272,17 @@ export default function ImportPage() {
       {}
     )
 
-    await supabase.from('import_logs').insert({
-      user_id: user?.id,
-      file_name: fileName,
-      file_type: fileType,
-      total_count: filteredProblems.length,
-      success_count: successCount,
-      error_count: errorMessages.length,
-      subject_breakdown: subjectBreakdown,
-      errors: errorMessages,
-    })
+    if (user?.id) {
+      await supabase.from('import_logs').insert({
+        user_id: user.id,
+        file_name: fileName,
+        file_type: fileType,
+        total_count: filteredProblems.length,
+        success_count: successCount,
+        error_count: errorMessages.length,
+        subject_breakdown: subjectBreakdown,
+      })
+    }
 
     // 既存IDセットを更新
     setExistingIds(prev => {

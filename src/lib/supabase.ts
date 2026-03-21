@@ -284,6 +284,30 @@ export type Database = {
         Update: Record<string, never>
         Relationships: []
       }
+      import_logs: {
+        Row: {
+          id: string
+          user_id: string
+          file_name: string
+          file_type: string
+          total_count: number
+          success_count: number
+          error_count: number
+          subject_breakdown: Record<string, number>
+          imported_at: string
+        }
+        Insert: {
+          user_id: string
+          file_name: string
+          file_type: string
+          total_count: number
+          success_count: number
+          error_count: number
+          subject_breakdown: Record<string, number>
+        }
+        Update: Record<string, never>
+        Relationships: []
+      }
     }
     Views: {
       problem_latest_results: {
