@@ -86,37 +86,37 @@ export default function Layout() {
         {/* iOSセーフエリア（ノッチ・Dynamic Island）のりしろ */}
         <div className="shrink-0" style={{ height: 'env(safe-area-inset-top)' }} />
 
-        {/* タイトル（ホームへのリンク） */}
-        <NavLink
-          to="/"
-          end
-          onClick={closeSidebar}
-          className="flex items-center gap-2 px-5 py-5 border-b border-[#2a2a4a] hover:bg-[#1a1a3a] transition-colors"
-        >
-          <span className="text-sm font-bold text-white leading-tight">
-            証券アナリスト2次<br />
-            <span className="text-[#a78bfa] font-semibold text-xs">学習ダッシュボード</span>
-          </span>
-        </NavLink>
+        {/* タイトル行：ホームリンク + 格納ボタン */}
+        <div className="flex items-center border-b border-[#2a2a4a]">
+          <NavLink
+            to="/"
+            end
+            onClick={closeSidebar}
+            className="flex-1 flex items-center gap-2 px-5 py-5 hover:bg-[#1a1a3a] transition-colors min-w-0"
+          >
+            <span className="text-sm font-bold text-white leading-tight">
+              証券アナリスト2次<br />
+              <span className="text-[#a78bfa] font-semibold text-xs">学習ダッシュボード</span>
+            </span>
+          </NavLink>
 
-        {/* モバイル: 閉じるボタン */}
-        <button
-          onClick={closeSidebar}
-          style={{ top: 'calc(env(safe-area-inset-top) + 12px)' }}
-          className="absolute right-3 p-1.5 rounded-lg text-[#8888aa] hover:text-white hover:bg-[#252540] transition-colors md:hidden"
-        >
-          <X className="w-4 h-4" />
-        </button>
+          {/* md+: サイドバー格納ボタン（インライン配置） */}
+          <button
+            onClick={() => setSidebarPinned(false)}
+            title="サイドバーを閉じる"
+            className="hidden md:flex shrink-0 p-2 mr-2 rounded-lg text-[#8888aa] hover:text-white hover:bg-[#252540] transition-colors"
+          >
+            <ChevronLeft className="w-4 h-4" />
+          </button>
 
-        {/* md+: サイドバー格納ボタン */}
-        <button
-          onClick={() => setSidebarPinned(false)}
-          title="サイドバーを閉じる"
-          style={{ top: 'calc(env(safe-area-inset-top) + 12px)' }}
-          className="absolute right-3 p-1.5 rounded-lg text-[#8888aa] hover:text-white hover:bg-[#252540] transition-colors hidden md:flex"
-        >
-          <ChevronLeft className="w-4 h-4" />
-        </button>
+          {/* モバイル: ドロワーを閉じるボタン */}
+          <button
+            onClick={closeSidebar}
+            className="flex md:hidden shrink-0 p-2 mr-2 rounded-lg text-[#8888aa] hover:text-white hover:bg-[#252540] transition-colors"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        </div>
 
         {/* ナビゲーション */}
         <nav className="flex-1 py-4 space-y-1 px-2">
@@ -199,29 +199,23 @@ export default function Layout() {
         />
       )}
 
-      {/* md+: サイドバーが閉じているときの再表示ボタン */}
-      {!sidebarPinned && (
-        <button
-          onClick={() => setSidebarPinned(true)}
-          title="サイドバーを開く"
-          className="hidden md:flex fixed z-40 items-center justify-center p-2 rounded-lg bg-[#111125] border border-[#2a2a4a] text-[#8888aa] hover:text-white hover:bg-[#252540] transition-colors shadow-lg"
-          style={{ top: 'calc(env(safe-area-inset-top) + 16px)', left: '12px' }}
-        >
-          <Menu className="w-5 h-5" strokeWidth={1.5} />
-        </button>
-      )}
-
       {/* ========== メインエリア ========== */}
       <div className={`${sidebarPinned ? 'md:pl-[220px]' : ''} flex flex-col min-h-screen transition-[padding] duration-200`}>
 
-        {/* モバイル用スティッキートップバー */}
-        <header className="md:hidden sticky top-0 z-30 bg-[#111125] border-b border-[#2a2a4a]">
+        {/* スティッキートップバー（モバイル常時 / md+ はサイドバー格納時のみ表示） */}
+        <header className={`${sidebarPinned ? 'md:hidden' : ''} sticky top-0 z-30 bg-[#111125] border-b border-[#2a2a4a]`}>
           {/* iOSセーフエリア（ノッチ・Dynamic Island）のりしろ */}
           <div style={{ height: 'env(safe-area-inset-top)' }} />
           {/* ナビゲーション行 */}
           <div className="px-4 h-14 flex items-center gap-3">
           <button
-            onClick={() => setSidebarOpen(true)}
+            onClick={() => {
+              if (window.matchMedia('(min-width: 768px)').matches) {
+                setSidebarPinned(true)
+              } else {
+                setSidebarOpen(true)
+              }
+            }}
             className="p-1.5 rounded-lg text-[#8888aa] hover:text-white hover:bg-[#252540] transition-colors"
           >
             <Menu className="w-5 h-5" strokeWidth={1.5} />
