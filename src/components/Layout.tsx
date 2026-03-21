@@ -120,7 +120,7 @@ export default function Layout() {
         </div>
 
         {/* ナビゲーション */}
-        <nav className="flex-1 py-4 space-y-1 px-2">
+        <nav className="flex-1 py-4 space-y-1 px-2 overflow-y-auto">
           {tabs.map(({ to, label, Icon, exact }) => (
             <NavLink
               key={to}
