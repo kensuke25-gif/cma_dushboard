@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { Outlet, NavLink, useLocation } from 'react-router-dom'
-import { LayoutDashboard, BookOpen, Brain, BarChart2, FileQuestion, LogOut, Menu, X } from 'lucide-react'
+import { LayoutDashboard, BookOpen, Brain, BarChart2, FileQuestion, LogOut, Menu, X, ChevronLeft } from 'lucide-react'
 import { useAuthStore } from '../stores/authStore'
 import { usePomodoroStore, MODES, registerFinishCallback, type PomodoroMode } from '../stores/pomodoroStore'
 import { playTimerEndSound } from '../lib/sound'
@@ -24,6 +24,13 @@ function sendNotification(title: string, body: string) {
 
 export default function Layout() {
   const [sidebarOpen, setSidebarOpen] = useState(false)
+  const [sidebarPinned, setSidebarPinned] = useState<boolean>(() => {
+    try { return localStorage.getItem('cma-sidebar-pinned') !== 'false' } catch { return true }
+  })
+
+  useEffect(() => {
+    try { localStorage.setItem('cma-sidebar-pinned', String(sidebarPinned)) } catch {}
+  }, [sidebarPinned])
   const user = useAuthStore(s => s.user)
   const signOut = useAuthStore(s => s.signOut)
   const { running, tick, mode, seconds } = usePomodoroStore()
@@ -57,6 +64,12 @@ export default function Layout() {
 
   const closeSidebar = () => setSidebarOpen(false)
 
+  const sidebarTranslateClass = sidebarOpen
+    ? 'translate-x-0'
+    : sidebarPinned
+      ? '-translate-x-full md:translate-x-0'
+      : '-translate-x-full'
+
   return (
     <div className="min-h-screen bg-[#1a1a2e]">
 
@@ -67,7 +80,7 @@ export default function Layout() {
           bg-[#111125] border-r border-[#2a2a4a]
           flex flex-col
           transform transition-transform duration-200 ease-in-out
-          ${sidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
+          ${sidebarTranslateClass}
         `}
       >
         {/* iOSセーフエリア（ノッチ・Dynamic Island）のりしろ */}
@@ -93,6 +106,16 @@ export default function Layout() {
           className="absolute right-3 p-1.5 rounded-lg text-[#8888aa] hover:text-white hover:bg-[#252540] transition-colors md:hidden"
         >
           <X className="w-4 h-4" />
+        </button>
+
+        {/* md+: サイドバー格納ボタン */}
+        <button
+          onClick={() => setSidebarPinned(false)}
+          title="サイドバーを閉じる"
+          style={{ top: 'calc(env(safe-area-inset-top) + 12px)' }}
+          className="absolute right-3 p-1.5 rounded-lg text-[#8888aa] hover:text-white hover:bg-[#252540] transition-colors hidden md:flex"
+        >
+          <ChevronLeft className="w-4 h-4" />
         </button>
 
         {/* ナビゲーション */}
@@ -176,8 +199,20 @@ export default function Layout() {
         />
       )}
 
+      {/* md+: サイドバーが閉じているときの再表示ボタン */}
+      {!sidebarPinned && (
+        <button
+          onClick={() => setSidebarPinned(true)}
+          title="サイドバーを開く"
+          className="hidden md:flex fixed z-40 items-center justify-center p-2 rounded-lg bg-[#111125] border border-[#2a2a4a] text-[#8888aa] hover:text-white hover:bg-[#252540] transition-colors shadow-lg"
+          style={{ top: 'calc(env(safe-area-inset-top) + 16px)', left: '12px' }}
+        >
+          <Menu className="w-5 h-5" strokeWidth={1.5} />
+        </button>
+      )}
+
       {/* ========== メインエリア ========== */}
-      <div className="md:pl-[220px] flex flex-col min-h-screen">
+      <div className={`${sidebarPinned ? 'md:pl-[220px]' : ''} flex flex-col min-h-screen transition-[padding] duration-200`}>
 
         {/* モバイル用スティッキートップバー */}
         <header className="md:hidden sticky top-0 z-30 bg-[#111125] border-b border-[#2a2a4a]">
