@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { ChevronDown, ChevronUp } from 'lucide-react'
 import type { Problem, ProblemResult } from '../../types/problem'
+import MathText from '../MathText'
 
 type Props = {
   problem: Problem
@@ -32,6 +33,29 @@ const RESULT_BUTTONS: ResultButton[] = [
   },
 ]
 
+function HintSection({ hintText }: { hintText: string }) {
+  const [open, setOpen] = useState(false)
+  return (
+    <div className="px-4 py-2 bg-[#1a1a3a] border-t border-[#2a2a4a]">
+      <button
+        onClick={() => setOpen(v => !v)}
+        className="flex items-center gap-2 text-xs text-[#fbbf24]
+                   hover:text-amber-300 transition-colors py-1"
+      >
+        <span className="text-base leading-none">💡</span>
+        {open ? 'ヒントを閉じる' : 'ヒントを見る'}
+      </button>
+      {open && (
+        <div className="mt-2 pl-2 border-l-2 border-[#fbbf24]/40">
+          <div className="text-xs text-[#c8c8e8] leading-relaxed">
+            <MathText text={hintText} />
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
 export default function ProblemCard({ problem, result, onSetResult }: Props) {
   const [showAnswer, setShowAnswer] = useState(false)
 
@@ -60,14 +84,52 @@ export default function ProblemCard({ problem, result, onSetResult }: Props) {
 
       {/* 問題文 */}
       <div className="px-4 py-4 bg-[#1e1e3a]">
-        <p className="text-sm text-[#c8c8e8] leading-relaxed whitespace-pre-wrap">{problem.questionText}</p>
+        <div className="text-sm text-[#c8c8e8] leading-relaxed">
+          <MathText text={problem.questionText} />
+        </div>
       </div>
+
+      {/* ヒントボタン（hintText が存在する場合のみ表示） */}
+      {problem.hintText && (
+        <HintSection hintText={problem.hintText} />
+      )}
 
       {/* 解答エリア（展開式） */}
       {showAnswer && (
-        <div className="px-4 py-4 bg-[#16162a] border-t border-[#2a2a4a]">
-          <p className="text-xs font-medium text-[#9090bb] mb-2">解答・解説</p>
-          <p className="text-sm text-[#c8c8e8] leading-relaxed whitespace-pre-wrap">{problem.answerText}</p>
+        <div className="px-4 py-4 bg-[#16162a] border-t border-[#2a2a4a] space-y-4">
+
+          {/* 模範解答 */}
+          <div>
+            <p className="text-xs font-semibold text-[#9090bb] mb-2">
+              ▍模範解答
+            </p>
+            <div className="text-sm text-[#c8c8e8] leading-relaxed">
+              <MathText text={problem.answerText} />
+            </div>
+          </div>
+
+          {/* 初学者向け解説 */}
+          <div className="pt-3 border-t border-[#2a2a4a]">
+            <p className="text-xs font-semibold text-[#a78bfa] mb-2">
+              ▍初学者向け解説
+            </p>
+            <div className="text-sm text-[#c8c8e8] leading-relaxed">
+              <MathText text={problem.explanation} />
+            </div>
+          </div>
+
+          {/* 周辺知識（存在する場合のみ表示） */}
+          {problem.relatedKnowledge && (
+            <div className="pt-3 border-t border-[#2a2a4a]">
+              <p className="text-xs font-semibold text-[#34d399] mb-2">
+                ▍周辺知識・発展
+              </p>
+              <div className="text-sm text-[#8888aa] leading-relaxed">
+                <MathText text={problem.relatedKnowledge} />
+              </div>
+            </div>
+          )}
+
         </div>
       )}
 

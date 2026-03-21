@@ -9,6 +9,7 @@ import ProblemPage from './pages/ProblemPage'
 import Login from './pages/Login'
 import { useAuthStore } from './stores/authStore'
 import { useProblemStore } from './stores/problemStore'
+import MathTestPage from './pages/MathTestPage'
 
 class ErrorBoundary extends Component<{ children: ReactNode }, { hasError: boolean }> {
   state = { hasError: false }
@@ -81,6 +82,7 @@ export default function App() {
           <Route path="/quiz" element={<Quiz />} />
           <Route path="/analytics" element={<Analytics />} />
           <Route path="/problems/:subject" element={<ProblemPage />} />
+          <Route path="/math-test" element={<MathTestPage />} />
         </Route>
       </Routes>
     </BrowserRouter>
