@@ -5,6 +5,7 @@ import Dashboard from './pages/Dashboard'
 import Items from './pages/Items'
 import Quiz from './pages/Quiz'
 import Analytics from './pages/Analytics'
+import ProblemPage from './pages/ProblemPage'
 import Login from './pages/Login'
 import { useAuthStore } from './stores/authStore'
 
@@ -70,6 +71,7 @@ export default function App() {
           <Route path="/items" element={<Items />} />
           <Route path="/quiz" element={<Quiz />} />
           <Route path="/analytics" element={<Analytics />} />
+          <Route path="/problems/:subject" element={<ProblemPage />} />
         </Route>
       </Routes>
     </BrowserRouter>
