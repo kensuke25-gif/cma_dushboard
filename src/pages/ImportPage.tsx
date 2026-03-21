@@ -1,11 +1,12 @@
 import { useState, useCallback, useRef, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
-  Upload, FileJson, FileText,
-  Loader2
+  Upload, FileJson, FileText, XCircle, CheckCircle,
+  Loader2, ChevronDown, ChevronUp, Filter, ArrowRight
 } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import type { Problem } from '../types/problem'
+import { useAuthStore } from '../stores/authStore'
 
 // ===== 型定義 =====
 type ImportStatus = 'idle' | 'parsing' | 'validating' | 'previewing' | 'importing' | 'done' | 'error'
@@ -117,6 +118,7 @@ function parseCSV(text: string): Problem[] {
 // ===== メインコンポーネント =====
 export default function ImportPage() {
   const navigate = useNavigate()
+  const { user } = useAuthStore()
 
   // --- state ---
   const [activeTab, setActiveTab] = useState<'import' | 'export' | 'history'>('import')
@@ -144,6 +146,8 @@ export default function ImportPage() {
     supabase.from('problems').select('id').then(({ data }) => {
       if (data) setExistingIds(new Set(data.map((r: { id: string }) => r.id)))
     })
+    fetchImportLogs()
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   // ===== ファイル処理 =====
@@ -171,7 +175,6 @@ export default function ImportPage() {
         parsed = parseCSV(text)
       }
 
-      // バリデーション・プレビューは次のステップで追加
       setProblems(parsed)
       setStatus('previewing')
     } catch (e) {
@@ -207,30 +210,120 @@ export default function ImportPage() {
     if (fileInputRef.current) fileInputRef.current.value = ''
   }
 
-  // 未使用変数の警告を抑制（次のステップで使用）
-  void navigate
-  void selectedSubjects
-  void setSelectedSubjects
-  void progress
-  void setProgress
-  void progressTotal
-  void setProgressTotal
-  void importResult
-  void setImportResult
-  void importLogs
-  void setImportLogs
+  // ===== インポート実行 =====
+  const filteredProblems = problems.filter(p =>
+    selectedSubjects.includes(p.subject as SubjectKey)
+  )
+
+  const handleImport = async () => {
+    if (filteredProblems.length === 0) return
+    if (!window.confirm(
+      `${filteredProblems.length}件の問題をインポートします。\n既存データは上書きされます。よろしいですか？`
+    )) return
+
+    setStatus('importing')
+    setProgress(0)
+    setProgressTotal(filteredProblems.length)
+
+    let successCount = 0
+    const errorMessages: string[] = []
+
+    // camelCase → snake_case 変換
+    const toSnakeCase = (p: Problem) => ({
+      id: p.id,
+      subject: p.subject,
+      chapter_key: p.chapterKey,
+      chapter_name: p.chapterName,
+      question_no: p.questionNo,
+      source: p.source ?? null,
+      difficulty: p.difficulty ?? null,
+      question_text: p.questionText,
+      hint_text: p.hintText ?? null,
+      answer_text: p.answerText,
+      explanation: p.explanation ?? null,
+      related_knowledge: p.relatedKnowledge ?? null,
+      tags: p.tags ?? [],
+      display_order: p.displayOrder ?? null,
+    })
+
+    // 100件ずつチャンク処理
+    for (let i = 0; i < filteredProblems.length; i += CHUNK_SIZE) {
+      const chunk = filteredProblems.slice(i, i + CHUNK_SIZE).map(toSnakeCase)
+      const { error } = await supabase
+        .from('problems')
+        .upsert(chunk, { onConflict: 'id' })
+
+      if (error) {
+        errorMessages.push(
+          `チャンク${Math.floor(i / CHUNK_SIZE) + 1}: ${error.message}`
+        )
+      } else {
+        successCount += chunk.length
+      }
+      setProgress(Math.min(i + CHUNK_SIZE, filteredProblems.length))
+    }
+
+    // import_logs に履歴を記録
+    const subjectBreakdown = filteredProblems.reduce<Record<string, number>>(
+      (acc, p) => {
+        acc[p.subject] = (acc[p.subject] ?? 0) + 1
+        return acc
+      },
+      {}
+    )
+
+    await supabase.from('import_logs').insert({
+      user_id: user?.id,
+      file_name: fileName,
+      file_type: fileType,
+      total_count: filteredProblems.length,
+      success_count: successCount,
+      error_count: errorMessages.length,
+      subject_breakdown: subjectBreakdown,
+      errors: errorMessages,
+    })
+
+    // 既存IDセットを更新
+    setExistingIds(prev => {
+      const next = new Set(prev)
+      filteredProblems.forEach(p => next.add(p.id))
+      return next
+    })
+
+    setImportResult({
+      success: successCount,
+      error: errorMessages.length,
+      errors: errorMessages,
+    })
+    setStatus('done')
+    fetchImportLogs()
+  }
+
+  const fetchImportLogs = async () => {
+    const { data } = await supabase
+      .from('import_logs')
+      .select('*')
+      .order('imported_at', { ascending: false })
+      .limit(10)
+    if (data) setImportLogs(data as ImportLog[])
+  }
+
+  // 未使用変数の警告を抑制
+  void previewRows
+  void fileSize
   void showAllErrors
   void setShowAllErrors
   void exportSubject
   void setExportSubject
   void exporting
   void setExporting
-  void fileType
-  void fileSize
-  void previewRows
   void existingIds
   void REQUIRED_FIELDS
-  void CHUNK_SIZE
+  void SUBJECT_LABELS
+  void XCircle
+  void ChevronDown
+  void ChevronUp
+  void Filter
 
   // ===== UI =====
   return (
@@ -314,7 +407,7 @@ export default function ImportPage() {
               </div>
             )}
 
-            {/* エラー表示（仮） */}
+            {/* エラー表示 */}
             {status === 'error' && (
               <div className="bg-red-900/30 border border-red-500/50 rounded-xl p-4">
                 <p className="text-red-300 text-sm">
@@ -329,24 +422,136 @@ export default function ImportPage() {
               </div>
             )}
 
-            {/* 読み込み完了（仮表示） */}
+            {/* プレビュー + 科目フィルター */}
             {status === 'previewing' && (
               <div className="bg-[#0f0f23] rounded-xl p-4">
                 <p className="text-white font-medium mb-1">
                   ✅ {fileName} を読み込みました
                 </p>
-                <p className="text-gray-400 text-sm">
+                <p className="text-gray-400 text-sm mb-3">
                   {problems.length} 件の問題を検出
                 </p>
-                <p className="text-gray-500 text-xs mt-2">
-                  ※ バリデーション・プレビュー・インポートボタンは次のステップで追加します
-                </p>
+
+                {/* 科目フィルター */}
+                <div className="mb-4">
+                  <p className="text-xs text-gray-500 mb-2 flex items-center gap-1">
+                    <Filter className="w-3 h-3" />
+                    インポートする科目を選択
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    {VALID_SUBJECTS.map(s => (
+                      <button
+                        key={s}
+                        onClick={() => setSelectedSubjects(prev =>
+                          prev.includes(s) ? prev.filter(x => x !== s) : [...prev, s]
+                        )}
+                        className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${
+                          selectedSubjects.includes(s)
+                            ? 'bg-blue-600 text-white'
+                            : 'bg-gray-700 text-gray-400'
+                        }`}
+                      >
+                        {SUBJECT_LABELS[s]} ({problems.filter(p => p.subject === s).length})
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
                 <button
                   onClick={resetFile}
-                  className="mt-3 text-sm text-gray-400 hover:text-white underline"
+                  className="text-sm text-gray-400 hover:text-white underline"
                 >
                   ← ファイルを変更
                 </button>
+              </div>
+            )}
+
+            {/* インポートボタン */}
+            {status === 'previewing' && (
+              <button
+                onClick={handleImport}
+                disabled={
+                  filteredProblems.length === 0 ||
+                  validationErrors.length > 0
+                }
+                className="w-full py-3 px-6 bg-blue-600 hover:bg-blue-500 disabled:opacity-40 disabled:cursor-not-allowed text-white font-medium rounded-xl transition-colors flex items-center justify-center gap-2"
+              >
+                <Upload className="w-5 h-5" />
+                {filteredProblems.length}件を Supabase にインポート
+              </button>
+            )}
+
+            {/* プログレスバー */}
+            {status === 'importing' && (
+              <div className="bg-[#0f0f23] rounded-xl p-4">
+                <div className="flex justify-between text-sm text-gray-400 mb-2">
+                  <span className="flex items-center gap-2">
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    インポート中...
+                  </span>
+                  <span>{progress} / {progressTotal} 件</span>
+                </div>
+                <div className="w-full bg-gray-700 rounded-full h-3">
+                  <div
+                    className="bg-blue-500 h-3 rounded-full transition-all duration-300"
+                    style={{
+                      width: `${progressTotal
+                        ? (progress / progressTotal) * 100
+                        : 0}%`
+                    }}
+                  />
+                </div>
+              </div>
+            )}
+
+            {/* 完了サマリー */}
+            {status === 'done' && importResult && (
+              <div className="bg-[#0f0f23] rounded-xl p-6">
+                <div className="flex items-center gap-3 mb-4">
+                  <CheckCircle className="w-6 h-6 text-green-400" />
+                  <h3 className="font-semibold text-white">
+                    インポート完了
+                  </h3>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3 mb-4">
+                  <div className="bg-green-900/30 border border-green-700/50 rounded-lg p-3 text-center">
+                    <p className="text-2xl font-bold text-green-400">
+                      {importResult.success}
+                    </p>
+                    <p className="text-xs text-green-300">成功</p>
+                  </div>
+                  <div className="bg-red-900/30 border border-red-700/50 rounded-lg p-3 text-center">
+                    <p className="text-2xl font-bold text-red-400">
+                      {importResult.error}
+                    </p>
+                    <p className="text-xs text-red-300">失敗</p>
+                  </div>
+                </div>
+
+                {importResult.errors.length > 0 && (
+                  <div className="bg-red-900/20 rounded-lg p-3 mb-4 space-y-1">
+                    {importResult.errors.map((e, i) => (
+                      <p key={i} className="text-sm text-red-300">{e}</p>
+                    ))}
+                  </div>
+                )}
+
+                <div className="flex gap-3">
+                  <button
+                    onClick={() => navigate('/problems/securities')}
+                    className="flex-1 py-2 px-4 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-sm flex items-center justify-center gap-2 transition-colors"
+                  >
+                    問題一覧へ
+                    <ArrowRight className="w-4 h-4" />
+                  </button>
+                  <button
+                    onClick={resetFile}
+                    className="flex-1 py-2 px-4 bg-gray-700 hover:bg-gray-600 text-white rounded-lg text-sm transition-colors"
+                  >
+                    続けてインポート
+                  </button>
+                </div>
               </div>
             )}
           </div>
@@ -359,10 +564,32 @@ export default function ImportPage() {
           </div>
         )}
 
-        {/* 履歴タブ（仮） */}
+        {/* 履歴タブ */}
         {activeTab === 'history' && (
-          <div className="bg-[#0f0f23] rounded-xl p-8 text-center text-gray-500">
-            履歴機能は次のステップで実装します
+          <div className="space-y-3">
+            {importLogs.length === 0 ? (
+              <div className="bg-[#0f0f23] rounded-xl p-8 text-center text-gray-500">
+                インポート履歴がありません
+              </div>
+            ) : (
+              importLogs.map(log => (
+                <div key={log.id} className="bg-[#0f0f23] rounded-xl p-4">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-sm font-medium text-white">{log.file_name}</span>
+                    <span className="text-xs text-gray-500">
+                      {new Date(log.imported_at).toLocaleString('ja-JP')}
+                    </span>
+                  </div>
+                  <div className="flex gap-4 text-xs text-gray-400">
+                    <span>合計: {log.total_count}件</span>
+                    <span className="text-green-400">成功: {log.success_count}件</span>
+                    {log.error_count > 0 && (
+                      <span className="text-red-400">失敗: {log.error_count}件</span>
+                    )}
+                  </div>
+                </div>
+              ))
+            )}
           </div>
         )}
 
