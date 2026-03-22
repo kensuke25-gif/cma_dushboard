@@ -95,6 +95,14 @@ type ProblemStore = {
    */
   fetchRecentAttempts: (problemIds: string[]) => Promise<void>
 
+  // ---- 削除 ----
+
+  /**
+   * 指定した章キーの問題・回答履歴を全て削除する
+   * @param chapterKey 削除対象の章キー
+   */
+  deleteChapter: (chapterKey: string) => Promise<void>
+
   // ---- 初期化 ----
 
   /**
@@ -415,6 +423,47 @@ export const useProblemStore = create<ProblemStore>((set, get) => ({
       )
     })
     set({ recentAttempts: map })
+  },
+
+  // =====================================
+  // 削除
+  // =====================================
+
+  deleteChapter: async (chapterKey) => {
+    // 対象問題IDを取得（ローカル state から）
+    const targetIds = get().problems
+      .filter(p => p.chapterKey === chapterKey)
+      .map(p => p.id)
+
+    if (targetIds.length === 0) return
+
+    // 回答履歴を先に削除（FK 制約対策）
+    await supabase
+      .from('problem_attempts')
+      .delete()
+      .in('problem_id', targetIds)
+
+    // 問題本体を削除
+    const { error } = await supabase
+      .from('problems')
+      .delete()
+      .eq('chapter_key', chapterKey)
+
+    if (error) {
+      console.error('[problemStore] deleteChapter error:', error)
+      return
+    }
+
+    // ローカル state を更新
+    set(state => ({
+      problems: state.problems.filter(p => p.chapterKey !== chapterKey),
+      stats: Object.fromEntries(
+        Object.entries(state.stats).filter(([id]) => !targetIds.includes(id))
+      ),
+      recentAttempts: Object.fromEntries(
+        Object.entries(state.recentAttempts).filter(([id]) => !targetIds.includes(id))
+      ),
+    }))
   },
 
   // =====================================

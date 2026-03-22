@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { BookOpen, ExternalLink, ChevronDown, ChevronUp } from 'lucide-react'
+import { BookOpen, ExternalLink, ChevronDown, ChevronUp, Trash2 } from 'lucide-react'
 import { SUBJECT_CONFIGS } from '../types/problem'
 import type { SubjectKey } from '../types/problem'
 import { useProblemStore } from '../stores/problemStore'
@@ -35,12 +35,16 @@ function HistoryDots({ history }: { history: AttemptResult[] }) {
 // ── メインコンポーネント ─────────────────────────────
 export default function ProblemsIndexPage() {
   const navigate = useNavigate()
-  const { problems, stats, recentAttempts, fetchRecentAttempts, loadingProblems } = useProblemStore()
+  const { problems, stats, recentAttempts, fetchRecentAttempts, loadingProblems, deleteChapter } = useProblemStore()
 
   // 展開中の科目キーセット（デフォルト: 全て折りたたみ）
   const [expandedSubjects, setExpandedSubjects] = useState<Set<string>>(new Set())
   // 展開中の章キーセット（デフォルト: 全て折りたたみ）
   const [expandedChapters, setExpandedChapters] = useState<Set<string>>(new Set())
+  // 削除確認中の章キー（null = 確認なし）
+  const [confirmDeleteKey, setConfirmDeleteKey] = useState<string | null>(null)
+  // 削除処理中フラグ
+  const [deleting, setDeleting] = useState(false)
 
   const toggleSubject = (key: string) => {
     setExpandedSubjects(prev => {
@@ -56,6 +60,13 @@ export default function ProblemsIndexPage() {
       next.has(key) ? next.delete(key) : next.add(key)
       return next
     })
+  }
+
+  const handleDeleteChapter = async (chapterKey: string) => {
+    setDeleting(true)
+    await deleteChapter(chapterKey)
+    setConfirmDeleteKey(null)
+    setDeleting(false)
   }
 
   // 全問題IDを渡して履歴を取得
@@ -163,6 +174,7 @@ export default function ProblemsIndexPage() {
               {isSubjectExpanded && <div className="divide-y divide-[#1e1e38]">
                 {chapters.map(ch => {
                   const isExpanded = expandedChapters.has(ch.chapterKey)
+                  const isConfirming = confirmDeleteKey === ch.chapterKey
                   const chapterPath = `${config.path}?chapter=${ch.chapterKey}`
                   const chProgress = ch.problems.length > 0
                     ? Math.round((ch.answered / ch.problems.length) * 100)
@@ -171,7 +183,7 @@ export default function ProblemsIndexPage() {
                   return (
                     <div key={ch.chapterKey}>
 
-                      {/* 章ヘッダー行（折りたたみデフォルト） */}
+                      {/* 章ヘッダー行 */}
                       <div className="flex items-center gap-2 px-4 py-3">
                         {/* 章名（タップで展開トグル） */}
                         <button
@@ -199,6 +211,15 @@ export default function ProblemsIndexPage() {
                           <ExternalLink className="w-3.5 h-3.5" strokeWidth={1.5} />
                         </button>
 
+                        {/* 削除ボタン */}
+                        <button
+                          onClick={() => setConfirmDeleteKey(isConfirming ? null : ch.chapterKey)}
+                          title="この章を削除"
+                          className="shrink-0 p-1.5 rounded-lg text-[#5a5a7a] hover:text-red-400 hover:bg-red-900/20 transition-colors"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" strokeWidth={1.5} />
+                        </button>
+
                         {/* 展開トグル */}
                         <button
                           onClick={() => toggleChapter(ch.chapterKey)}
@@ -211,6 +232,28 @@ export default function ProblemsIndexPage() {
                           }
                         </button>
                       </div>
+
+                      {/* 削除確認バー */}
+                      {isConfirming && (
+                        <div className="flex items-center gap-2 px-4 py-2.5 bg-red-950/40 border-t border-red-900/40">
+                          <p className="flex-1 text-xs text-red-300">
+                            「{ch.chapterName}」の問題と回答履歴を全て削除しますか？
+                          </p>
+                          <button
+                            onClick={() => setConfirmDeleteKey(null)}
+                            className="px-3 py-1 text-xs text-[#8888aa] hover:text-white rounded-lg hover:bg-[#252540] transition-colors"
+                          >
+                            キャンセル
+                          </button>
+                          <button
+                            onClick={() => handleDeleteChapter(ch.chapterKey)}
+                            disabled={deleting}
+                            className="px-3 py-1 text-xs bg-red-700 hover:bg-red-600 text-white rounded-lg transition-colors disabled:opacity-50"
+                          >
+                            {deleting ? '削除中…' : '削除する'}
+                          </button>
+                        </div>
+                      )}
 
                       {/* 章プログレスバー */}
                       {ch.answered > 0 && (
@@ -235,11 +278,10 @@ export default function ProblemsIndexPage() {
                                 onClick={() => navigate(chapterPath)}
                                 className="w-full flex items-start gap-3 px-5 py-3 hover:bg-[#1a1a3a] transition-colors text-left"
                               >
-                                {/* 最新結果バッジ */}
                                 <span className={`mt-0.5 w-5 h-5 rounded-full border flex items-center justify-center text-[10px] font-bold shrink-0 ${
-                                  latestResult === 'correct'   ? 'bg-green-900/30 border-green-500/40 text-green-400'
-                                  : latestResult === 'partial' ? 'bg-amber-900/30 border-amber-500/40 text-amber-400'
-                                  : latestResult === 'incorrect' ? 'bg-red-900/30 border-red-500/40 text-red-400'
+                                  latestResult === 'correct'    ? 'bg-green-900/30 border-green-500/40 text-green-400'
+                                  : latestResult === 'partial'  ? 'bg-amber-900/30 border-amber-500/40 text-amber-400'
+                                  : latestResult === 'incorrect'? 'bg-red-900/30 border-red-500/40 text-red-400'
                                   : 'border-[#3a3a5c] text-[#5a5a7a]'
                                 }`}>
                                   {latestResult === 'correct' ? '○'
@@ -247,7 +289,6 @@ export default function ProblemsIndexPage() {
                                     : latestResult === 'incorrect' ? '✕'
                                     : '−'}
                                 </span>
-
                                 <div className="flex-1 min-w-0">
                                   <p className="text-xs font-medium text-[#a78bfa] mb-0.5">{p.questionNo}</p>
                                   <p className="text-xs text-[#8888aa] leading-snug line-clamp-1">
