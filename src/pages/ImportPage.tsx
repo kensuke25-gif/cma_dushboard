@@ -7,6 +7,7 @@ import {
 import { supabase } from '../lib/supabase'
 import type { Problem } from '../types/problem'
 import { useAuthStore } from '../stores/authStore'
+import { useProblemStore } from '../stores/problemStore'
 
 // ===== 型定義 =====
 type ImportStatus = 'idle' | 'parsing' | 'validating' | 'previewing' | 'importing' | 'done' | 'error'
@@ -143,6 +144,7 @@ function parseCSV(text: string): Problem[] {
 export default function ImportPage() {
   const navigate = useNavigate()
   const { user } = useAuthStore()
+  const fetchProblems = useProblemStore(s => s.fetchProblems)
 
   // --- state ---
   const [activeTab, setActiveTab] = useState<'import' | 'export' | 'history'>('import')
@@ -333,6 +335,8 @@ export default function ImportPage() {
     })
     setStatus('done')
     fetchImportLogs()
+    // problemStore を更新して問題集に即反映
+    fetchProblems()
   }
 
   const fetchImportLogs = async () => {

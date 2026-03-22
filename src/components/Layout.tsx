@@ -9,7 +9,7 @@ const tabs = [
   { to: '/', label: 'Dashboard', Icon: LayoutDashboard, exact: true },
   { to: '/items', label: '項目', Icon: BookOpen, exact: false },
   { to: '/quiz', label: 'クイズ', Icon: Brain, exact: false },
-  { to: '/problems/market', label: '問題集', Icon: FileQuestion, exact: false },
+  { to: '/problems', label: '問題集', Icon: FileQuestion, exact: false },
   { to: '/analytics', label: 'レポート', Icon: BarChart2, exact: false },
   { to: '/import', label: 'インポート', Icon: Upload, exact: false },
 ]
