@@ -88,6 +88,23 @@ function parseSegments(text: string): Segment[] {
 }
 
 // -----------------------------------------------
+// LaTeX 前処理（よくある記法ミスを自動補正）
+// -----------------------------------------------
+
+/**
+ * \frac の直後が { でない文字（例: \fracc{1} や \fracc1）は
+ * LaTeX では未知コマンドとしてエラーになるため、
+ * \frac{X} の形に補正する。
+ *
+ * 例: \fracc{1-c}  →  \frac{c}{1-c}
+ *     \fracc1      →  \frac{c}1
+ */
+function sanitizeLatex(latex: string): string {
+  // \frac の直後が { でも空白でも \ でもない単一文字 → \frac{X} に補正
+  return latex.replace(/\\frac([^{\s\\])/g, '\\frac{$1}')
+}
+
+// -----------------------------------------------
 // エラーフォールバック付き数式レンダラー
 // -----------------------------------------------
 
@@ -99,7 +116,7 @@ type MathRendererProps = {
 function MathRenderer({ latex, display }: MathRendererProps) {
   let html: string
   try {
-    html = katex.renderToString(latex, {
+    html = katex.renderToString(sanitizeLatex(latex), {
       throwOnError: false,
       displayMode: display,
       output: 'html',
