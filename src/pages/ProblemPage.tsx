@@ -1,17 +1,24 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import {
   ChevronLeft, ChevronRight, List, X,
-  ChevronDown, ChevronUp, Lightbulb,
+  Lightbulb, ChevronDown, ChevronUp, Eye,
 } from 'lucide-react'
 import { SUBJECT_CONFIGS } from '../types/problem'
-import type { Problem, ProblemResult } from '../types/problem'
+import type { Problem, ProblemResult, ProblemStats, SubjectKey } from '../types/problem'
 import { useProblemStore } from '../stores/problemStore'
+import { usePomodoroStore, MODES } from '../stores/pomodoroStore'
 import MathText from '../components/MathText'
 
-// -----------------------------------------------
-// 難易度バッジ
-// -----------------------------------------------
+// ── 章グループ型 ─────────────────────────────────
+type ChapterGroup = {
+  chapterKey: string
+  chapterName: string
+  startIndex: number
+  problems: Problem[]
+}
+
+// ── 難易度ドット ──────────────────────────────────
 function DifficultyDots({ difficulty }: { difficulty: 1 | 2 | 3 }) {
   return (
     <div className="flex items-center gap-0.5">
@@ -26,27 +33,28 @@ function DifficultyDots({ difficulty }: { difficulty: 1 | 2 | 3 }) {
   )
 }
 
-// -----------------------------------------------
-// 結果バッジ（目次用）
-// -----------------------------------------------
+// ── 結果バッジ ────────────────────────────────────
 function ResultBadge({ result }: { result: ProblemResult }) {
-  if (!result) return <span className="w-5 h-5 rounded-full border border-[#3a3a5c] inline-flex items-center justify-center text-[10px] text-[#5a5a7a]">−</span>
-  const map = {
+  if (!result) {
+    return (
+      <span className="w-5 h-5 rounded-full border border-[#3a3a5c] inline-flex items-center justify-center text-[10px] text-[#5a5a7a] shrink-0">
+        −
+      </span>
+    )
+  }
+  const m: Record<NonNullable<ProblemResult>, { label: string; cls: string }> = {
     correct:   { label: '○', cls: 'bg-green-900/30 text-green-400 border-green-500/40' },
     partial:   { label: '△', cls: 'bg-amber-900/30 text-amber-400 border-amber-500/40' },
     incorrect: { label: '×', cls: 'bg-red-900/30 text-red-400 border-red-500/40' },
   }
-  const { label, cls } = map[result]
   return (
-    <span className={`w-5 h-5 rounded-full border inline-flex items-center justify-center text-[10px] font-bold ${cls}`}>
-      {label}
+    <span className={`w-5 h-5 rounded-full border inline-flex items-center justify-center text-[10px] font-bold shrink-0 ${m[result].cls}`}>
+      {m[result].label}
     </span>
   )
 }
 
-// -----------------------------------------------
-// ヒントセクション
-// -----------------------------------------------
+// ── ヒントセクション ──────────────────────────────
 function HintSection({ hintText }: { hintText: string }) {
   const [open, setOpen] = useState(false)
   return (
@@ -60,7 +68,7 @@ function HintSection({ hintText }: { hintText: string }) {
           {open ? 'ヒントを閉じる' : 'ヒントを見る'}
         </span>
         {open
-          ? <ChevronUp className="w-4 h-4 text-[#fbbf24]/60" strokeWidth={1.5} />
+          ? <ChevronUp   className="w-4 h-4 text-[#fbbf24]/60" strokeWidth={1.5} />
           : <ChevronDown className="w-4 h-4 text-[#fbbf24]/60" strokeWidth={1.5} />
         }
       </button>
@@ -75,9 +83,7 @@ function HintSection({ hintText }: { hintText: string }) {
   )
 }
 
-// -----------------------------------------------
-// 解答・解説セクション
-// -----------------------------------------------
+// ── 解答・解説セクション ──────────────────────────
 function AnswerSection({ problem }: { problem: Problem }) {
   return (
     <div className="rounded-xl border border-[#2a2a4a] overflow-hidden animate-in slide-in-from-bottom-4 duration-300">
@@ -116,16 +122,14 @@ function AnswerSection({ problem }: { problem: Problem }) {
   )
 }
 
-// -----------------------------------------------
-// 正誤ボタン群
-// -----------------------------------------------
+// ── 採点ボタン ────────────────────────────────────
 const RESULT_BTNS = [
-  { value: 'incorrect' as const, label: '✕', text: '不正解', activeClass: 'bg-red-900/40 border-red-500/70 text-red-400' },
+  { value: 'incorrect' as const, label: '✕', text: '不正解',  activeClass: 'bg-red-900/40 border-red-500/70 text-red-400' },
   { value: 'partial'   as const, label: '△', text: '部分正解', activeClass: 'bg-amber-900/40 border-amber-500/70 text-amber-400' },
-  { value: 'correct'   as const, label: '○', text: '正解',   activeClass: 'bg-green-900/40 border-green-500/70 text-green-400' },
+  { value: 'correct'   as const, label: '○', text: '正解',    activeClass: 'bg-green-900/40 border-green-500/70 text-green-400' },
 ]
 
-function ResultButtons({
+function ScoringButtons({
   result,
   onChange,
 }: {
@@ -133,77 +137,147 @@ function ResultButtons({
   onChange: (r: NonNullable<ProblemResult>) => void
 }) {
   return (
-    <div className="grid grid-cols-3 gap-2">
-      {RESULT_BTNS.map(({ value, label, text, activeClass }) => (
-        <button
-          key={value}
-          onClick={() => onChange(value)}
-          className={`flex flex-col items-center justify-center gap-1 py-3 rounded-xl border font-medium transition-all duration-150 ${
-            result === value
-              ? activeClass
-              : 'bg-[#1e1e3a] border-[#3a3a5c] text-[#5a5a7a] hover:border-[#5a5a7a] hover:text-[#8888aa]'
-          }`}
-        >
-          <span className="text-xl leading-none">{label}</span>
-          <span className="text-[10px]">{text}</span>
-        </button>
+    <div>
+      <p className="text-xs text-[#5a5a7a] mb-2 text-center">採点してください</p>
+      <div className="grid grid-cols-3 gap-2">
+        {RESULT_BTNS.map(({ value, label, text, activeClass }) => (
+          <button
+            key={value}
+            onClick={() => onChange(value)}
+            className={`flex flex-col items-center justify-center gap-1 py-3 rounded-xl border font-medium transition-all duration-150 ${
+              result === value
+                ? activeClass
+                : 'bg-[#1e1e3a] border-[#3a3a5c] text-[#5a5a7a] hover:border-[#5a5a7a] hover:text-[#8888aa]'
+            }`}
+          >
+            <span className="text-xl leading-none">{label}</span>
+            <span className="text-[10px]">{text}</span>
+          </button>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+// ── 問題リスト（サイドバー・モバイルドロワー共通） ─
+function ProblemListContent({
+  grouped,
+  currentIndex,
+  stats,
+  onJump,
+}: {
+  grouped: ChapterGroup[]
+  currentIndex: number
+  stats: Record<string, ProblemStats>
+  onJump: (idx: number) => void
+}) {
+  return (
+    <div className="py-2">
+      {grouped.map(({ chapterKey, chapterName, startIndex, problems: ps }) => (
+        <div key={chapterKey} className="mb-1">
+          {/* 章ヘッダー */}
+          <div className="px-3 py-1.5 flex items-center gap-2">
+            <div className="w-1 h-3 rounded-full bg-[#7c4dff] shrink-0" />
+            <span className="text-[11px] font-semibold text-[#9090bb] leading-snug line-clamp-2">
+              {chapterName}
+            </span>
+          </div>
+          {/* 問題リスト */}
+          <div className="pl-4 pr-2 space-y-0.5">
+            {ps.map((p, localIdx) => {
+              const globalIdx = startIndex + localIdx
+              const isActive = globalIdx === currentIndex
+              const r = stats[p.id]?.latestResult ?? null
+              return (
+                <button
+                  key={p.id}
+                  data-active={isActive ? 'true' : undefined}
+                  onClick={() => onJump(globalIdx)}
+                  className={`w-full text-left flex items-center gap-2 px-2 py-1.5 rounded-lg transition-colors min-h-[36px] ${
+                    isActive
+                      ? 'bg-[#7c4dff]/20 text-white'
+                      : 'text-[#8888aa] hover:text-[#c8c8e8] hover:bg-[#1a1a3a]'
+                  }`}
+                >
+                  <ResultBadge result={r} />
+                  <span className="text-xs flex-1 leading-snug">{p.questionNo}</span>
+                  {isActive && <span className="w-1.5 h-1.5 rounded-full bg-[#7c4dff] shrink-0" />}
+                </button>
+              )
+            })}
+          </div>
+        </div>
       ))}
     </div>
   )
 }
 
-// -----------------------------------------------
-// メインコンポーネント
-// -----------------------------------------------
+// ── メインコンポーネント ──────────────────────────
 export default function ProblemPage() {
   const { subject } = useParams<{ subject: string }>()
   const navigate = useNavigate()
   const config = SUBJECT_CONFIGS.find(c => c.key === subject)
 
   const { loadingProblems, stats, submitResult, getProblemsBySubject } = useProblemStore()
-  const problems = config ? getProblemsBySubject(config.key) : []
+  const { running, seconds, mode } = usePomodoroStore()
 
-  // 章ごとにグルーピング
+  const problems = config ? getProblemsBySubject(config.key as SubjectKey) : []
+
+  // 章グループ
   const chapterKeys = [...new Set(problems.map(p => p.chapterKey))]
-  const grouped = chapterKeys.map(key => ({
+  const grouped: ChapterGroup[] = chapterKeys.map(key => ({
     chapterKey: key,
     chapterName: problems.find(p => p.chapterKey === key)!.chapterName,
-    startIndex: problems.findIndex(p => p.chapterKey === key),
-    problems: problems.filter(p => p.chapterKey === key),
+    startIndex:  problems.findIndex(p => p.chapterKey === key),
+    problems:    problems.filter(p => p.chapterKey === key),
   }))
 
-  // 現在のインデックス
-  const [index, setIndex] = useState(0)
-  const [showAnswer, setShowAnswer] = useState(false)
-  const [showToc, setShowToc] = useState(false)
-  const mainRef = useRef<HTMLDivElement>(null)
+  const [index,          setIndex]          = useState(0)
+  const [revealedAnswer, setRevealedAnswer] = useState(false)
+  const [showToc,        setShowToc]        = useState(false)
 
-  const problem = problems[index] ?? null
+  const mainRef    = useRef<HTMLDivElement>(null)
+  const sidebarRef = useRef<HTMLDivElement>(null)
 
-  // 問題が変わったら解答を閉じてトップにスクロール
+  const problem       = problems[index] ?? null
+  const currentResult = problem ? (stats[problem.id]?.latestResult ?? null) : null
+  const currentChapter = problem ? grouped.find(g => g.chapterKey === problem.chapterKey) : null
+
+  // 問題切替時: 解答非表示 + スクロールリセット
   useEffect(() => {
-    setShowAnswer(false)
+    setRevealedAnswer(false)
     mainRef.current?.scrollTo({ top: 0, behavior: 'smooth' })
   }, [index])
+
+  // サイドバーのアクティブ項目を自動スクロール
+  useEffect(() => {
+    const el = sidebarRef.current?.querySelector<HTMLElement>('[data-active="true"]')
+    el?.scrollIntoView({ block: 'nearest', behavior: 'smooth' })
+  }, [index])
+
+  const jumpTo = useCallback((idx: number) => {
+    setIndex(idx)
+    setShowToc(false)
+  }, [])
 
   // キーボードショートカット
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
       if (showToc) { if (e.key === 'Escape') setShowToc(false); return }
       if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return
-      if (e.key === 'ArrowLeft'  && index > 0)                setIndex(i => i - 1)
-      if (e.key === 'ArrowRight' && index < problems.length - 1) setIndex(i => i + 1)
+      if (e.key === 'ArrowLeft'  && index > 0)                    setIndex(i => i - 1)
+      if (e.key === 'ArrowRight' && index < problems.length - 1)  setIndex(i => i + 1)
       if (e.key === 'Escape') navigate(-1)
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
   }, [index, problems.length, showToc, navigate])
 
-  function jumpTo(idx: number) {
-    setIndex(idx)
-    setShowToc(false)
-  }
+  // ポモドーロ残り時間
+  const pomMm = String(Math.floor(seconds / 60)).padStart(2, '0')
+  const pomSs = String(seconds % 60).padStart(2, '0')
 
+  // ── エラー画面 ────────────────────────────────
   if (!config) {
     return (
       <div className="min-h-screen bg-[#1a1a2e] flex items-center justify-center">
@@ -211,7 +285,6 @@ export default function ProblemPage() {
       </div>
     )
   }
-
   if (!loadingProblems && problems.length === 0) {
     return (
       <div className="min-h-screen bg-[#1a1a2e] flex items-center justify-center p-4">
@@ -223,103 +296,16 @@ export default function ProblemPage() {
     )
   }
 
-  // 現在の章
-  const currentChapter = problem
-    ? grouped.find(g => g.chapterKey === problem.chapterKey)
-    : null
-
-  const currentResult = problem ? (stats[problem.id]?.latestResult ?? null) : null
-
-  // -----------------------------------------------
-  // TOC ドロワー
-  // -----------------------------------------------
-  function TocDrawer() {
-    return (
-      <>
-        {/* オーバーレイ */}
-        <div
-          className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm"
-          onClick={() => setShowToc(false)}
-        />
-        {/* パネル（右から出てくる） */}
-        <aside className="fixed top-0 right-0 bottom-0 z-50 w-72 max-w-[85vw]
-                          bg-[#111125] border-l border-[#2a2a4a]
-                          flex flex-col
-                          animate-in slide-in-from-right duration-200">
-          {/* ドロワーヘッダー */}
-          <div className="flex items-center justify-between px-4 py-4 border-b border-[#2a2a4a] shrink-0">
-            <p className="text-sm font-semibold text-white">目次</p>
-            <button
-              onClick={() => setShowToc(false)}
-              className="p-1.5 rounded-lg text-[#8888aa] hover:text-white hover:bg-[#252540] transition-colors"
-            >
-              <X className="w-4 h-4" strokeWidth={1.5} />
-            </button>
-          </div>
-
-          {/* スクロール可能なリスト */}
-          <div className="flex-1 overflow-y-auto py-3">
-            {grouped.map(({ chapterKey, chapterName, startIndex, problems: ps }) => (
-              <div key={chapterKey} className="mb-1">
-                {/* 章ヘッダー */}
-                <div className="px-4 py-2 flex items-center gap-2">
-                  <div className="w-1 h-3 rounded-full bg-[#7c4dff] shrink-0" />
-                  <span className="text-xs font-semibold text-[#9090bb] leading-snug line-clamp-2">
-                    {chapterName}
-                  </span>
-                </div>
-                {/* 問題リスト */}
-                <div className="pl-6 pr-3 space-y-0.5">
-                  {ps.map((p, localIdx) => {
-                    const globalIdx = startIndex + localIdx
-                    const isActive = globalIdx === index
-                    const r = stats[p.id]?.latestResult ?? null
-                    return (
-                      <button
-                        key={p.id}
-                        onClick={() => jumpTo(globalIdx)}
-                        className={`w-full text-left flex items-center gap-2 px-3 py-2 rounded-lg transition-colors ${
-                          isActive
-                            ? 'bg-[#7c4dff]/20 text-white'
-                            : 'text-[#8888aa] hover:text-[#c8c8e8] hover:bg-[#1a1a3a]'
-                        }`}
-                      >
-                        <ResultBadge result={r} />
-                        <span className="text-xs flex-1 truncate">{p.questionNo}</span>
-                        {isActive && (
-                          <span className="w-1.5 h-1.5 rounded-full bg-[#7c4dff] shrink-0" />
-                        )}
-                      </button>
-                    )
-                  })}
-                </div>
-              </div>
-            ))}
-          </div>
-
-          {/* 進捗サマリー */}
-          <div className="px-4 py-3 border-t border-[#2a2a4a] shrink-0">
-            <p className="text-xs text-[#5a5a7a] text-center">
-              {index + 1} / {problems.length} 問
-            </p>
-          </div>
-        </aside>
-      </>
-    )
-  }
-
-  // -----------------------------------------------
-  // メイン画面
-  // -----------------------------------------------
+  // ── レンダリング ──────────────────────────────
   return (
     <div className="min-h-screen bg-[#1a1a2e] flex flex-col">
 
-      {/* ===== ヘッダー（sticky） ===== */}
-      <header className="sticky top-0 z-20 bg-[#111125] border-b border-[#2a2a4a]">
-        <div className="max-w-2xl mx-auto px-4 py-3">
-
-          {/* 上段: 戻る + パンくず + 目次ボタン */}
+      {/* ===== ページヘッダー（sticky） ===== */}
+      <header className="sticky top-0 z-20 bg-[#111125] border-b border-[#2a2a4a] shrink-0">
+        <div className="px-3 py-2.5">
           <div className="flex items-center gap-2">
+
+            {/* 戻るボタン */}
             <button
               onClick={() => navigate(-1)}
               className="p-1.5 rounded-lg text-[#8888aa] hover:text-white hover:bg-[#252540] transition-colors shrink-0"
@@ -327,6 +313,7 @@ export default function ProblemPage() {
               <ChevronLeft className="w-4 h-4" strokeWidth={1.5} />
             </button>
 
+            {/* パンくず */}
             <div className="flex-1 min-w-0">
               <p className="text-xs text-[#8888aa] truncate">
                 {config.shortLabel}
@@ -334,25 +321,31 @@ export default function ProblemPage() {
               </p>
             </div>
 
-            {/* 問題番号バッジ */}
-            <span className="text-xs tabular-nums text-[#8888aa] shrink-0 px-2 py-1 rounded-lg bg-[#252540]">
-              {problems.length > 0 ? `${index + 1} / ${problems.length}` : '−'}
-            </span>
+            {/* 進捗バッジ */}
+            {problems.length > 0 && (
+              <span className="text-xs tabular-nums text-[#8888aa] px-2 py-1 rounded-lg bg-[#252540] shrink-0">
+                {index + 1} / {problems.length}
+              </span>
+            )}
 
-            {/* 目次ボタン */}
+            {/* ポモドーロ残り時間（実行中のみ） */}
+            {running && (
+              <span className={`text-xs font-bold tabular-nums px-2 py-1 rounded-lg bg-[#252540] shrink-0 ${MODES[mode].textColor}`}>
+                {pomMm}:{pomSs}
+              </span>
+            )}
+
+            {/* 目次ボタン（モバイルのみ） */}
             <button
               onClick={() => setShowToc(true)}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl
-                         bg-[#252540] border border-[#3a3a5c]
-                         text-xs text-[#8888aa] hover:text-white hover:border-[#5a5a7a]
-                         transition-colors shrink-0"
+              className="md:hidden flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#252540] border border-[#3a3a5c] text-xs text-[#8888aa] hover:text-white hover:border-[#5a5a7a] transition-colors shrink-0"
             >
               <List className="w-3.5 h-3.5" strokeWidth={1.5} />
               目次
             </button>
           </div>
 
-          {/* 下段: プログレスバー */}
+          {/* プログレスバー */}
           {problems.length > 0 && (
             <div className="mt-2 h-1 bg-[#252540] rounded-full overflow-hidden">
               <div
@@ -364,116 +357,179 @@ export default function ProblemPage() {
         </div>
       </header>
 
-      {/* ===== メインエリア ===== */}
-      <main ref={mainRef} className="flex-1 overflow-y-auto pb-36">
-        {loadingProblems && (
-          <div className="flex justify-center py-20">
-            <div className="w-8 h-8 border-2 border-[#7c4dff] border-t-transparent rounded-full animate-spin" />
+      {/* ===== ボディ: サイドバー + メインコンテンツ ===== */}
+      <div className="flex flex-1">
+
+        {/* 問題一覧サイドバー（md+ のみ） */}
+        <aside
+          ref={sidebarRef}
+          className="hidden md:flex flex-col w-56 shrink-0 border-r border-[#2a2a4a] overflow-y-auto sticky self-start"
+          style={{ top: '60px', maxHeight: 'calc(100dvh - 60px)' }}
+        >
+          {/* サイドバーヘッダー */}
+          <div className="px-3 py-2.5 border-b border-[#2a2a4a] shrink-0 flex items-center justify-between">
+            <p className="text-xs font-semibold text-[#9090bb]">問題一覧</p>
+            <span className="text-[10px] text-[#5a5a7a]">{problems.length}問</span>
           </div>
-        )}
+          <ProblemListContent
+            grouped={grouped}
+            currentIndex={index}
+            stats={stats}
+            onJump={jumpTo}
+          />
+        </aside>
 
-        {problem && (
-          <div className="max-w-2xl mx-auto px-4 py-5 space-y-4">
-
-            {/* 問題メタ情報 */}
-            <div className="flex items-center gap-2 flex-wrap">
-              <DifficultyDots difficulty={problem.difficulty} />
-              <span className="text-xs px-2 py-0.5 rounded-full bg-[#7c4dff]/20 text-[#a78bfa] font-medium">
-                {problem.questionNo}
-              </span>
-              {problem.points > 0 && (
-                <span className="text-xs px-2 py-0.5 rounded-full bg-[#252540] text-[#8888aa]">
-                  {problem.points}点
-                </span>
-              )}
-              {problem.tags.map(tag => (
-                <span key={tag} className="text-xs px-2 py-0.5 rounded-full bg-[#1e1e3a] text-[#5a5a7a]">
-                  {tag}
-                </span>
-              ))}
+        {/* メインコンテンツ */}
+        <main ref={mainRef} className="flex-1 min-w-0 pb-28">
+          {loadingProblems && (
+            <div className="flex justify-center py-20">
+              <div className="w-8 h-8 border-2 border-[#7c4dff] border-t-transparent rounded-full animate-spin" />
             </div>
+          )}
 
-            {/* 問題文カード */}
-            <div className="rounded-xl border border-[#2a2a4a] bg-[#1e1e3a] px-5 py-5">
-              <div className="text-sm text-[#c8c8e8] leading-relaxed">
-                <MathText text={problem.questionText} />
+          {problem && (
+            <div className="max-w-2xl mx-auto px-4 py-5 space-y-4">
+
+              {/* メタバッジ */}
+              <div className="flex items-center gap-2 flex-wrap">
+                <DifficultyDots difficulty={problem.difficulty} />
+                <span className="text-xs px-2 py-0.5 rounded-full bg-[#7c4dff]/20 text-[#a78bfa] font-medium">
+                  {problem.questionNo}
+                </span>
+                {problem.points > 0 && (
+                  <span className="text-xs px-2 py-0.5 rounded-full bg-[#252540] text-[#8888aa]">
+                    {problem.points}点
+                  </span>
+                )}
+                {problem.tags.map(tag => (
+                  <span key={tag} className="text-xs px-2 py-0.5 rounded-full bg-[#1e1e3a] text-[#5a5a7a]">
+                    {tag}
+                  </span>
+                ))}
               </div>
+
+              {/* 問題文 */}
+              <div className="rounded-xl border border-[#2a2a4a] bg-[#1e1e3a] px-5 py-5">
+                <div className="text-sm text-[#c8c8e8] leading-relaxed">
+                  <MathText text={problem.questionText} />
+                </div>
+              </div>
+
+              {/* ヒント */}
+              {problem.hintText && <HintSection hintText={problem.hintText} />}
+
+              {/* 解答確認フロー */}
+              {!revealedAnswer ? (
+                /* 解答を確認するボタン */
+                <button
+                  onClick={() => setRevealedAnswer(true)}
+                  className="w-full flex items-center justify-center gap-2 py-4 rounded-xl bg-[#7c4dff] hover:bg-[#6c3de8] text-white font-semibold text-sm transition-colors shadow-lg shadow-[#7c4dff]/25"
+                >
+                  <Eye className="w-4 h-4" strokeWidth={1.5} />
+                  解答を確認する
+                </button>
+              ) : (
+                <>
+                  {/* 解答・解説 */}
+                  <AnswerSection key={problem.id} problem={problem} />
+
+                  {/* 採点ボタン */}
+                  <ScoringButtons
+                    result={currentResult}
+                    onChange={r => submitResult(problem.id, r)}
+                  />
+
+                  {/* 解答を閉じる */}
+                  <button
+                    onClick={() => setRevealedAnswer(false)}
+                    className="w-full flex items-center justify-center gap-1.5 py-2.5 text-xs text-[#5a5a7a] hover:text-[#8888aa] transition-colors"
+                  >
+                    <ChevronUp className="w-3.5 h-3.5" strokeWidth={1.5} />
+                    解答を閉じる
+                  </button>
+                </>
+              )}
+
             </div>
-
-            {/* ヒント */}
-            {problem.hintText && <HintSection hintText={problem.hintText} />}
-
-            {/* 解答トグル */}
-            <button
-              onClick={() => setShowAnswer(v => !v)}
-              className={`w-full flex items-center justify-center gap-2 py-3 rounded-xl border font-medium text-sm transition-colors ${
-                showAnswer
-                  ? 'bg-[#1e1e3a] border-[#3a3a5c] text-[#8888aa] hover:border-[#5a5a7a]'
-                  : 'bg-[#7c4dff]/10 border-[#7c4dff]/40 text-[#a78bfa] hover:bg-[#7c4dff]/20'
-              }`}
-            >
-              {showAnswer
-                ? <><ChevronUp className="w-4 h-4" strokeWidth={1.5} />解答を閉じる</>
-                : <><ChevronDown className="w-4 h-4" strokeWidth={1.5} />解答を見る</>
-              }
-            </button>
-
-            {/* 解答・解説 */}
-            {showAnswer && <AnswerSection key={problem.id} problem={problem} />}
-
-          </div>
-        )}
-      </main>
+          )}
+        </main>
+      </div>
 
       {/* ===== フッター（fixed） ===== */}
       <footer className="fixed bottom-0 left-0 right-0 z-20 bg-[#111125]/95 backdrop-blur-sm border-t border-[#2a2a4a]">
-        <div className="max-w-2xl mx-auto px-4 py-3 space-y-2">
+        {/* サイドバー幅分のスペーサー + ナビゲーション */}
+        <div className="flex">
+          {/* md+ サイドバーと揃えるスペーサー */}
+          <div className="hidden md:block w-56 shrink-0 border-r border-[#2a2a4a]/50" />
 
-          {/* 正誤ボタン */}
-          {problem && (
-            <ResultButtons
-              result={currentResult}
-              onChange={r => submitResult(problem.id, r)}
-            />
-          )}
+          {/* ナビゲーション */}
+          <div className="flex-1 px-4 py-3 space-y-2">
+            <div className="flex items-center gap-2 max-w-2xl mx-auto">
+              <button
+                onClick={() => setIndex(i => i - 1)}
+                disabled={index === 0}
+                className="flex items-center justify-center gap-1.5 flex-1 py-3 rounded-xl border font-medium text-sm transition-all
+                           disabled:opacity-30 disabled:cursor-not-allowed
+                           border-[#3a3a5c] text-[#8888aa] hover:border-[#5a5a7a] hover:text-white
+                           disabled:border-[#2a2a4a] disabled:text-[#3a3a5c]"
+              >
+                <ChevronLeft className="w-4 h-4" strokeWidth={1.5} />
+                前の問題
+              </button>
 
-          {/* 前へ / 次へ */}
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => setIndex(i => i - 1)}
-              disabled={index === 0}
-              className="flex items-center justify-center gap-1.5 flex-1 py-3 rounded-xl border font-medium text-sm transition-all
-                         disabled:opacity-30 disabled:cursor-not-allowed
-                         border-[#3a3a5c] text-[#8888aa] hover:border-[#5a5a7a] hover:text-white
-                         disabled:border-[#2a2a4a] disabled:text-[#3a3a5c]"
-            >
-              <ChevronLeft className="w-4 h-4" strokeWidth={1.5} />
-              前の問題
-            </button>
+              <button
+                onClick={() => setIndex(i => i + 1)}
+                disabled={index >= problems.length - 1}
+                className="flex items-center justify-center gap-1.5 flex-1 py-3 rounded-xl font-medium text-sm transition-all
+                           disabled:opacity-30 disabled:cursor-not-allowed
+                           bg-[#7c4dff] hover:bg-[#6c3de8] text-white shadow-lg shadow-[#7c4dff]/20
+                           disabled:bg-[#252540] disabled:text-[#3a3a5c] disabled:shadow-none"
+              >
+                次の問題
+                <ChevronRight className="w-4 h-4" strokeWidth={1.5} />
+              </button>
+            </div>
 
-            <button
-              onClick={() => setIndex(i => i + 1)}
-              disabled={index >= problems.length - 1}
-              className="flex items-center justify-center gap-1.5 flex-1 py-3 rounded-xl font-medium text-sm transition-all
-                         disabled:opacity-30 disabled:cursor-not-allowed
-                         bg-[#7c4dff] hover:bg-[#6c3de8] text-white shadow-lg shadow-[#7c4dff]/20
-                         disabled:bg-[#252540] disabled:text-[#3a3a5c] disabled:shadow-none"
-            >
-              次の問題
-              <ChevronRight className="w-4 h-4" strokeWidth={1.5} />
-            </button>
+            <p className="hidden md:block text-center text-[10px] text-[#3a3a5c]">
+              ← / → キーで問題を移動　Esc で戻る
+            </p>
           </div>
-
-          {/* キーボードヒント */}
-          <p className="hidden md:block text-center text-[10px] text-[#3a3a5c]">
-            ← / → キーで問題を移動　Esc で戻る
-          </p>
-
         </div>
       </footer>
 
-      {/* ===== 目次ドロワー ===== */}
-      {showToc && <TocDrawer />}
+      {/* ===== モバイル 目次ドロワー ===== */}
+      {showToc && (
+        <>
+          <div
+            className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm md:hidden"
+            onClick={() => setShowToc(false)}
+          />
+          <aside className="fixed top-0 right-0 bottom-0 z-50 w-72 max-w-[85vw] md:hidden
+                            bg-[#111125] border-l border-[#2a2a4a] flex flex-col
+                            animate-in slide-in-from-right duration-200">
+            <div className="flex items-center justify-between px-4 py-4 border-b border-[#2a2a4a] shrink-0">
+              <p className="text-sm font-semibold text-white">問題一覧</p>
+              <button
+                onClick={() => setShowToc(false)}
+                className="p-1.5 rounded-lg text-[#8888aa] hover:text-white hover:bg-[#252540] transition-colors"
+              >
+                <X className="w-4 h-4" strokeWidth={1.5} />
+              </button>
+            </div>
+            <div className="flex-1 overflow-y-auto">
+              <ProblemListContent
+                grouped={grouped}
+                currentIndex={index}
+                stats={stats}
+                onJump={jumpTo}
+              />
+            </div>
+            <div className="px-4 py-3 border-t border-[#2a2a4a] shrink-0 text-center">
+              <p className="text-xs text-[#5a5a7a]">{index + 1} / {problems.length} 問</p>
+            </div>
+          </aside>
+        </>
+      )}
 
     </div>
   )
