@@ -1,41 +1,106 @@
+import { useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { BookOpen, ChevronRight, CheckCircle, Circle } from 'lucide-react'
+import { BookOpen, ExternalLink } from 'lucide-react'
 import { SUBJECT_CONFIGS } from '../types/problem'
 import type { SubjectKey } from '../types/problem'
 import { useProblemStore } from '../stores/problemStore'
 
+// ── 回答履歴ドット ──────────────────────────────────
+type AttemptResult = 'correct' | 'partial' | 'incorrect'
+
+function HistoryDots({ history }: { history: AttemptResult[] }) {
+  const slots = Array.from({ length: 10 }, (_, i) => history[i] ?? null)
+  return (
+    <div className="flex items-center gap-0.5">
+      {slots.map((r, i) => {
+        if (!r) {
+          return (
+            <span
+              key={i}
+              className="w-4 h-4 rounded-full border border-[#2a2a4a] flex items-center justify-center text-[8px] text-[#3a3a5c]"
+            >
+              −
+            </span>
+          )
+        }
+        if (r === 'correct') {
+          return (
+            <span
+              key={i}
+              className="w-4 h-4 rounded-full bg-green-900/50 border border-green-500/50 flex items-center justify-center text-[8px] font-bold text-green-400"
+            >
+              ○
+            </span>
+          )
+        }
+        if (r === 'partial') {
+          return (
+            <span
+              key={i}
+              className="w-4 h-4 rounded-full bg-amber-900/50 border border-amber-500/50 flex items-center justify-center text-[8px] font-bold text-amber-400"
+            >
+              △
+            </span>
+          )
+        }
+        return (
+          <span
+            key={i}
+            className="w-4 h-4 rounded-full bg-red-900/50 border border-red-500/50 flex items-center justify-center text-[8px] font-bold text-red-400"
+          >
+            ✕
+          </span>
+        )
+      })}
+    </div>
+  )
+}
+
+// ── メインコンポーネント ──────────────────────────────
 export default function ProblemsIndexPage() {
   const navigate = useNavigate()
-  const { problems, stats, loadingProblems } = useProblemStore()
+  const { problems, stats, recentAttempts, fetchRecentAttempts, loadingProblems } = useProblemStore()
+
+  // 全問題IDを渡して履歴を取得
+  useEffect(() => {
+    if (problems.length > 0) {
+      fetchRecentAttempts(problems.map(p => p.id))
+    }
+  }, [problems, fetchRecentAttempts])
 
   // 科目ごとに章一覧をまとめる
   const subjectChapters = SUBJECT_CONFIGS.map(config => {
     const subjectProblems = problems.filter(p => p.subject === config.key as SubjectKey)
-    // chapter_key でユニークな章を抽出（displayOrder 順）
+
     const seen = new Set<string>()
-    const chapters: { chapterKey: string; chapterName: string; count: number; answered: number; correct: number }[] = []
+    const chapters: {
+      chapterKey: string
+      chapterName: string
+      problems: typeof subjectProblems
+      answered: number
+    }[] = []
 
     subjectProblems.forEach(p => {
       if (!seen.has(p.chapterKey)) {
         seen.add(p.chapterKey)
         const chProblems = subjectProblems.filter(q => q.chapterKey === p.chapterKey)
         const answered = chProblems.filter(q => stats[q.id]?.latestResult).length
-        const correct = chProblems.filter(q => stats[q.id]?.latestResult === 'correct').length
         chapters.push({
           chapterKey: p.chapterKey,
           chapterName: p.chapterName,
-          count: chProblems.length,
+          problems: chProblems,
           answered,
-          correct,
         })
       }
     })
 
     const totalProblems = subjectProblems.length
     const totalAnswered = subjectProblems.filter(p => stats[p.id]?.latestResult).length
-    const totalCorrect = subjectProblems.filter(p => stats[p.id]?.latestResult === 'correct').length
+    const progress = totalProblems > 0
+      ? Math.round((totalAnswered / totalProblems) * 100)
+      : 0
 
-    return { config, chapters, totalProblems, totalAnswered, totalCorrect }
+    return { config, chapters, totalProblems, totalAnswered, progress }
   })
 
   return (
@@ -72,21 +137,14 @@ export default function ProblemsIndexPage() {
         )}
 
         {/* 科目カード一覧 */}
-        {!loadingProblems && subjectChapters.map(({ config, chapters, totalProblems, totalAnswered }) => {
+        {!loadingProblems && subjectChapters.map(({ config, chapters, totalProblems, totalAnswered, progress }) => {
           if (totalProblems === 0) return null
 
-          const progress = totalProblems > 0
-            ? Math.round((totalAnswered / totalProblems) * 100)
-            : 0
-
           return (
-            <div key={config.key} className="mb-6 bg-[#111125] rounded-2xl border border-[#2a2a4a] overflow-hidden">
+            <div key={config.key} className="mb-8 bg-[#111125] rounded-2xl border border-[#2a2a4a] overflow-hidden">
 
               {/* 科目ヘッダー */}
-              <button
-                onClick={() => navigate(config.path)}
-                className="w-full flex items-center gap-3 px-5 py-4 hover:bg-[#1a1a3a] transition-colors text-left border-b border-[#2a2a4a]"
-              >
+              <div className="flex items-center gap-3 px-5 py-4 border-b border-[#2a2a4a]">
                 <div
                   className="w-2 h-8 rounded-full shrink-0"
                   style={{ backgroundColor: config.accentHex }}
@@ -99,10 +157,9 @@ export default function ProblemsIndexPage() {
                   <p className="text-xs text-[#8888aa]">{totalAnswered} / {totalProblems}</p>
                   <p className="text-xs" style={{ color: config.accentHex }}>{progress}%</p>
                 </div>
-                <ChevronRight className="w-4 h-4 text-[#5a5a7a] shrink-0" strokeWidth={1.5} />
-              </button>
+              </div>
 
-              {/* プログレスバー */}
+              {/* 科目プログレスバー */}
               <div className="h-0.5 bg-[#2a2a4a]">
                 <div
                   className="h-full transition-all duration-500"
@@ -111,38 +168,95 @@ export default function ProblemsIndexPage() {
               </div>
 
               {/* 章一覧 */}
-              <div className="divide-y divide-[#1e1e38]">
+              <div>
                 {chapters.map(ch => {
-                  const chProgress = ch.count > 0
-                    ? Math.round((ch.answered / ch.count) * 100)
+                  const chProgress = ch.problems.length > 0
+                    ? Math.round((ch.answered / ch.problems.length) * 100)
                     : 0
-                  const done = ch.answered === ch.count && ch.count > 0
+
+                  // ?chapter= 付きのパス
+                  const chapterPath = `${config.path}?chapter=${ch.chapterKey}`
 
                   return (
-                    <button
-                      key={ch.chapterKey}
-                      onClick={() => navigate(config.path)}
-                      className="w-full flex items-center gap-3 px-5 py-3 hover:bg-[#1a1a3a] transition-colors text-left"
-                    >
-                      {done
-                        ? <CheckCircle className="w-4 h-4 shrink-0 text-green-400" strokeWidth={1.5} />
-                        : <Circle className="w-4 h-4 shrink-0 text-[#3a3a5c]" strokeWidth={1.5} />
-                      }
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm text-[#c8c8e8] leading-snug">{ch.chapterName}</p>
-                        {ch.answered > 0 && (
-                          <div className="mt-1 h-0.5 bg-[#2a2a4a] rounded-full overflow-hidden w-32">
-                            <div
-                              className="h-full rounded-full"
-                              style={{ width: `${chProgress}%`, backgroundColor: config.accentHex + '99' }}
-                            />
-                          </div>
-                        )}
+                    <div key={ch.chapterKey} className="border-b border-[#1e1e38] last:border-b-0">
+
+                      {/* 章ヘッダー行 */}
+                      <div className="flex items-center gap-2 px-4 py-3 bg-[#13132a]">
+                        <div
+                          className="w-1 h-4 rounded-full shrink-0"
+                          style={{ backgroundColor: config.accentHex + '80' }}
+                        />
+                        <p className="flex-1 text-sm font-medium text-[#c8c8e8] leading-snug">
+                          {ch.chapterName}
+                        </p>
+                        <span className="text-xs text-[#5a5a7a] tabular-nums shrink-0">
+                          {ch.answered}/{ch.problems.length}
+                        </span>
+                        {/* 問題を開くアイコンボタン */}
+                        <button
+                          onClick={() => navigate(chapterPath)}
+                          title="この章の問題を開く"
+                          className="shrink-0 p-1.5 rounded-lg text-[#5a5a7a] hover:text-white hover:bg-[#252540] transition-colors"
+                        >
+                          <ExternalLink className="w-3.5 h-3.5" strokeWidth={1.5} />
+                        </button>
                       </div>
-                      <span className="text-xs text-[#5a5a7a] shrink-0 tabular-nums">
-                        {ch.answered}/{ch.count}
-                      </span>
-                    </button>
+
+                      {/* 章プログレスバー */}
+                      <div className="h-px bg-[#2a2a4a]">
+                        <div
+                          className="h-full transition-all duration-500"
+                          style={{ width: `${chProgress}%`, backgroundColor: config.accentHex + '60' }}
+                        />
+                      </div>
+
+                      {/* 問題一覧 */}
+                      <div className="divide-y divide-[#1a1a35]">
+                        {ch.problems.map(p => {
+                          const latestResult = stats[p.id]?.latestResult ?? null
+                          const history = (recentAttempts[p.id] ?? []).map(a => a.result)
+
+                          return (
+                            <button
+                              key={p.id}
+                              onClick={() => navigate(chapterPath)}
+                              className="w-full flex items-start gap-3 px-5 py-3 hover:bg-[#1a1a3a] transition-colors text-left"
+                            >
+                              {/* 最新結果バッジ */}
+                              <span className={`mt-0.5 w-5 h-5 rounded-full border flex items-center justify-center text-[10px] font-bold shrink-0 ${
+                                latestResult === 'correct'
+                                  ? 'bg-green-900/30 border-green-500/40 text-green-400'
+                                  : latestResult === 'partial'
+                                    ? 'bg-amber-900/30 border-amber-500/40 text-amber-400'
+                                    : latestResult === 'incorrect'
+                                      ? 'bg-red-900/30 border-red-500/40 text-red-400'
+                                      : 'border-[#3a3a5c] text-[#5a5a7a]'
+                              }`}>
+                                {latestResult === 'correct' ? '○'
+                                  : latestResult === 'partial' ? '△'
+                                  : latestResult === 'incorrect' ? '✕'
+                                  : '−'}
+                              </span>
+
+                              <div className="flex-1 min-w-0">
+                                {/* 問題番号 + 問題文冒頭 */}
+                                <p className="text-xs font-medium text-[#a78bfa] mb-0.5">{p.questionNo}</p>
+                                <p className="text-xs text-[#8888aa] leading-snug line-clamp-1">
+                                  {p.questionText.replace(/\$[^$]*\$/g, '[数式]').slice(0, 60)}
+                                </p>
+                                {/* 回答履歴ドット */}
+                                {history.length > 0 && (
+                                  <div className="mt-1.5">
+                                    <HistoryDots history={history} />
+                                  </div>
+                                )}
+                              </div>
+                            </button>
+                          )
+                        })}
+                      </div>
+
+                    </div>
                   )
                 })}
               </div>
