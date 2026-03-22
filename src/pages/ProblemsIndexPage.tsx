@@ -1,65 +1,52 @@
-import { useEffect } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { BookOpen, ExternalLink } from 'lucide-react'
+import { BookOpen, ExternalLink, ChevronDown, ChevronUp } from 'lucide-react'
 import { SUBJECT_CONFIGS } from '../types/problem'
 import type { SubjectKey } from '../types/problem'
 import { useProblemStore } from '../stores/problemStore'
 
-// ── 回答履歴ドット ──────────────────────────────────
+// ── 回答履歴ドット ─────────────────────────────────
 type AttemptResult = 'correct' | 'partial' | 'incorrect'
 
 function HistoryDots({ history }: { history: AttemptResult[] }) {
   const slots = Array.from({ length: 10 }, (_, i) => history[i] ?? null)
   return (
     <div className="flex items-center gap-0.5">
-      {slots.map((r, i) => {
-        if (!r) {
-          return (
-            <span
-              key={i}
-              className="w-4 h-4 rounded-full border border-[#2a2a4a] flex items-center justify-center text-[8px] text-[#3a3a5c]"
-            >
-              −
-            </span>
-          )
-        }
-        if (r === 'correct') {
-          return (
-            <span
-              key={i}
-              className="w-4 h-4 rounded-full bg-green-900/50 border border-green-500/50 flex items-center justify-center text-[8px] font-bold text-green-400"
-            >
-              ○
-            </span>
-          )
-        }
-        if (r === 'partial') {
-          return (
-            <span
-              key={i}
-              className="w-4 h-4 rounded-full bg-amber-900/50 border border-amber-500/50 flex items-center justify-center text-[8px] font-bold text-amber-400"
-            >
-              △
-            </span>
-          )
-        }
-        return (
-          <span
-            key={i}
-            className="w-4 h-4 rounded-full bg-red-900/50 border border-red-500/50 flex items-center justify-center text-[8px] font-bold text-red-400"
-          >
-            ✕
-          </span>
-        )
-      })}
+      {slots.map((r, i) => (
+        <span
+          key={i}
+          className={`w-4 h-4 rounded-full border flex items-center justify-center text-[8px] font-bold ${
+            r === 'correct'
+              ? 'bg-green-900/50 border-green-500/50 text-green-400'
+              : r === 'partial'
+                ? 'bg-amber-900/50 border-amber-500/50 text-amber-400'
+                : r === 'incorrect'
+                  ? 'bg-red-900/50 border-red-500/50 text-red-400'
+                  : 'border-[#2a2a4a] text-[#3a3a5c]'
+          }`}
+        >
+          {r === 'correct' ? '○' : r === 'partial' ? '△' : r === 'incorrect' ? '✕' : '−'}
+        </span>
+      ))}
     </div>
   )
 }
 
-// ── メインコンポーネント ──────────────────────────────
+// ── メインコンポーネント ─────────────────────────────
 export default function ProblemsIndexPage() {
   const navigate = useNavigate()
   const { problems, stats, recentAttempts, fetchRecentAttempts, loadingProblems } = useProblemStore()
+
+  // 展開中の章キーセット（デフォルト: 全て折りたたみ）
+  const [expandedChapters, setExpandedChapters] = useState<Set<string>>(new Set())
+
+  const toggleChapter = (key: string) => {
+    setExpandedChapters(prev => {
+      const next = new Set(prev)
+      next.has(key) ? next.delete(key) : next.add(key)
+      return next
+    })
+  }
 
   // 全問題IDを渡して履歴を取得
   useEffect(() => {
@@ -85,20 +72,13 @@ export default function ProblemsIndexPage() {
         seen.add(p.chapterKey)
         const chProblems = subjectProblems.filter(q => q.chapterKey === p.chapterKey)
         const answered = chProblems.filter(q => stats[q.id]?.latestResult).length
-        chapters.push({
-          chapterKey: p.chapterKey,
-          chapterName: p.chapterName,
-          problems: chProblems,
-          answered,
-        })
+        chapters.push({ chapterKey: p.chapterKey, chapterName: p.chapterName, problems: chProblems, answered })
       }
     })
 
     const totalProblems = subjectProblems.length
     const totalAnswered = subjectProblems.filter(p => stats[p.id]?.latestResult).length
-    const progress = totalProblems > 0
-      ? Math.round((totalAnswered / totalProblems) * 100)
-      : 0
+    const progress = totalProblems > 0 ? Math.round((totalAnswered / totalProblems) * 100) : 0
 
     return { config, chapters, totalProblems, totalAnswered, progress }
   })
@@ -141,58 +121,58 @@ export default function ProblemsIndexPage() {
           if (totalProblems === 0) return null
 
           return (
-            <div key={config.key} className="mb-8 bg-[#111125] rounded-2xl border border-[#2a2a4a] overflow-hidden">
+            <div key={config.key} className="mb-6 bg-[#111125] rounded-2xl border border-[#2a2a4a] overflow-hidden">
 
               {/* 科目ヘッダー */}
               <div className="flex items-center gap-3 px-5 py-4 border-b border-[#2a2a4a]">
-                <div
-                  className="w-2 h-8 rounded-full shrink-0"
-                  style={{ backgroundColor: config.accentHex }}
-                />
+                <div className="w-2 h-8 rounded-full shrink-0" style={{ backgroundColor: config.accentHex }} />
                 <div className="flex-1 min-w-0">
                   <p className="font-semibold text-white text-sm">{config.shortLabel}</p>
                   <p className="text-xs text-[#5a5a7a] truncate">{config.label}</p>
                 </div>
                 <div className="shrink-0 text-right">
                   <p className="text-xs text-[#8888aa]">{totalAnswered} / {totalProblems}</p>
-                  <p className="text-xs" style={{ color: config.accentHex }}>{progress}%</p>
+                  <p className="text-xs font-medium" style={{ color: config.accentHex }}>{progress}%</p>
                 </div>
               </div>
 
               {/* 科目プログレスバー */}
               <div className="h-0.5 bg-[#2a2a4a]">
-                <div
-                  className="h-full transition-all duration-500"
-                  style={{ width: `${progress}%`, backgroundColor: config.accentHex }}
-                />
+                <div className="h-full transition-all duration-500" style={{ width: `${progress}%`, backgroundColor: config.accentHex }} />
               </div>
 
               {/* 章一覧 */}
-              <div>
+              <div className="divide-y divide-[#1e1e38]">
                 {chapters.map(ch => {
+                  const isExpanded = expandedChapters.has(ch.chapterKey)
+                  const chapterPath = `${config.path}?chapter=${ch.chapterKey}`
                   const chProgress = ch.problems.length > 0
                     ? Math.round((ch.answered / ch.problems.length) * 100)
                     : 0
 
-                  // ?chapter= 付きのパス
-                  const chapterPath = `${config.path}?chapter=${ch.chapterKey}`
-
                   return (
-                    <div key={ch.chapterKey} className="border-b border-[#1e1e38] last:border-b-0">
+                    <div key={ch.chapterKey}>
 
-                      {/* 章ヘッダー行 */}
-                      <div className="flex items-center gap-2 px-4 py-3 bg-[#13132a]">
-                        <div
-                          className="w-1 h-4 rounded-full shrink-0"
-                          style={{ backgroundColor: config.accentHex + '80' }}
-                        />
-                        <p className="flex-1 text-sm font-medium text-[#c8c8e8] leading-snug">
-                          {ch.chapterName}
-                        </p>
+                      {/* 章ヘッダー行（折りたたみデフォルト） */}
+                      <div className="flex items-center gap-2 px-4 py-3">
+                        {/* 章名（タップで展開トグル） */}
+                        <button
+                          onClick={() => toggleChapter(ch.chapterKey)}
+                          className="flex-1 flex items-center gap-2 text-left min-w-0"
+                        >
+                          <div
+                            className="w-1 h-4 rounded-full shrink-0"
+                            style={{ backgroundColor: config.accentHex + '80' }}
+                          />
+                          <span className="text-sm text-[#c8c8e8] leading-snug flex-1">{ch.chapterName}</span>
+                        </button>
+
+                        {/* 回答進捗 */}
                         <span className="text-xs text-[#5a5a7a] tabular-nums shrink-0">
                           {ch.answered}/{ch.problems.length}
                         </span>
-                        {/* 問題を開くアイコンボタン */}
+
+                        {/* 問題集へジャンプ */}
                         <button
                           onClick={() => navigate(chapterPath)}
                           title="この章の問題を開く"
@@ -200,61 +180,72 @@ export default function ProblemsIndexPage() {
                         >
                           <ExternalLink className="w-3.5 h-3.5" strokeWidth={1.5} />
                         </button>
+
+                        {/* 展開トグル */}
+                        <button
+                          onClick={() => toggleChapter(ch.chapterKey)}
+                          title={isExpanded ? '折りたたむ' : '問題一覧を表示'}
+                          className="shrink-0 p-1.5 rounded-lg text-[#5a5a7a] hover:text-white hover:bg-[#252540] transition-colors"
+                        >
+                          {isExpanded
+                            ? <ChevronUp className="w-3.5 h-3.5" strokeWidth={1.5} />
+                            : <ChevronDown className="w-3.5 h-3.5" strokeWidth={1.5} />
+                          }
+                        </button>
                       </div>
 
                       {/* 章プログレスバー */}
-                      <div className="h-px bg-[#2a2a4a]">
-                        <div
-                          className="h-full transition-all duration-500"
-                          style={{ width: `${chProgress}%`, backgroundColor: config.accentHex + '60' }}
-                        />
-                      </div>
+                      {ch.answered > 0 && (
+                        <div className="h-px mx-4 bg-[#2a2a4a] rounded-full overflow-hidden">
+                          <div
+                            className="h-full transition-all duration-500"
+                            style={{ width: `${chProgress}%`, backgroundColor: config.accentHex + '70' }}
+                          />
+                        </div>
+                      )}
 
-                      {/* 問題一覧 */}
-                      <div className="divide-y divide-[#1a1a35]">
-                        {ch.problems.map(p => {
-                          const latestResult = stats[p.id]?.latestResult ?? null
-                          const history = (recentAttempts[p.id] ?? []).map(a => a.result)
+                      {/* 問題一覧（展開時のみ） */}
+                      {isExpanded && (
+                        <div className="bg-[#0e0e20] border-t border-[#1e1e38] divide-y divide-[#1a1a35]">
+                          {ch.problems.map(p => {
+                            const latestResult = stats[p.id]?.latestResult ?? null
+                            const history = (recentAttempts[p.id] ?? []).map(a => a.result)
 
-                          return (
-                            <button
-                              key={p.id}
-                              onClick={() => navigate(chapterPath)}
-                              className="w-full flex items-start gap-3 px-5 py-3 hover:bg-[#1a1a3a] transition-colors text-left"
-                            >
-                              {/* 最新結果バッジ */}
-                              <span className={`mt-0.5 w-5 h-5 rounded-full border flex items-center justify-center text-[10px] font-bold shrink-0 ${
-                                latestResult === 'correct'
-                                  ? 'bg-green-900/30 border-green-500/40 text-green-400'
-                                  : latestResult === 'partial'
-                                    ? 'bg-amber-900/30 border-amber-500/40 text-amber-400'
-                                    : latestResult === 'incorrect'
-                                      ? 'bg-red-900/30 border-red-500/40 text-red-400'
-                                      : 'border-[#3a3a5c] text-[#5a5a7a]'
-                              }`}>
-                                {latestResult === 'correct' ? '○'
-                                  : latestResult === 'partial' ? '△'
-                                  : latestResult === 'incorrect' ? '✕'
-                                  : '−'}
-                              </span>
+                            return (
+                              <button
+                                key={p.id}
+                                onClick={() => navigate(chapterPath)}
+                                className="w-full flex items-start gap-3 px-5 py-3 hover:bg-[#1a1a3a] transition-colors text-left"
+                              >
+                                {/* 最新結果バッジ */}
+                                <span className={`mt-0.5 w-5 h-5 rounded-full border flex items-center justify-center text-[10px] font-bold shrink-0 ${
+                                  latestResult === 'correct'   ? 'bg-green-900/30 border-green-500/40 text-green-400'
+                                  : latestResult === 'partial' ? 'bg-amber-900/30 border-amber-500/40 text-amber-400'
+                                  : latestResult === 'incorrect' ? 'bg-red-900/30 border-red-500/40 text-red-400'
+                                  : 'border-[#3a3a5c] text-[#5a5a7a]'
+                                }`}>
+                                  {latestResult === 'correct' ? '○'
+                                    : latestResult === 'partial' ? '△'
+                                    : latestResult === 'incorrect' ? '✕'
+                                    : '−'}
+                                </span>
 
-                              <div className="flex-1 min-w-0">
-                                {/* 問題番号 + 問題文冒頭 */}
-                                <p className="text-xs font-medium text-[#a78bfa] mb-0.5">{p.questionNo}</p>
-                                <p className="text-xs text-[#8888aa] leading-snug line-clamp-1">
-                                  {p.questionText.replace(/\$[^$]*\$/g, '[数式]').slice(0, 60)}
-                                </p>
-                                {/* 回答履歴ドット */}
-                                {history.length > 0 && (
-                                  <div className="mt-1.5">
-                                    <HistoryDots history={history} />
-                                  </div>
-                                )}
-                              </div>
-                            </button>
-                          )
-                        })}
-                      </div>
+                                <div className="flex-1 min-w-0">
+                                  <p className="text-xs font-medium text-[#a78bfa] mb-0.5">{p.questionNo}</p>
+                                  <p className="text-xs text-[#8888aa] leading-snug line-clamp-1">
+                                    {p.questionText.replace(/\$[^$]*\$/g, '[数式]').slice(0, 60)}
+                                  </p>
+                                  {history.length > 0 && (
+                                    <div className="mt-1.5">
+                                      <HistoryDots history={history} />
+                                    </div>
+                                  )}
+                                </div>
+                              </button>
+                            )
+                          })}
+                        </div>
+                      )}
 
                     </div>
                   )
