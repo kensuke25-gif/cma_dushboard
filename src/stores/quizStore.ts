@@ -60,6 +60,7 @@ interface QuizState {
   uploadQuestions: (subject: string, field: string, questions: RawQuestion[]) => Promise<void>
   countExisting: (subject: string, field: string) => Promise<number>
   deleteQuestion: (id: string) => Promise<void>
+  deleteField: (subject: string, field: string) => Promise<void>
   addQuestion: (subject: string, field: string, q: RawQuestion) => Promise<QuizQuestion>
   fetchAnswerStats: (questionIds: string[]) => Promise<Record<string, { total: number; correct: number }>>
 }
@@ -156,6 +157,14 @@ export const useQuizStore = create<QuizState>((set, get) => ({
   deleteQuestion: async (id) => {
     await supabase.from('quiz_questions').delete().eq('id', id)
     set(state => ({ questions: state.questions.filter(q => q.id !== id) }))
+  },
+
+  deleteField: async (subject, field) => {
+    await supabase.from('quiz_questions').delete()
+      .eq('subject', subject).eq('field', field)
+    set(state => ({
+      questions: state.questions.filter(q => !(q.subject === subject && q.field === field)),
+    }))
   },
 
   addQuestion: async (subject, field, q) => {
