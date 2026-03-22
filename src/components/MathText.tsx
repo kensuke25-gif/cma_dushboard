@@ -4,7 +4,7 @@
 // react-katex を使用
 // =============================================
 
-import { InlineMath, BlockMath } from 'react-katex'
+import katex from 'katex'
 // KaTeX CSS は src/main.tsx で import 済み
 
 // -----------------------------------------------
@@ -97,24 +97,29 @@ type MathRendererProps = {
 }
 
 function MathRenderer({ latex, display }: MathRendererProps) {
+  let html: string
   try {
-    if (display) {
-      return (
-        <div className="my-3 overflow-x-auto">
-          <BlockMath math={latex} />
-        </div>
-      )
-    }
-    return <InlineMath math={latex} />
+    html = katex.renderToString(latex, {
+      throwOnError: false,
+      displayMode: display,
+      output: 'html',
+    })
   } catch {
-    // KaTeX パースエラー時は元の文字列をそのまま表示
     const raw = display ? `$$${latex}$$` : `$${latex}$`
     return (
-      <span className="font-mono text-amber-400 text-sm">
-        {raw}
-      </span>
+      <span className="font-mono text-amber-400 text-sm">{raw}</span>
     )
   }
+
+  if (display) {
+    return (
+      <div
+        className="my-3 overflow-x-auto"
+        dangerouslySetInnerHTML={{ __html: html }}
+      />
+    )
+  }
+  return <span dangerouslySetInnerHTML={{ __html: html }} />
 }
 
 // -----------------------------------------------
