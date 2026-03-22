@@ -8,6 +8,7 @@ import { create } from 'zustand'
 import { supabase } from '../lib/supabase'
 import type {
   Problem,
+  ProblemAttempt,
   ProblemResult,
   ProblemStats,
   SubjectKey,
@@ -80,6 +81,19 @@ type ProblemStore = {
 
   /** ストリークを Supabase から再計算して取得 */
   fetchStreak: () => Promise<void>
+
+  // ---- 回答履歴 ----
+
+  /**
+   * 問題ごとの直近10件回答履歴
+   * key: problem_id / value: ProblemAttempt[] (古い順)
+   */
+  recentAttempts: Record<string, ProblemAttempt[]>
+
+  /**
+   * 指定した問題IDリストの直近10件履歴を取得して recentAttempts に格納
+   */
+  fetchRecentAttempts: (problemIds: string[]) => Promise<void>
 
   // ---- 初期化 ----
 
@@ -355,6 +369,52 @@ export const useProblemStore = create<ProblemStore>((set, get) => ({
     }
 
     set({ streak })
+  },
+
+  // =====================================
+  // 回答履歴
+  // =====================================
+
+  recentAttempts: {},
+
+  fetchRecentAttempts: async (problemIds) => {
+    if (problemIds.length === 0) return
+
+    const { data, error } = await supabase
+      .from('problem_attempts')
+      .select('id, problem_id, result, attempted_at')
+      .in('problem_id', problemIds)
+      .order('attempted_at', { ascending: false })
+      .limit(problemIds.length * 10)
+
+    if (error) {
+      console.error('[problemStore] fetchRecentAttempts error:', error)
+      return
+    }
+
+    if (!data) return
+
+    // problem_id ごとに最新10件を切り出し、古い順にソート
+    const map: Record<string, ProblemAttempt[]> = {}
+    data.forEach((r) => {
+      if (!map[r.problem_id]) map[r.problem_id] = []
+      if (map[r.problem_id].length < 10) {
+        map[r.problem_id].push({
+          id:           r.id,
+          userId:       '',
+          problemId:    r.problem_id,
+          result:       r.result as NonNullable<ProblemResult>,
+          attemptedAt:  r.attempted_at,
+        })
+      }
+    })
+    // 古い順（昇順）に並び替え
+    Object.keys(map).forEach((pid) => {
+      map[pid].sort((a, b) =>
+        new Date(a.attemptedAt).getTime() - new Date(b.attemptedAt).getTime()
+      )
+    })
+    set({ recentAttempts: map })
   },
 
   // =====================================

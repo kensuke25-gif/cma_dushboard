@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
-import { useParams, useNavigate } from 'react-router-dom'
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom'
 import {
   ChevronLeft, ChevronRight, List, X,
   Lightbulb, ChevronDown, ChevronUp, Eye,
@@ -215,6 +215,7 @@ function ProblemListContent({
 // ── メインコンポーネント ──────────────────────────
 export default function ProblemPage() {
   const { subject } = useParams<{ subject: string }>()
+  const [searchParams] = useSearchParams()
   const navigate = useNavigate()
   const config = SUBJECT_CONFIGS.find(c => c.key === subject)
 
@@ -232,9 +233,24 @@ export default function ProblemPage() {
     problems:    problems.filter(p => p.chapterKey === key),
   }))
 
-  const [index,          setIndex]          = useState(0)
+  // ?chapter=chapterKey で指定した章の先頭問題から開始
+  const chapterParam = searchParams.get('chapter')
+  const initialIndex = chapterParam
+    ? Math.max(0, problems.findIndex(p => p.chapterKey === chapterParam))
+    : 0
+
+  const [index,          setIndex]          = useState(initialIndex)
   const [revealedAnswer, setRevealedAnswer] = useState(false)
   const [showToc,        setShowToc]        = useState(false)
+
+  // problems が遅れてロードされた場合に initialIndex を反映
+  useEffect(() => {
+    if (problems.length > 0 && chapterParam) {
+      const idx = problems.findIndex(p => p.chapterKey === chapterParam)
+      if (idx >= 0) setIndex(idx)
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [problems.length])
 
   const mainRef    = useRef<HTMLDivElement>(null)
   const sidebarRef = useRef<HTMLDivElement>(null)
