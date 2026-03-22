@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react'
-import { Loader2, ChevronDown, ChevronUp } from 'lucide-react'
+import { Loader2, ChevronDown, ChevronUp, Trash2 } from 'lucide-react'
 import { useQuizStore } from '../../stores/quizStore'
 import { SUBJECTS } from '../dashboard/StudyRecordPanel'
+import MathText from '../MathText'
 
 type AnswerStats = Record<string, { total: number; correct: number }>
 
@@ -24,31 +25,48 @@ function AccuracyBadge({ stats, id }: { stats: AnswerStats; id: string }) {
 }
 
 export default function QuizBrowser() {
-  const { questions, loading, fetchQuestions, getFields, fetchAnswerStats } = useQuizStore()
+  const { questions, loading, fetchQuestions, getFields, fetchAnswerStats, deleteField } = useQuizStore()
   const [subject, setSubject] = useState('')
   const [field, setField] = useState<string | null>(null)
   const [fields, setFields] = useState<string[]>([])
+  const [fieldCounts, setFieldCounts] = useState<Record<string, number>>({})
   const [stats, setStats] = useState<AnswerStats>({})
   const [loadingStats, setLoadingStats] = useState(false)
   const [expandedId, setExpandedId] = useState<string | null>(null)
+  // 削除確認中の分野名
+  const [confirmDeleteField, setConfirmDeleteField] = useState<string | null>(null)
+  const [deleting, setDeleting] = useState(false)
 
+  // 科目変更: 分野一覧を取得
   useEffect(() => {
-    if (!subject) { setFields([]); setField(null); return }
-    getFields(subject).then(f => { setFields(f); setField(null) })
+    if (!subject) { setFields([]); setField(null); setFieldCounts({}); return }
+    getFields(subject).then(f => {
+      setFields(f)
+      setField(null)
+    })
   }, [subject, getFields])
 
+  // 分野一覧が変わったら各分野の件数を取得
+  useEffect(() => {
+    if (fields.length === 0) { setFieldCounts({}); return }
+    Promise.all(
+      fields.map(f =>
+        useQuizStore.getState().countExisting(subject, f).then(c => [f, c] as [string, number])
+      )
+    ).then(results => {
+      setFieldCounts(Object.fromEntries(results))
+    })
+  }, [fields, subject])
+
+  // 科目・分野変更: 問題を取得
   useEffect(() => {
     if (!subject) return
     setExpandedId(null)
     setStats({})
-
-    fetchQuestions(subject, field).then(() => {
-      // fetchQuestions が完了すると useQuizStore の questions が更新される
-      // ここでは ids を取得するため store から直接読む
-    })
+    fetchQuestions(subject, field)
   }, [subject, field, fetchQuestions])
 
-  // questions が変わったら正答率を取得
+  // 問題が変わったら正答率を取得
   useEffect(() => {
     if (questions.length === 0) { setStats({}); return }
     setLoadingStats(true)
@@ -56,6 +74,17 @@ export default function QuizBrowser() {
       .then(s => setStats(s))
       .finally(() => setLoadingStats(false))
   }, [questions, fetchAnswerStats])
+
+  const handleDeleteField = async (f: string) => {
+    setDeleting(true)
+    await deleteField(subject, f)
+    // 分野リストと件数を再取得
+    const updatedFields = await getFields(subject)
+    setFields(updatedFields)
+    if (field === f) setField(null)
+    setConfirmDeleteField(null)
+    setDeleting(false)
+  }
 
   return (
     <div className="max-w-2xl mx-auto px-4 py-8">
@@ -79,10 +108,60 @@ export default function QuizBrowser() {
         </div>
       </div>
 
-      {/* 分野選択 */}
+      {/* 分野管理（件数表示＋削除） */}
+      {subject && fields.length > 0 && (
+        <div className="mb-5 bg-[#111125] rounded-xl border border-[#2a2a4a] overflow-hidden">
+          <p className="text-xs font-medium text-[#5a5a7a] px-4 py-2.5 border-b border-[#2a2a4a]">
+            分野ごとの登録問題数
+          </p>
+          <div className="divide-y divide-[#1e1e38]">
+            {fields.map(f => {
+              const isConfirming = confirmDeleteField === f
+              const cnt = fieldCounts[f] ?? '…'
+              return (
+                <div key={f}>
+                  <div className="flex items-center gap-2 px-4 py-2.5">
+                    <span className="flex-1 text-sm text-[#c8c8e8] truncate">{f}</span>
+                    <span className="text-xs text-[#5a5a7a] tabular-nums shrink-0">{cnt}問</span>
+                    <button
+                      onClick={() => setConfirmDeleteField(isConfirming ? null : f)}
+                      title="この分野を削除"
+                      className="shrink-0 p-1.5 rounded-lg text-[#5a5a7a] hover:text-red-400 hover:bg-red-900/20 transition-colors"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" strokeWidth={1.5} />
+                    </button>
+                  </div>
+                  {isConfirming && (
+                    <div className="flex items-center gap-2 px-4 py-2.5 bg-red-950/40 border-t border-red-900/40">
+                      <p className="flex-1 text-xs text-red-300">
+                        「{f}」の問題を全て削除しますか？
+                      </p>
+                      <button
+                        onClick={() => setConfirmDeleteField(null)}
+                        className="px-3 py-1 text-xs text-[#8888aa] hover:text-white rounded-lg hover:bg-[#252540] transition-colors"
+                      >
+                        キャンセル
+                      </button>
+                      <button
+                        onClick={() => handleDeleteField(f)}
+                        disabled={deleting}
+                        className="px-3 py-1 text-xs bg-red-700 hover:bg-red-600 text-white rounded-lg transition-colors disabled:opacity-50"
+                      >
+                        {deleting ? '削除中…' : '削除する'}
+                      </button>
+                    </div>
+                  )}
+                </div>
+              )
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* 分野フィルター */}
       {subject && fields.length > 0 && (
         <div className="mb-6">
-          <label className="block text-sm font-medium text-[#c8c8e8] mb-2">分野</label>
+          <label className="block text-sm font-medium text-[#c8c8e8] mb-2">分野で絞り込む</label>
           <div className="flex flex-wrap gap-2">
             <button
               onClick={() => setField(null)}
@@ -133,7 +212,6 @@ export default function QuizBrowser() {
             <div className="space-y-2">
               {questions.map((q, i) => (
                 <div key={q.id} className="bg-[#111125] rounded-xl border border-[#2a2a4a] overflow-hidden">
-                  {/* 一覧行 */}
                   <button
                     onClick={() => setExpandedId(expandedId === q.id ? null : q.id)}
                     className="w-full flex items-center gap-3 px-3 py-2.5 text-left"
@@ -146,10 +224,11 @@ export default function QuizBrowser() {
                       : <ChevronDown className="w-4 h-4 text-[#5a5a7a] shrink-0" />}
                   </button>
 
-                  {/* 展開: 全文・選択肢・解説 */}
                   {expandedId === q.id && (
                     <div className="border-t border-[#2a2a4a] px-4 py-3 space-y-3">
-                      <p className="text-sm text-[#c8c8e8] whitespace-pre-wrap leading-relaxed">{q.question}</p>
+                      <p className="text-sm text-[#c8c8e8] leading-relaxed">
+                        <MathText text={q.question} />
+                      </p>
 
                       <div className="space-y-1.5">
                         {q.options.map((opt, oi) => (
@@ -162,7 +241,7 @@ export default function QuizBrowser() {
                             }`}
                           >
                             <span className="shrink-0 font-bold">{String.fromCharCode(65 + oi)}.</span>
-                            <span>{opt}</span>
+                            <span><MathText text={opt} /></span>
                           </div>
                         ))}
                       </div>
@@ -170,11 +249,12 @@ export default function QuizBrowser() {
                       {q.explanation && (
                         <div className="bg-[#1a1a2e] rounded-lg px-3 py-2">
                           <p className="text-[10px] text-[#5a5a7a] mb-1 font-medium">解説</p>
-                          <p className="text-xs text-[#8888aa] whitespace-pre-wrap leading-relaxed">{q.explanation}</p>
+                          <p className="text-xs text-[#8888aa] leading-relaxed">
+                            <MathText text={q.explanation} />
+                          </p>
                         </div>
                       )}
 
-                      {/* 正答率詳細 */}
                       {stats[q.id] && stats[q.id].total > 0 && (
                         <div className="flex items-center gap-2">
                           <div className="flex-1 h-1.5 bg-[#252540] rounded-full overflow-hidden">
