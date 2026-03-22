@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react'
 import { CheckCircle, XCircle, Flag } from 'lucide-react'
 import type { QuizQuestion as Question } from '../../stores/quizStore'
 import { useQuizStore } from '../../stores/quizStore'
+import MathText from '../MathText'
 
 type Props = {
   question: Question
@@ -95,7 +96,9 @@ export default function QuizQuestion({ question, questionIndex, totalQuestions, 
 
       {/* 問題文 */}
       <div className="mb-6 p-5 rounded-2xl bg-[#111125] border border-[#2a2a4a]">
-        <p className="text-base text-white leading-relaxed whitespace-pre-wrap">{question.question}</p>
+        <p className="text-base text-white leading-relaxed">
+          <MathText text={question.question} />
+        </p>
       </div>
 
       {/* 選択肢 */}
@@ -106,7 +109,7 @@ export default function QuizQuestion({ question, questionIndex, totalQuestions, 
               <span className={badgeStyle(i)}>
                 {String.fromCharCode(65 + i)}
               </span>
-              <span className="leading-relaxed">{opt.text}</span>
+              <span className="leading-relaxed"><MathText text={opt.text} /></span>
             </span>
           </button>
         ))}
@@ -148,7 +151,9 @@ export default function QuizQuestion({ question, questionIndex, totalQuestions, 
             </button>
           </div>
           {question.explanation && (
-            <p className="text-sm text-[#c8c8e8] leading-relaxed whitespace-pre-wrap">{question.explanation}</p>
+            <p className="text-sm text-[#c8c8e8] leading-relaxed">
+              <MathText text={question.explanation} />
+            </p>
           )}
         </div>
       )}
