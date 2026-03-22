@@ -37,8 +37,18 @@ export default function ProblemsIndexPage() {
   const navigate = useNavigate()
   const { problems, stats, recentAttempts, fetchRecentAttempts, loadingProblems } = useProblemStore()
 
+  // 展開中の科目キーセット（デフォルト: 全て折りたたみ）
+  const [expandedSubjects, setExpandedSubjects] = useState<Set<string>>(new Set())
   // 展開中の章キーセット（デフォルト: 全て折りたたみ）
   const [expandedChapters, setExpandedChapters] = useState<Set<string>>(new Set())
+
+  const toggleSubject = (key: string) => {
+    setExpandedSubjects(prev => {
+      const next = new Set(prev)
+      next.has(key) ? next.delete(key) : next.add(key)
+      return next
+    })
+  }
 
   const toggleChapter = (key: string) => {
     setExpandedChapters(prev => {
@@ -119,30 +129,38 @@ export default function ProblemsIndexPage() {
         {/* 科目カード一覧 */}
         {!loadingProblems && subjectChapters.map(({ config, chapters, totalProblems, totalAnswered, progress }) => {
           if (totalProblems === 0) return null
+          const isSubjectExpanded = expandedSubjects.has(config.key)
 
           return (
-            <div key={config.key} className="mb-6 bg-[#111125] rounded-2xl border border-[#2a2a4a] overflow-hidden">
+            <div key={config.key} className="mb-4 bg-[#111125] rounded-2xl border border-[#2a2a4a] overflow-hidden">
 
-              {/* 科目ヘッダー */}
-              <div className="flex items-center gap-3 px-5 py-4 border-b border-[#2a2a4a]">
+              {/* 科目ヘッダー（タップで章一覧を展開/格納） */}
+              <button
+                onClick={() => toggleSubject(config.key)}
+                className="w-full flex items-center gap-3 px-5 py-4 text-left hover:bg-[#161630] transition-colors"
+              >
                 <div className="w-2 h-8 rounded-full shrink-0" style={{ backgroundColor: config.accentHex }} />
                 <div className="flex-1 min-w-0">
                   <p className="font-semibold text-white text-sm">{config.shortLabel}</p>
                   <p className="text-xs text-[#5a5a7a] truncate">{config.label}</p>
                 </div>
-                <div className="shrink-0 text-right">
+                <div className="shrink-0 text-right mr-2">
                   <p className="text-xs text-[#8888aa]">{totalAnswered} / {totalProblems}</p>
                   <p className="text-xs font-medium" style={{ color: config.accentHex }}>{progress}%</p>
                 </div>
-              </div>
+                {isSubjectExpanded
+                  ? <ChevronUp className="w-4 h-4 text-[#5a5a7a] shrink-0" strokeWidth={1.5} />
+                  : <ChevronDown className="w-4 h-4 text-[#5a5a7a] shrink-0" strokeWidth={1.5} />
+                }
+              </button>
 
               {/* 科目プログレスバー */}
               <div className="h-0.5 bg-[#2a2a4a]">
                 <div className="h-full transition-all duration-500" style={{ width: `${progress}%`, backgroundColor: config.accentHex }} />
               </div>
 
-              {/* 章一覧 */}
-              <div className="divide-y divide-[#1e1e38]">
+              {/* 章一覧（展開時のみ） */}
+              {isSubjectExpanded && <div className="divide-y divide-[#1e1e38]">
                 {chapters.map(ch => {
                   const isExpanded = expandedChapters.has(ch.chapterKey)
                   const chapterPath = `${config.path}?chapter=${ch.chapterKey}`
@@ -250,7 +268,7 @@ export default function ProblemsIndexPage() {
                     </div>
                   )
                 })}
-              </div>
+              </div>}
 
             </div>
           )
