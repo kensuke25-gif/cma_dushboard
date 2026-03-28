@@ -275,7 +275,7 @@ export default function ProblemsIndexPage() {
                             return (
                               <button
                                 key={p.id}
-                                onClick={() => navigate(chapterPath)}
+                                onClick={() => navigate(`${config.path}?chapter=${ch.chapterKey}&problem=${p.id}`)}
                                 className="w-full flex items-start gap-3 px-5 py-3 hover:bg-[#1a1a3a] transition-colors text-left"
                               >
                                 <span className={`mt-0.5 w-5 h-5 rounded-full border flex items-center justify-center text-[10px] font-bold shrink-0 ${
