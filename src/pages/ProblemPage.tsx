@@ -251,7 +251,7 @@ export default function ProblemPage() {
   const [revealedAnswer, setRevealedAnswer] = useState(false)
   const [showToc,        setShowToc]        = useState(false)
 
-  // problems が遅れてロードされた場合に initialIndex を反映
+  // URLパラメータ変化（同一コンポーネント再利用時）またはproblemsの遅延ロード時にインデックスを更新
   useEffect(() => {
     if (problems.length === 0) return
     if (problemParam) {
@@ -262,8 +262,7 @@ export default function ProblemPage() {
       const idx = problems.findIndex(p => p.chapterKey === chapterParam)
       if (idx >= 0) setIndex(idx)
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [problems.length])
+  }, [problems.length, problemParam, chapterParam])
 
   const mainRef    = useRef<HTMLDivElement>(null)
   const sidebarRef = useRef<HTMLDivElement>(null)
