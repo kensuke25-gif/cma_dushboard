@@ -22,13 +22,14 @@ export function formatMinutes(minutes: number): string {
 type Props = {
   isOpen: boolean
   onClose: () => void
+  defaultMinutes?: number
 }
 
-export default function StudyRecordModal({ isOpen, onClose }: Props) {
+export default function StudyRecordModal({ isOpen, onClose, defaultMinutes }: Props) {
   const addRecord = useStudyStore(s => s.addRecord)
   const [subject, setSubject] = useState<string>(SUBJECTS[0])
   const [content, setContent] = useState('')
-  const [timeValue, setTimeValue] = useState('')
+  const [timeValue, setTimeValue] = useState(defaultMinutes != null ? String(defaultMinutes) : '')
   const [timeUnit, setTimeUnit] = useState<'min' | 'hour'>('min')
   const [nextAction, setNextAction] = useState('')
 
