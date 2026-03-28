@@ -233,11 +233,19 @@ export default function ProblemPage() {
     problems:    problems.filter(p => p.chapterKey === key),
   }))
 
-  // ?chapter=chapterKey で指定した章の先頭問題から開始
+  // ?problem=problemId で特定問題、?chapter=chapterKey で章の先頭問題から開始
   const chapterParam = searchParams.get('chapter')
-  const initialIndex = chapterParam
-    ? Math.max(0, problems.findIndex(p => p.chapterKey === chapterParam))
-    : 0
+  const problemParam = searchParams.get('problem')
+  const initialIndex = (() => {
+    if (problemParam) {
+      const idx = problems.findIndex(p => p.id === problemParam)
+      if (idx >= 0) return idx
+    }
+    if (chapterParam) {
+      return Math.max(0, problems.findIndex(p => p.chapterKey === chapterParam))
+    }
+    return 0
+  })()
 
   const [index,          setIndex]          = useState(initialIndex)
   const [revealedAnswer, setRevealedAnswer] = useState(false)
@@ -245,7 +253,12 @@ export default function ProblemPage() {
 
   // problems が遅れてロードされた場合に initialIndex を反映
   useEffect(() => {
-    if (problems.length > 0 && chapterParam) {
+    if (problems.length === 0) return
+    if (problemParam) {
+      const idx = problems.findIndex(p => p.id === problemParam)
+      if (idx >= 0) { setIndex(idx); return }
+    }
+    if (chapterParam) {
       const idx = problems.findIndex(p => p.chapterKey === chapterParam)
       if (idx >= 0) setIndex(idx)
     }
