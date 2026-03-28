@@ -419,7 +419,7 @@ export default function ImportPage() {
         latestAt: string
         p: AttemptWithProblem['problems']
       }>()
-      for (const row of (data as AttemptWithProblem[]) ?? []) {
+      for (const row of (data as unknown as AttemptWithProblem[]) ?? []) {
         if (!row.problems) continue
         if (!problemMap.has(row.problem_id)) {
           problemMap.set(row.problem_id, {

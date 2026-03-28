@@ -37,20 +37,19 @@ export const useGoalStore = create<GoalState>((set) => ({
       const user = authData?.user
       if (!user) return
 
-      const { data } = await supabase
-        .from('user_goals')
-        .select('*')
-        .eq('user_id', user.id)
-        .single()
+      // user_goals は Supabase 生成型に未登録のため any 経由でアクセス
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data } = await (supabase as any).from('user_goals')
+        .select('*').eq('user_id', user.id).single() as { data: Record<string, unknown> | null }
 
       if (data) {
         set({
           goals: {
-            examDate: data.exam_date ?? DEFAULTS.examDate,
-            examTotalHours: data.exam_total_hours ?? DEFAULTS.examTotalHours,
-            monthlyHours: data.monthly_hours ?? DEFAULTS.monthlyHours,
-            weeklyHours: data.weekly_hours ?? DEFAULTS.weeklyHours,
-            dailyMinutes: data.daily_minutes ?? DEFAULTS.dailyMinutes,
+            examDate: (data.exam_date as string) ?? DEFAULTS.examDate,
+            examTotalHours: (data.exam_total_hours as number) ?? DEFAULTS.examTotalHours,
+            monthlyHours: (data.monthly_hours as number) ?? DEFAULTS.monthlyHours,
+            weeklyHours: (data.weekly_hours as number) ?? DEFAULTS.weeklyHours,
+            dailyMinutes: (data.daily_minutes as number) ?? DEFAULTS.dailyMinutes,
           },
         })
       }
@@ -68,7 +67,8 @@ export const useGoalStore = create<GoalState>((set) => ({
     const user = authData?.user
     if (!user) return
 
-    await supabase.from('user_goals').upsert({
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await (supabase as any).from('user_goals').upsert({
       user_id: user.id,
       exam_date: goals.examDate,
       exam_total_hours: goals.examTotalHours,
