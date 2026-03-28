@@ -177,7 +177,7 @@ function SettingsForm({ initial, saving, onSave, onClose }: SettingsFormProps) {
 
 // ── メインコンポーネント ──────────────────────────────────────
 export default function GoalProgressPanel() {
-  const { goals, loading, saving, fetchGoals, saveGoals } = useGoalStore()
+  const { goals, saving, fetchGoals, saveGoals } = useGoalStore()
   const { todayMin, weekMin, monthMin, totalMin } = useStudyTotals()
   const [showSettings, setShowSettings] = useState(false)
 
@@ -185,8 +185,6 @@ export default function GoalProgressPanel() {
 
   const examDays = daysUntilExam(goals.examDate)
   const examDayLabel = examDays > 0 ? `残り${examDays}日` : '試験日'
-
-  if (loading) return null
 
   return (
     <div className="space-y-3">
