@@ -34,7 +34,7 @@ export default function Layout() {
   }, [sidebarPinned])
   const user = useAuthStore(s => s.user)
   const signOut = useAuthStore(s => s.signOut)
-  const { running, tick, mode, seconds } = usePomodoroStore()
+  const { running, overtimeRunning, tick, mode, seconds } = usePomodoroStore()
   const location = useLocation()
 
   const avatarUrl = user?.user_metadata?.avatar_url as string | undefined
@@ -53,12 +53,13 @@ export default function Layout() {
   }, [])
 
   // グローバルタイマーインターバル — ページ移動中も動き続ける
+  // overtimeRunning 中もインターバルを継続してストップウォッチをカウントアップ
   const stableTick = useCallback(tick, [tick])
   useEffect(() => {
-    if (!running) return
+    if (!running && !overtimeRunning) return
     const id = window.setInterval(stableTick, 500)
     return () => clearInterval(id)
-  }, [running, stableTick])
+  }, [running, overtimeRunning, stableTick])
 
   const mm = String(Math.floor(seconds / 60)).padStart(2, '0')
   const ss = String(seconds % 60).padStart(2, '0')
