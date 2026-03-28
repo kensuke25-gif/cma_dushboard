@@ -2,7 +2,7 @@ import { useState, useCallback, useRef, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   Upload, FileJson, FileText, XCircle, CheckCircle,
-  Loader2, ChevronDown, ChevronUp, Filter, ArrowRight
+  Loader2, ChevronDown, ChevronUp, Filter, ArrowRight, Download
 } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import type { Problem } from '../types/problem'
@@ -39,6 +39,26 @@ interface ImportResult {
   success: number
   error: number
   errors: string[]
+}
+
+interface AttemptWithProblem {
+  problem_id: string
+  result: string
+  time_spent_sec: number | null
+  attempted_at: string
+  problems: {
+    subject: string
+    chapter_key: string
+    chapter_name: string
+    question_no: string
+    question_text: string
+    hint_text: string | null
+    answer_text: string
+    explanation: string | null
+    related_knowledge: string | null
+    tags: string[]
+    difficulty: number
+  } | null
 }
 
 // ===== 定数 =====
@@ -163,7 +183,9 @@ export default function ImportPage() {
   const [isDragging, setIsDragging] = useState(false)
   const [showAllErrors, setShowAllErrors] = useState(false)
   const [existingIds, setExistingIds] = useState<Set<string>>(new Set())
-  const [exportSubject, setExportSubject] = useState<SubjectKey | 'all'>('all')
+  const [exportResultFilter, setExportResultFilter] = useState<'mistakes' | 'all'>('mistakes')
+  const [exportFormat, setExportFormat] = useState<'json' | 'csv'>('json')
+  const [exportSelectedSubjects, setExportSelectedSubjects] = useState<SubjectKey[]>([...VALID_SUBJECTS])
   const [exporting, setExporting] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
@@ -371,22 +393,135 @@ export default function ImportPage() {
     if (data) setImportLogs(data as ImportLog[])
   }
 
+  const handleExport = async () => {
+    if (!user?.id) return
+    setExporting(true)
+    try {
+      const { data, error } = await supabase
+        .from('problem_attempts')
+        .select(`
+          problem_id, result, time_spent_sec, attempted_at,
+          problems (
+            subject, chapter_key, chapter_name, question_no,
+            question_text, hint_text, answer_text, explanation,
+            related_knowledge, tags, difficulty
+          )
+        `)
+        .eq('user_id', user.id)
+        .order('attempted_at', { ascending: false })
+
+      if (error) throw error
+
+      // problem_id ごとに集計（最新の試行結果 + 挑戦回数）
+      const problemMap = new Map<string, {
+        latestResult: string
+        attemptCount: number
+        latestAt: string
+        p: AttemptWithProblem['problems']
+      }>()
+      for (const row of (data as AttemptWithProblem[]) ?? []) {
+        if (!row.problems) continue
+        if (!problemMap.has(row.problem_id)) {
+          problemMap.set(row.problem_id, {
+            latestResult: row.result,
+            attemptCount: 1,
+            latestAt: row.attempted_at,
+            p: row.problems,
+          })
+        } else {
+          problemMap.get(row.problem_id)!.attemptCount++
+        }
+      }
+
+      let rows = [...problemMap.values()]
+
+      // 結果フィルタ
+      if (exportResultFilter === 'mistakes') {
+        rows = rows.filter(r => r.latestResult === 'incorrect' || r.latestResult === 'partial')
+      }
+      // 科目フィルタ
+      rows = rows.filter(r => exportSelectedSubjects.includes(r.p!.subject as SubjectKey))
+
+      const RESULT_LABELS: Record<string, string> = {
+        correct: '正解', partial: '部分正解', incorrect: '不正解',
+      }
+      const dateStr = new Date().toISOString().slice(0, 10)
+
+      const triggerDownload = (blob: Blob, filename: string) => {
+        const url = URL.createObjectURL(blob)
+        const a = document.createElement('a')
+        a.href = url
+        a.download = filename
+        a.click()
+        URL.revokeObjectURL(url)
+      }
+
+      if (exportFormat === 'json') {
+        const output = rows.map(r => ({
+          科目: SUBJECT_LABELS[r.p!.subject as SubjectKey] ?? r.p!.subject,
+          章名: r.p!.chapter_name,
+          問題番号: r.p!.question_no,
+          問題文: r.p!.question_text,
+          解答: r.p!.answer_text,
+          解説: r.p!.explanation ?? '',
+          関連知識: r.p!.related_knowledge ?? '',
+          タグ: r.p!.tags ?? [],
+          難易度: r.p!.difficulty,
+          最終結果: RESULT_LABELS[r.latestResult] ?? r.latestResult,
+          挑戦回数: r.attemptCount,
+          最終挑戦日時: r.latestAt,
+        }))
+        triggerDownload(
+          new Blob([JSON.stringify(output, null, 2)], { type: 'application/json' }),
+          `cma_problems_${dateStr}.json`
+        )
+      } else {
+        const BOM = '\uFEFF'
+        const escape = (v: unknown) => {
+          const s = String(v ?? '')
+          return s.includes(',') || s.includes('"') || s.includes('\n')
+            ? `"${s.replace(/"/g, '""')}"` : s
+        }
+        const headers = ['科目', '章名', '問題番号', '問題文', '解答', '解説', '関連知識', 'タグ', '難易度', '最終結果', '挑戦回数', '最終挑戦日時']
+        const lines = [
+          headers.join(','),
+          ...rows.map(r => [
+            SUBJECT_LABELS[r.p!.subject as SubjectKey] ?? r.p!.subject,
+            r.p!.chapter_name,
+            r.p!.question_no,
+            r.p!.question_text,
+            r.p!.answer_text,
+            r.p!.explanation ?? '',
+            r.p!.related_knowledge ?? '',
+            (r.p!.tags ?? []).join(';'),
+            r.p!.difficulty,
+            RESULT_LABELS[r.latestResult] ?? r.latestResult,
+            r.attemptCount,
+            r.latestAt,
+          ].map(escape).join(',')),
+        ]
+        triggerDownload(
+          new Blob([BOM + lines.join('\n')], { type: 'text/csv;charset=utf-8;' }),
+          `cma_problems_${dateStr}.csv`
+        )
+      }
+    } catch (e) {
+      console.error('Export error:', e)
+    } finally {
+      setExporting(false)
+    }
+  }
+
   // 未使用変数の警告を抑制
   void previewRows
   void fileSize
   void showAllErrors
   void setShowAllErrors
-  void exportSubject
-  void setExportSubject
-  void exporting
-  void setExporting
   void existingIds
   void REQUIRED_FIELDS
-  void SUBJECT_LABELS
   void XCircle
   void ChevronDown
   void ChevronUp
-  void Filter
 
   // ===== UI =====
   return (
@@ -620,10 +755,117 @@ export default function ImportPage() {
           </div>
         )}
 
-        {/* エクスポートタブ（仮） */}
+        {/* エクスポートタブ */}
         {activeTab === 'export' && (
-          <div className="bg-[#0f0f23] rounded-xl p-8 text-center text-gray-500">
-            エクスポート機能は次のステップで実装します
+          <div className="space-y-4">
+
+            {/* 説明 */}
+            <div className="bg-[#0f0f23] rounded-xl p-4">
+              <h3 className="text-white font-medium mb-1 flex items-center gap-2">
+                <Download className="w-4 h-4 text-blue-400" />
+                解答履歴エクスポート
+              </h3>
+              <p className="text-gray-400 text-sm">
+                問題集の解答履歴をダウンロードして、AIへの類似問題作成プロンプトとして活用できます。
+              </p>
+            </div>
+
+            {/* 結果フィルタ */}
+            <div className="bg-[#0f0f23] rounded-xl p-4 space-y-2">
+              <p className="text-xs text-gray-500 font-medium uppercase tracking-wide">出力対象</p>
+              <div className="flex gap-2">
+                {([
+                  { value: 'mistakes', label: '間違い・部分正解のみ', desc: 'AI類似問題作成に最適' },
+                  { value: 'all', label: '全問題' },
+                ] as const).map(opt => (
+                  <button
+                    key={opt.value}
+                    onClick={() => setExportResultFilter(opt.value)}
+                    className={`flex-1 py-2 px-3 rounded-lg text-sm border transition-colors text-left ${
+                      exportResultFilter === opt.value
+                        ? 'bg-blue-600/20 border-blue-500 text-white'
+                        : 'bg-transparent border-gray-700 text-gray-400 hover:border-gray-500'
+                    }`}
+                  >
+                    <span className="block font-medium">{opt.label}</span>
+                    {'desc' in opt && <span className="block text-xs text-blue-400 mt-0.5">{opt.desc}</span>}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* 科目フィルタ */}
+            <div className="bg-[#0f0f23] rounded-xl p-4 space-y-2">
+              <p className="text-xs text-gray-500 font-medium uppercase tracking-wide flex items-center gap-1">
+                <Filter className="w-3 h-3" />
+                科目
+              </p>
+              <div className="flex flex-wrap gap-2">
+                {VALID_SUBJECTS.map(s => (
+                  <button
+                    key={s}
+                    onClick={() => setExportSelectedSubjects(prev =>
+                      prev.includes(s) ? prev.filter(x => x !== s) : [...prev, s]
+                    )}
+                    className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${
+                      exportSelectedSubjects.includes(s)
+                        ? 'bg-blue-600 text-white'
+                        : 'bg-gray-700 text-gray-400'
+                    }`}
+                  >
+                    {SUBJECT_LABELS[s]}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* 形式選択 */}
+            <div className="bg-[#0f0f23] rounded-xl p-4 space-y-2">
+              <p className="text-xs text-gray-500 font-medium uppercase tracking-wide">ファイル形式</p>
+              <div className="flex gap-2">
+                {([
+                  { value: 'json', label: 'JSON', desc: 'AIプロンプト向け（推奨）', icon: <FileJson className="w-4 h-4" /> },
+                  { value: 'csv', label: 'CSV', desc: 'Excel・スプレッドシート向け', icon: <FileText className="w-4 h-4" /> },
+                ] as const).map(opt => (
+                  <button
+                    key={opt.value}
+                    onClick={() => setExportFormat(opt.value)}
+                    className={`flex-1 py-2 px-3 rounded-lg text-sm border transition-colors text-left flex items-start gap-2 ${
+                      exportFormat === opt.value
+                        ? 'bg-blue-600/20 border-blue-500 text-white'
+                        : 'bg-transparent border-gray-700 text-gray-400 hover:border-gray-500'
+                    }`}
+                  >
+                    <span className="mt-0.5 shrink-0">{opt.icon}</span>
+                    <span>
+                      <span className="block font-medium">{opt.label}</span>
+                      <span className="block text-xs text-gray-500 mt-0.5">{opt.desc}</span>
+                    </span>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* ダウンロードボタン */}
+            <button
+              onClick={handleExport}
+              disabled={exporting || exportSelectedSubjects.length === 0}
+              className="w-full py-3 px-6 bg-blue-600 hover:bg-blue-500 disabled:opacity-40 disabled:cursor-not-allowed text-white font-medium rounded-xl transition-colors flex items-center justify-center gap-2"
+            >
+              {exporting
+                ? <><Loader2 className="w-5 h-5 animate-spin" />エクスポート中...</>
+                : <><Download className="w-5 h-5" />解答履歴をダウンロード</>
+              }
+            </button>
+
+            {/* AIプロンプト例 */}
+            <div className="bg-[#0f0f23] rounded-xl p-4">
+              <p className="text-xs text-gray-500 font-medium mb-2">AIプロンプト活用例</p>
+              <p className="text-xs text-gray-400 leading-relaxed bg-black/30 rounded-lg p-3 font-mono">
+                「以下のJSONは私が間違えたCMA試験問題です。各問題の問題文・解答・タグをもとに、類似問題を3問ずつ作成してください。難易度や出題形式は元の問題に合わせてください。」
+              </p>
+            </div>
+
           </div>
         )}
 
