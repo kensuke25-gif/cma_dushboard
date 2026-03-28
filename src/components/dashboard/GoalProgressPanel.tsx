@@ -187,10 +187,10 @@ export default function GoalProgressPanel() {
   const examDayLabel = examDays > 0 ? `残り${examDays}日` : '試験日'
 
   return (
-    <div className="space-y-3">
+    <div className="bg-[#13132a] rounded-2xl p-4 sm:p-5 space-y-3 border border-gray-800/50">
       {/* ヘッダー */}
       <div className="flex items-center justify-between">
-        <h2 className="text-sm font-semibold text-gray-300">学習時間の目標</h2>
+        <h2 className="text-sm font-semibold text-white">学習時間の目標</h2>
         <button
           onClick={() => setShowSettings(v => !v)}
           className="flex items-center gap-1.5 text-xs text-gray-500 hover:text-gray-300 transition-colors"
