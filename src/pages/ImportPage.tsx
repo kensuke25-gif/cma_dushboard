@@ -283,14 +283,20 @@ export default function ImportPage() {
       display_order: p.displayOrder ?? null,
     })
 
-    // インポート対象の章キーに属する孤立問題（ファイルに存在しないID）を削除
-    const importedChapterKeys = [...new Set(filteredProblems.map(p => p.chapterKey))]
+    // インポート対象の (subject, chapter_key) ペアに属する孤立問題（ファイルに存在しないID）を削除
+    // ※ chapter_key のみのフィルタは他科目の同名章を誤削除するため、科目ごとにペアで絞り込む
+    const subjectChapterPairs = [...new Map(
+      filteredProblems.map(p => [`${p.subject}:${p.chapterKey}`, { subject: p.subject, chapterKey: p.chapterKey }])
+    ).values()]
     const importedIdSet = new Set(filteredProblems.map(p => p.id))
-    if (importedChapterKeys.length > 0) {
+    if (subjectChapterPairs.length > 0) {
+      const orFilter = subjectChapterPairs
+        .map(p => `and(subject.eq.${p.subject},chapter_key.eq.${p.chapterKey})`)
+        .join(',')
       const { data: existingInChapters } = await supabase
         .from('problems')
         .select('id')
-        .in('chapter_key', importedChapterKeys)
+        .or(orFilter)
       const orphanedIds = (existingInChapters ?? [])
         .map((r: { id: string }) => r.id)
         .filter(id => !importedIdSet.has(id))
