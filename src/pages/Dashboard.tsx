@@ -1,10 +1,10 @@
 import { useEffect, useState } from 'react'
 import { RefreshCw } from 'lucide-react'
 import PomodoroTimer from '../components/dashboard/PomodoroTimer'
-import TodayTasks from '../components/dashboard/TodayTasks'
 import ProgressSection from '../components/dashboard/ProgressSection'
 import RecentHistory from '../components/dashboard/RecentHistory'
 import StreakBanner from '../components/problems/StreakBanner'
+import GoalProgressPanel from '../components/dashboard/GoalProgressPanel'
 import { useStudyStore } from '../stores/studyStore'
 
 export default function Dashboard() {
@@ -34,6 +34,11 @@ export default function Dashboard() {
         </button>
       </div>
 
+      {/* 学習目標パネル（フル幅） */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 pb-1">
+        <GoalProgressPanel />
+      </div>
+
       {/* メインレイアウト
           - モバイル (< md): 1 列、全セクション縦積み
           - タブレット (md〜xl): 2 列、RecentHistory は下段フル幅
@@ -48,9 +53,8 @@ export default function Dashboard() {
           <ProgressSection />
         </div>
 
-        {/* 列 2: 今日やること + ポモドーロ */}
+        {/* 列 2: ポモドーロ */}
         <div className="flex flex-col gap-4 sm:gap-5">
-          <TodayTasks />
           <PomodoroTimer />
         </div>
 
