@@ -283,6 +283,23 @@ export default function ImportPage() {
       display_order: p.displayOrder ?? null,
     })
 
+    // インポート対象の章キーに属する孤立問題（ファイルに存在しないID）を削除
+    const importedChapterKeys = [...new Set(filteredProblems.map(p => p.chapterKey))]
+    const importedIdSet = new Set(filteredProblems.map(p => p.id))
+    if (importedChapterKeys.length > 0) {
+      const { data: existingInChapters } = await supabase
+        .from('problems')
+        .select('id')
+        .in('chapter_key', importedChapterKeys)
+      const orphanedIds = (existingInChapters ?? [])
+        .map((r: { id: string }) => r.id)
+        .filter(id => !importedIdSet.has(id))
+      if (orphanedIds.length > 0) {
+        await supabase.from('problem_attempts').delete().in('problem_id', orphanedIds)
+        await supabase.from('problems').delete().in('id', orphanedIds)
+      }
+    }
+
     // 100件ずつチャンク処理
     for (let i = 0; i < filteredProblems.length; i += CHUNK_SIZE) {
       const chunk = filteredProblems.slice(i, i + CHUNK_SIZE).map(toSnakeCase)

@@ -430,18 +430,22 @@ export const useProblemStore = create<ProblemStore>((set, get) => ({
   // =====================================
 
   deleteChapter: async (chapterKey) => {
-    // 対象問題IDを取得（ローカル state から）
-    const targetIds = get().problems
-      .filter(p => p.chapterKey === chapterKey)
-      .map(p => p.id)
+    // ローカル state ではなく Supabase から直接 ID を取得
+    // （ストアと DB がずれていても確実に削除できるよう）
+    const { data: existing } = await supabase
+      .from('problems')
+      .select('id')
+      .eq('chapter_key', chapterKey)
 
-    if (targetIds.length === 0) return
+    const targetIds = (existing ?? []).map((r: { id: string }) => r.id)
 
     // 回答履歴を先に削除（FK 制約対策）
-    await supabase
-      .from('problem_attempts')
-      .delete()
-      .in('problem_id', targetIds)
+    if (targetIds.length > 0) {
+      await supabase
+        .from('problem_attempts')
+        .delete()
+        .in('problem_id', targetIds)
+    }
 
     // 問題本体を削除
     const { error } = await supabase
@@ -451,17 +455,18 @@ export const useProblemStore = create<ProblemStore>((set, get) => ({
 
     if (error) {
       console.error('[problemStore] deleteChapter error:', error)
-      return
+      throw error  // 呼び出し元でエラーハンドリングできるよう伝播
     }
 
     // ローカル state を更新
+    const targetIdSet = new Set(targetIds)
     set(state => ({
       problems: state.problems.filter(p => p.chapterKey !== chapterKey),
       stats: Object.fromEntries(
-        Object.entries(state.stats).filter(([id]) => !targetIds.includes(id))
+        Object.entries(state.stats).filter(([id]) => !targetIdSet.has(id))
       ),
       recentAttempts: Object.fromEntries(
-        Object.entries(state.recentAttempts).filter(([id]) => !targetIds.includes(id))
+        Object.entries(state.recentAttempts).filter(([id]) => !targetIdSet.has(id))
       ),
     }))
   },

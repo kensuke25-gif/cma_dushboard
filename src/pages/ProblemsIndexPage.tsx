@@ -45,6 +45,8 @@ export default function ProblemsIndexPage() {
   const [confirmDeleteKey, setConfirmDeleteKey] = useState<string | null>(null)
   // 削除処理中フラグ
   const [deleting, setDeleting] = useState(false)
+  // 削除エラーメッセージ
+  const [deleteError, setDeleteError] = useState<string | null>(null)
 
   const toggleSubject = (key: string) => {
     setExpandedSubjects(prev => {
@@ -64,9 +66,15 @@ export default function ProblemsIndexPage() {
 
   const handleDeleteChapter = async (chapterKey: string) => {
     setDeleting(true)
-    await deleteChapter(chapterKey)
-    setConfirmDeleteKey(null)
-    setDeleting(false)
+    setDeleteError(null)
+    try {
+      await deleteChapter(chapterKey)
+      setConfirmDeleteKey(null)
+    } catch {
+      setDeleteError('削除に失敗しました。再度お試しください。')
+    } finally {
+      setDeleting(false)
+    }
   }
 
   // 全問題IDを渡して履歴を取得
@@ -252,6 +260,13 @@ export default function ProblemsIndexPage() {
                           >
                             {deleting ? '削除中…' : '削除する'}
                           </button>
+                        </div>
+                      )}
+
+                      {/* 削除エラー */}
+                      {deleteError && confirmDeleteKey === ch.chapterKey && (
+                        <div className="px-4 py-2 bg-red-950/40 border-t border-red-900/40">
+                          <p className="text-xs text-red-400">{deleteError}</p>
                         </div>
                       )}
 
