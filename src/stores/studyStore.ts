@@ -18,6 +18,7 @@ interface StudyState {
   loading: boolean
   fetchRecords: () => Promise<void>
   addRecord: (record: Omit<StudyRecord, 'id' | 'created_at'>) => Promise<void>
+  updateRecord: (id: string, updates: Partial<Omit<StudyRecord, 'id' | 'created_at'>>) => Promise<void>
   fetchWeakItems: () => Promise<void>
   toggleWeakItem: (itemId: number) => Promise<void>
 }
@@ -47,6 +48,18 @@ export const useStudyStore = create<StudyState>((set, get) => ({
       .single()
     if (!error && data) {
       set(state => ({ records: [data as StudyRecord, ...state.records] }))
+    }
+  },
+
+  updateRecord: async (id, updates) => {
+    const { error } = await supabase
+      .from('study_records')
+      .update(updates)
+      .eq('id', id)
+    if (!error) {
+      set(state => ({
+        records: state.records.map(r => r.id === id ? { ...r, ...updates } : r),
+      }))
     }
   },
 
