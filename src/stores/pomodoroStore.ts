@@ -97,21 +97,22 @@ export const usePomodoroStore = create<PomodoroState>()(
         if (!running || endTime === null) return
         const remaining = Math.round((endTime - Date.now()) / 1000)
         if (remaining <= 0) {
-          // タイマー終了 → ストップウォッチ開始
-          set({
-            running: false,
-            endTime: null,
-            seconds: 0,
-            overtimeRunning: true,
-            overtimeStartTime: Date.now(),
-            overtime: 0,
-          })
           if (mode === 'focus') {
+            // 集中モード終了 → ストップウォッチ開始 & セット数カウント
             const now = todayStr()
             set(s => ({
+              running: false,
+              endTime: null,
+              seconds: 0,
+              overtimeRunning: true,
+              overtimeStartTime: Date.now(),
+              overtime: 0,
               sets: s.setsDate === now ? s.sets + 1 : 1,
               setsDate: now,
             }))
+          } else {
+            // 休憩モード終了 → 通常終了（ストップウォッチなし）
+            set({ running: false, endTime: null, seconds: 0 })
           }
           _finishCallback?.(mode)
         } else {
