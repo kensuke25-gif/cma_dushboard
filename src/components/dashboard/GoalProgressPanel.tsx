@@ -59,7 +59,7 @@ function DiffBadge({ actual, prev, label }: { actual: number; prev: number; labe
   const diff = actual - prev
   if (diff > 0) {
     return (
-      <span className="flex items-center gap-0.5 text-[10px] font-semibold text-red-400">
+      <span className="flex items-center gap-0.5 text-[10px] font-semibold text-emerald-400 shrink-0">
         <TrendingUp className="w-3 h-3" strokeWidth={2} />
         +{fmtMin(diff)}
         <span className="text-[#8888aa] font-normal">{label}</span>
@@ -68,7 +68,7 @@ function DiffBadge({ actual, prev, label }: { actual: number; prev: number; labe
   }
   if (diff < 0) {
     return (
-      <span className="flex items-center gap-0.5 text-[10px] font-semibold text-emerald-400">
+      <span className="flex items-center gap-0.5 text-[10px] font-semibold text-red-400 shrink-0">
         <TrendingDown className="w-3 h-3" strokeWidth={2} />
         -{fmtMin(Math.abs(diff))}
         <span className="text-[#8888aa] font-normal">{label}</span>
@@ -76,7 +76,7 @@ function DiffBadge({ actual, prev, label }: { actual: number; prev: number; labe
     )
   }
   return (
-    <span className="flex items-center gap-0.5 text-[10px] font-semibold text-[#8888aa]">
+    <span className="flex items-center gap-0.5 text-[10px] font-semibold text-[#8888aa] shrink-0">
       <Minus className="w-3 h-3" strokeWidth={2} />
       ±0
       <span className="font-normal">{label}</span>
@@ -101,21 +101,15 @@ function ProgressCard({ label, actual, target, prev, prevLabel, sub }: CardProps
 
   return (
     <div className="bg-[#252540] rounded-[16px] p-3 sm:p-4 flex flex-col gap-2 min-w-0">
-      <div className="flex items-center justify-between gap-1">
-        <span className="text-[10px] sm:text-xs text-[#8888aa] font-medium">{label}</span>
-        {sub && <span className="text-[10px] text-[#8888aa]">{sub}</span>}
-      </div>
+      {/* ラベル */}
+      <span className="text-[10px] sm:text-xs text-[#8888aa] font-medium">{label}</span>
 
-      <div className="flex items-end justify-between gap-1">
-        <div className="flex items-end gap-1 min-w-0">
-          <span className={`text-lg sm:text-xl font-bold leading-none ${done ? 'text-[#a78bfa]' : 'text-white'}`}>
-            {fmtMin(actual)}
-          </span>
-          <span className="text-[10px] text-[#8888aa] mb-0.5 shrink-0">/ {fmtMin(target)}</span>
-        </div>
-        {prev !== undefined && prevLabel && (
-          <DiffBadge actual={actual} prev={prev} label={prevLabel} />
-        )}
+      {/* 実績 / 目標 */}
+      <div className="flex items-end gap-1">
+        <span className={`text-lg sm:text-xl font-bold leading-none ${done ? 'text-[#a78bfa]' : 'text-white'}`}>
+          {fmtMin(actual)}
+        </span>
+        <span className="text-[10px] text-[#8888aa] mb-0.5">/ {fmtMin(target)}</span>
       </div>
 
       {/* プログレスバー */}
@@ -126,11 +120,16 @@ function ProgressCard({ label, actual, target, prev, prevLabel, sub }: CardProps
         />
       </div>
 
-      <div className="flex items-center justify-between">
-        <span className={`text-[10px] font-medium ${done ? 'text-[#a78bfa]' : 'text-[#8888aa]'}`}>
+      {/* フッター: 残り/達成 ← → 前期比 or 残りXX日 */}
+      <div className="flex items-center justify-between gap-1">
+        <span className={`text-[10px] font-medium shrink-0 ${done ? 'text-[#a78bfa]' : 'text-[#8888aa]'}`}>
           {done ? '達成!' : `残り ${fmtMin(remaining)}`}
         </span>
-        <span className="text-[10px] text-[#8888aa]">{pct}%</span>
+        {prev !== undefined && prevLabel ? (
+          <DiffBadge actual={actual} prev={prev} label={prevLabel} />
+        ) : sub ? (
+          <span className="text-[10px] text-[#8888aa] shrink-0">{sub}</span>
+        ) : null}
       </div>
     </div>
   )
