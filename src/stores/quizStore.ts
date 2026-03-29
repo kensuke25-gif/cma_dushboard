@@ -63,6 +63,7 @@ interface QuizState {
   deleteField: (subject: string, field: string) => Promise<void>
   addQuestion: (subject: string, field: string, q: RawQuestion) => Promise<QuizQuestion>
   updateQuestion: (id: string, updates: Partial<RawQuestion>) => Promise<void>
+  renameField: (subject: string, oldField: string, newField: string) => Promise<void>
   fetchAnswerStats: (questionIds: string[]) => Promise<Record<string, { total: number; correct: number }>>
 }
 
@@ -196,6 +197,32 @@ export const useQuizStore = create<QuizState>((set, get) => ({
     const added = data as QuizQuestion
     set(state => ({ questions: [...state.questions, added] }))
     return added
+  },
+
+  renameField: async (subject, oldField, newField) => {
+    const trimmed = newField.trim()
+    if (!trimmed || trimmed === oldField) return
+    const { error } = await supabase
+      .from('quiz_questions')
+      .update({ field: trimmed })
+      .eq('subject', subject)
+      .eq('field', oldField)
+    if (error) throw new Error(error.message)
+    set(state => ({
+      questions: state.questions.map(q =>
+        q.subject === subject && q.field === oldField ? { ...q, field: trimmed } : q
+      ),
+    }))
+    // localStorageの並び順キーも更新
+    const orderKey = `quiz_field_order_${subject}`
+    const saved = localStorage.getItem(orderKey)
+    if (saved) {
+      try {
+        const order = JSON.parse(saved) as string[]
+        const updated = order.map(f => (f === oldField ? trimmed : f))
+        localStorage.setItem(orderKey, JSON.stringify(updated))
+      } catch { /* ignore */ }
+    }
   },
 
   fetchAnswerStats: async (questionIds) => {

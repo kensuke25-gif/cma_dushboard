@@ -86,7 +86,7 @@ function QuestionFormFields({
 }
 
 export default function QuizEditor() {
-  const { questions, loading, fetchQuestions, getFields, deleteQuestion, addQuestion, updateQuestion } = useQuizStore()
+  const { questions, loading, fetchQuestions, getFields, deleteQuestion, addQuestion, updateQuestion, renameField } = useQuizStore()
   const [subject, setSubject] = useState('')
   const [field, setField] = useState<string | null>(null)
   const [fields, setFields] = useState<string[]>([])
@@ -97,16 +97,35 @@ export default function QuizEditor() {
   const [expandedId, setExpandedId] = useState<string | null>(null)
   const [addSuccess, setAddSuccess] = useState(false)
 
-  // 編集状態
+  // 問題編集状態
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editForm, setEditForm] = useState<QuestionForm>(EMPTY_FORM)
   const [editSaving, setEditSaving] = useState(false)
   const [editSuccess, setEditSuccess] = useState(false)
 
+  // 分野リネーム状態
+  const [renamingField, setRenamingField] = useState<string | null>(null)
+  const [renameValue, setRenameValue] = useState('')
+  const [renameSaving, setRenameSaving] = useState(false)
+
   useEffect(() => {
     if (!subject) { setFields([]); setField(null); return }
     getFields(subject).then(f => { setFields(f); setField(null) })
   }, [subject, getFields])
+
+  async function handleRenameField(oldName: string) {
+    const newName = renameValue.trim()
+    if (!newName || newName === oldName) { setRenamingField(null); return }
+    setRenameSaving(true)
+    try {
+      await renameField(subject, oldName, newName)
+      setFields(prev => prev.map(f => (f === oldName ? newName : f)))
+      if (field === oldName) setField(newName)
+    } finally {
+      setRenameSaving(false)
+      setRenamingField(null)
+    }
+  }
 
   useEffect(() => {
     if (!subject) return
@@ -193,6 +212,58 @@ export default function QuizEditor() {
           ))}
         </div>
       </div>
+
+      {/* 分野管理（リネーム） */}
+      {subject && fields.length > 0 && (
+        <div className="mb-5 bg-[#111125] rounded-xl border border-[#2a2a4a] overflow-hidden">
+          <p className="text-xs font-medium text-[#5a5a7a] px-4 py-2.5 border-b border-[#2a2a4a]">分野の管理</p>
+          <div className="divide-y divide-[#1e1e38]">
+            {fields.map(f => (
+              <div key={f} className="px-4 py-2.5">
+                {renamingField === f ? (
+                  <div className="flex items-center gap-2">
+                    <input
+                      autoFocus
+                      type="text"
+                      value={renameValue}
+                      onChange={e => setRenameValue(e.target.value)}
+                      onKeyDown={e => {
+                        if (e.key === 'Enter') handleRenameField(f)
+                        if (e.key === 'Escape') setRenamingField(null)
+                      }}
+                      className="flex-1 bg-[#1e1e3a] border border-[#7c4dff] rounded-lg px-3 py-1 text-sm text-[#c8c8e8] focus:outline-none"
+                    />
+                    <button
+                      onClick={() => handleRenameField(f)}
+                      disabled={renameSaving}
+                      className="px-3 py-1 text-xs bg-[#7c4dff] text-white rounded-lg hover:bg-[#6a3de8] disabled:opacity-50 transition-colors shrink-0"
+                    >
+                      {renameSaving ? '保存中…' : '保存'}
+                    </button>
+                    <button
+                      onClick={() => setRenamingField(null)}
+                      className="p-1 text-[#5a5a7a] hover:text-[#c8c8e8] transition-colors"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-2">
+                    <span className="flex-1 text-sm text-[#c8c8e8] truncate">{f}</span>
+                    <button
+                      onClick={() => { setRenamingField(f); setRenameValue(f) }}
+                      title="分野名を変更"
+                      className="p-1.5 rounded-lg text-[#5a5a7a] hover:text-[#a78bfa] hover:bg-[#7c4dff]/10 transition-colors"
+                    >
+                      <Pencil className="w-3.5 h-3.5" strokeWidth={1.5} />
+                    </button>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* 分野選択 */}
       {subject && fields.length > 0 && (
