@@ -62,6 +62,7 @@ interface QuizState {
   deleteQuestion: (id: string) => Promise<void>
   deleteField: (subject: string, field: string) => Promise<void>
   addQuestion: (subject: string, field: string, q: RawQuestion) => Promise<QuizQuestion>
+  updateQuestion: (id: string, updates: Partial<RawQuestion>) => Promise<void>
   fetchAnswerStats: (questionIds: string[]) => Promise<Record<string, { total: number; correct: number }>>
 }
 
@@ -164,6 +165,24 @@ export const useQuizStore = create<QuizState>((set, get) => ({
       .eq('subject', subject).eq('field', field)
     set(state => ({
       questions: state.questions.filter(q => !(q.subject === subject && q.field === field)),
+    }))
+  },
+
+  updateQuestion: async (id, updates) => {
+    const { error } = await supabase
+      .from('quiz_questions')
+      .update({
+        ...(updates.question !== undefined && { question: updates.question }),
+        ...(updates.options !== undefined && { options: updates.options }),
+        ...(updates.correct_answer !== undefined && { correct_answer: updates.correct_answer }),
+        ...(updates.explanation !== undefined && { explanation: updates.explanation ?? null }),
+      })
+      .eq('id', id)
+    if (error) throw new Error(error.message)
+    set(state => ({
+      questions: state.questions.map(q =>
+        q.id === id ? { ...q, ...updates } : q
+      ),
     }))
   },
 
