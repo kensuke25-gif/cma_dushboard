@@ -308,6 +308,27 @@ export type Database = {
         Update: Record<string, never>
         Relationships: []
       }
+      memos: {
+        Row: {
+          id: string
+          user_id: string
+          title: string
+          body: string
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          user_id: string
+          title: string
+          body: string
+        }
+        Update: {
+          title?: string
+          body?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       problem_latest_results: {
