@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
-import { Outlet, NavLink, useLocation } from 'react-router-dom'
-import { LayoutDashboard, BookOpen, Brain, BarChart2, FileQuestion, LogOut, Menu, X, ChevronLeft, Upload } from 'lucide-react'
+import { Outlet, NavLink, useLocation, useNavigate } from 'react-router-dom'
+import { LayoutDashboard, BookOpen, Brain, BarChart2, FileQuestion, LogOut, Menu, X, ChevronLeft, Upload, Timer } from 'lucide-react'
 import { useAuthStore } from '../stores/authStore'
 import { usePomodoroStore, MODES, registerFinishCallback, type PomodoroMode } from '../stores/pomodoroStore'
 import { playTimerEndSound } from '../lib/sound'
@@ -12,6 +12,15 @@ const tabs = [
   { to: '/problems', label: '問題集', Icon: FileQuestion, exact: false },
   { to: '/analytics', label: 'レポート', Icon: BarChart2, exact: false },
   { to: '/import', label: 'インポート', Icon: Upload, exact: false },
+]
+
+// モバイルボトムナビゲーション用タブ
+const bottomTabs = [
+  { id: 'dashboard', to: '/', label: 'Dashboard', Icon: LayoutDashboard },
+  { id: 'report',    to: '/analytics', label: 'Report', Icon: BarChart2 },
+  { id: 'pomodoro',  to: '/', label: 'Pomodoro', Icon: Timer },
+  { id: 'quiz',      to: '/quiz', label: 'Quiz', Icon: Brain },
+  { id: 'workbook',  to: '/problems', label: 'Workbook', Icon: FileQuestion },
 ]
 
 // ---- 通知 ----
@@ -28,6 +37,7 @@ export default function Layout() {
   const [sidebarPinned, setSidebarPinned] = useState<boolean>(() => {
     try { return localStorage.getItem('cma-sidebar-pinned') !== 'false' } catch { return true }
   })
+  const [lastBottomTab, setLastBottomTab] = useState<string>('dashboard')
 
   useEffect(() => {
     try { localStorage.setItem('cma-sidebar-pinned', String(sidebarPinned)) } catch {}
@@ -36,6 +46,18 @@ export default function Layout() {
   const signOut = useAuthStore(s => s.signOut)
   const { running, overtimeRunning, tick, mode, seconds } = usePomodoroStore()
   const location = useLocation()
+  const navigate = useNavigate()
+
+  // パス変更時にボトムタブのアクティブ状態を同期
+  useEffect(() => {
+    const p = location.pathname
+    if (p === '/analytics') setLastBottomTab('report')
+    else if (p.startsWith('/quiz')) setLastBottomTab('quiz')
+    else if (p.startsWith('/problems')) setLastBottomTab('workbook')
+    else if (p === '/') {
+      setLastBottomTab(prev => (prev === 'pomodoro' ? 'pomodoro' : 'dashboard'))
+    }
+  }, [location.pathname])
 
   const avatarUrl = user?.user_metadata?.avatar_url as string | undefined
   const name = (user?.user_metadata?.full_name ?? user?.email ?? '') as string
@@ -261,17 +283,60 @@ export default function Layout() {
           </div>{/* /ナビゲーション行 */}
         </header>
 
-        <main className="flex-1">
+        <main className="flex-1 pb-[calc(56px+env(safe-area-inset-bottom))] md:pb-0">
           <Outlet />
         </main>
       </div>
+
+      {/* ========== モバイルボトムナビゲーション ========== */}
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-[#111125] border-t border-[#2a2a4a] flex items-stretch"
+        style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
+      >
+        {bottomTabs.map(({ id, to, label, Icon }) => {
+          const isActive =
+            id === 'dashboard' ? location.pathname === '/' && lastBottomTab === 'dashboard' :
+            id === 'pomodoro'  ? location.pathname === '/' && lastBottomTab === 'pomodoro' :
+            id === 'report'    ? location.pathname === '/analytics' :
+            id === 'quiz'      ? location.pathname.startsWith('/quiz') :
+            id === 'workbook'  ? location.pathname.startsWith('/problems') :
+            false
+
+          return (
+            <button
+              key={id}
+              onClick={() => {
+                setLastBottomTab(id)
+                navigate(to)
+              }}
+              className={`flex-1 flex flex-col items-center justify-center gap-0.5 py-2 transition-colors ${
+                isActive ? 'text-[#a78bfa]' : 'text-[#8888aa]'
+              }`}
+            >
+              <Icon
+                className="w-5 h-5 shrink-0"
+                strokeWidth={1.5}
+                style={id === 'pomodoro' && running ? { color: MODES[mode].ringColor } : undefined}
+              />
+              <span className="text-[10px] font-medium leading-none">{label}</span>
+              {id === 'pomodoro' && running && (
+                <span
+                  className="text-[9px] font-bold tabular-nums leading-none"
+                  style={{ color: MODES[mode].ringColor }}
+                >
+                  {mm}:{ss}
+                </span>
+              )}
+            </button>
+          )
+        })}
+      </nav>
 
       {/* フローティングポモドーロタイマー（Dashboard以外で実行中に表示） */}
       {running && location.pathname !== '/' && (
         <NavLink
           to="/"
           title="Dashboardでタイマーを確認"
-          className="fixed bottom-6 right-6 z-40 flex items-center gap-2 px-4 py-2.5 rounded-full bg-[#1a1a30]/95 border border-[#7c4dff]/50 shadow-xl backdrop-blur-sm hover:border-[#7c4dff] hover:bg-[#252545] transition-colors"
+          className="fixed bottom-[calc(72px+env(safe-area-inset-bottom))] md:bottom-6 right-6 z-40 flex items-center gap-2 px-4 py-2.5 rounded-full bg-[#1a1a30]/95 border border-[#7c4dff]/50 shadow-xl backdrop-blur-sm hover:border-[#7c4dff] hover:bg-[#252545] transition-colors"
         >
           <span
             className="w-2 h-2 rounded-full animate-pulse shrink-0"
