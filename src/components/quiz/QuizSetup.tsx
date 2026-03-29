@@ -28,11 +28,25 @@ export default function QuizSetup({ onStart }: Props) {
 
   const { getFields, fetchQuestions, fetchWeakQuestions, questions, weakQuestionIds, loading } = useQuizStore()
 
-  // 科目変更時に分野リストを取得
+  // 科目変更時に分野リストを取得（保存済みの並び順を適用）
   useEffect(() => {
     if (!subject) { setFields([]); setField(null); return }
-    getFields(subject).then(f => {
-      setFields(f)
+    getFields(subject).then(rawFields => {
+      try {
+        const saved = localStorage.getItem(`quiz_field_order_${subject}`)
+        if (saved) {
+          const savedOrder = JSON.parse(saved) as string[]
+          const ordered = [
+            ...savedOrder.filter(f => rawFields.includes(f)),
+            ...rawFields.filter(f => !savedOrder.includes(f)),
+          ]
+          setFields(ordered)
+        } else {
+          setFields(rawFields)
+        }
+      } catch {
+        setFields(rawFields)
+      }
       setField(null)
     })
   }, [subject, getFields])
