@@ -5,6 +5,7 @@ import ProgressSection from '../components/dashboard/ProgressSection'
 import RecentHistory from '../components/dashboard/RecentHistory'
 import StreakBanner from '../components/problems/StreakBanner'
 import GoalProgressPanel from '../components/dashboard/GoalProgressPanel'
+import MemoPanel from '../components/dashboard/MemoPanel'
 import { useStudyStore } from '../stores/studyStore'
 
 export default function Dashboard() {
@@ -53,9 +54,10 @@ export default function Dashboard() {
           <ProgressSection />
         </div>
 
-        {/* 列 2: ポモドーロ */}
+        {/* 列 2: ポモドーロ＋メモ */}
         <div className="flex flex-col gap-4 sm:gap-5">
           <PomodoroTimer />
+          <MemoPanel />
         </div>
 
         {/* 列 3: 最近の記録
