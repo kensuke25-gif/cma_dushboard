@@ -18,7 +18,7 @@ const tabs = [
 const bottomTabs = [
   { id: 'dashboard', to: '/', label: 'Dashboard', Icon: LayoutDashboard },
   { id: 'report',    to: '/analytics', label: 'Report', Icon: BarChart2 },
-  { id: 'pomodoro',  to: '/', label: 'Pomodoro', Icon: Timer },
+  { id: 'pomodoro',  to: '/pomodoro', label: 'Pomodoro', Icon: Timer },
   { id: 'quiz',      to: '/quiz', label: 'Quiz', Icon: Brain },
   { id: 'workbook',  to: '/problems', label: 'Workbook', Icon: FileQuestion },
 ]
@@ -51,12 +51,11 @@ export default function Layout() {
   // パス変更時にボトムタブのアクティブ状態を同期
   useEffect(() => {
     const p = location.pathname
-    if (p === '/analytics') setLastBottomTab('report')
-    else if (p.startsWith('/quiz')) setLastBottomTab('quiz')
+    if (p === '/analytics')       setLastBottomTab('report')
+    else if (p.startsWith('/quiz'))     setLastBottomTab('quiz')
     else if (p.startsWith('/problems')) setLastBottomTab('workbook')
-    else if (p === '/') {
-      setLastBottomTab(prev => (prev === 'pomodoro' ? 'pomodoro' : 'dashboard'))
-    }
+    else if (p === '/pomodoro')         setLastBottomTab('pomodoro')
+    else if (p === '/')                 setLastBottomTab('dashboard')
   }, [location.pathname])
 
   const avatarUrl = user?.user_metadata?.avatar_url as string | undefined
@@ -293,13 +292,7 @@ export default function Layout() {
         style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
       >
         {bottomTabs.map(({ id, to, label, Icon }) => {
-          const isActive =
-            id === 'dashboard' ? location.pathname === '/' && lastBottomTab === 'dashboard' :
-            id === 'pomodoro'  ? location.pathname === '/' && lastBottomTab === 'pomodoro' :
-            id === 'report'    ? location.pathname === '/analytics' :
-            id === 'quiz'      ? location.pathname.startsWith('/quiz') :
-            id === 'workbook'  ? location.pathname.startsWith('/problems') :
-            false
+          const isActive = lastBottomTab === id
 
           return (
             <button
@@ -331,8 +324,8 @@ export default function Layout() {
         })}
       </nav>
 
-      {/* フローティングポモドーロタイマー（Dashboard以外で実行中に表示） */}
-      {running && location.pathname !== '/' && (
+      {/* フローティングポモドーロタイマー（Dashboard・Pomodoro以外で実行中に表示） */}
+      {running && location.pathname !== '/' && location.pathname !== '/pomodoro' && (
         <NavLink
           to="/"
           title="Dashboardでタイマーを確認"

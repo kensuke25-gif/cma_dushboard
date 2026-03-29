@@ -13,6 +13,7 @@ import MathTestPage from './pages/MathTestPage'
 import QuizModePage from './pages/QuizModePage'
 import ImportPage from './pages/ImportPage'
 import ProblemsIndexPage from './pages/ProblemsIndexPage'
+import PomodoroPage from './pages/PomodoroPage'
 
 class ErrorBoundary extends Component<{ children: ReactNode }, { hasError: boolean }> {
   state = { hasError: false }
@@ -92,6 +93,7 @@ export default function App() {
           {/* 1問1ページ演習モード（章指定） */}
           <Route path="/quiz-mode/:subject/:chapterKey" element={<QuizModePage />} />
           <Route path="/import" element={<ImportPage />} />
+          <Route path="/pomodoro" element={<PomodoroPage />} />
         </Route>
       </Routes>
     </BrowserRouter>
