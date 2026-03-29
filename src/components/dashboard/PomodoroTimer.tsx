@@ -1,6 +1,8 @@
 import { useState } from 'react'
-import { PieChart, Pie, Cell } from 'recharts'
 import { usePomodoroStore, MODES, type PomodoroMode } from '../../stores/pomodoroStore'
+
+const RING_RADIUS = 66
+const RING_CIRCUMFERENCE = 2 * Math.PI * RING_RADIUS
 import { SOUND_OPTIONS, getSoundSetting, setSoundSetting, playTimerEndSound, playStartSound, type SoundType } from '../../lib/sound'
 import StudyRecordModal from './StudyRecordPanel'
 
@@ -133,11 +135,9 @@ export default function PomodoroTimer() {
   const overtimeSs = String(overtime % 60).padStart(2, '0')
   const overtimePct = Math.min(overtime / total, 1)
 
-  // オーバータイム中はリングが amber でカウントアップ
-  const ringData = overtimeRunning
-    ? [{ value: overtimePct * 100 }, { value: (1 - overtimePct) * 100 }]
-    : [{ value: remainingPct * 100 }, { value: (1 - remainingPct) * 100 }]
+  const ringProgress = overtimeRunning ? overtimePct : remainingPct
   const ringFillColor = overtimeRunning ? '#f59e0b' : MODES[mode].ringColor
+  const ringDashOffset = RING_CIRCUMFERENCE * (1 - ringProgress)
 
   const currentSound = SOUND_OPTIONS.find(o => o.value === soundType)?.label ?? 'ビープ音'
 
@@ -208,23 +208,22 @@ export default function PomodoroTimer() {
           ))}
         </div>
 
-        {/* ドーナツリング */}
-        <div className="relative w-44 h-44 sm:w-48 sm:h-48 mx-auto mb-3 sm:mb-4 flex items-center justify-center">
-          <PieChart width={176} height={176} margin={{ top: 0, right: 0, bottom: 0, left: 0 }}>
-            <Pie
-              data={ringData}
-              cx={88} cy={88}
-              startAngle={90} endAngle={-270}
-              innerRadius={66} outerRadius={80}
-              dataKey="value"
-              strokeWidth={0}
-              isAnimationActive={false}
-            >
-              <Cell fill={ringFillColor} />
-              <Cell fill="#252540" />
-            </Pie>
-          </PieChart>
-          <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+        {/* ドーナツリング（SVG） */}
+        <div className="relative w-44 h-44 sm:w-48 sm:h-48 mx-auto mb-3 sm:mb-4">
+          <svg className="w-full h-full -rotate-90" viewBox="0 0 176 176">
+            <circle cx="88" cy="88" r={RING_RADIUS} fill="none" stroke="#252540" strokeWidth="14" />
+            <circle
+              cx="88" cy="88" r={RING_RADIUS}
+              fill="none"
+              stroke={ringFillColor}
+              strokeWidth="14"
+              strokeLinecap="round"
+              strokeDasharray={RING_CIRCUMFERENCE}
+              strokeDashoffset={ringDashOffset}
+              style={{ transition: 'stroke-dashoffset 0.5s linear, stroke 0.3s ease' }}
+            />
+          </svg>
+          <div className="absolute inset-0 flex flex-col items-center justify-center">
             {overtimeRunning ? (
               <>
                 <span className="text-3xl font-bold tabular-nums text-amber-400">
