@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect, type ReactNode } from 'react'
+import { useState, useMemo, useEffect, useCallback, type ReactNode } from 'react'
 import { Download, ChevronLeft, ChevronRight } from 'lucide-react'
 import {
   LineChart, Line,
@@ -11,6 +11,7 @@ import SubjectHeatmap from '../components/problems/SubjectHeatmap'
 import StreakBanner    from '../components/problems/StreakBanner'
 import { useProblemStore } from '../stores/problemStore'
 import { SUBJECT_CONFIGS } from '../types/problem'
+import { supabase } from '../lib/supabase'
 
 const SUBJECT_COLORS: Record<string, string> = {
   '証券分析': '#7c4dff',
@@ -74,6 +75,64 @@ function exportCSV(records: StudyRecord[]) {
   URL.revokeObjectURL(url)
 }
 
+async function exportQuizCSV() {
+  // 1. quiz_answers を取得（全件）
+  const { data: answers, error: aErr } = await supabase
+    .from('quiz_answers')
+    .select('id, session_id, question_key, is_correct')
+  if (aErr || !answers || answers.length === 0) return
+
+  // 2. 関連する quiz_sessions を取得
+  const sessionIds = [...new Set(answers.map((a: { session_id: string }) => a.session_id))]
+  const { data: sessions, error: sErr } = await supabase
+    .from('quiz_sessions')
+    .select('id, created_at, subject, field')
+    .in('id', sessionIds)
+  if (sErr || !sessions) return
+
+  // 3. 関連する quiz_questions を取得
+  const questionKeys = [...new Set(answers.map((a: { question_key: string }) => a.question_key))]
+  const { data: questions, error: qErr } = await supabase
+    .from('quiz_questions')
+    .select('id, subject, field, question')
+    .in('id', questionKeys)
+  if (qErr || !questions) return
+
+  // ルックアップマップ作成
+  const sessionMap = new Map(sessions.map((s: { id: string; created_at: string; subject: string; field: string | null }) => [s.id, s]))
+  const questionMap = new Map(questions.map((q: { id: string; subject: string; field: string; question: string }) => [q.id, q]))
+
+  // 4. CSV生成
+  const header = ['日付', '科目', '項目', '問題文（先頭60字）', '正誤']
+  const rows = [...answers]
+    .sort((a: { session_id: string }, b: { session_id: string }) => {
+      const sa = sessionMap.get(a.session_id)?.created_at ?? ''
+      const sb = sessionMap.get(b.session_id)?.created_at ?? ''
+      return sa.localeCompare(sb)
+    })
+    .map((a: { session_id: string; question_key: string; is_correct: boolean }) => {
+      const sess = sessionMap.get(a.session_id)
+      const ques = questionMap.get(a.question_key)
+      const date = sess ? new Date(sess.created_at).toLocaleDateString('ja-JP') : ''
+      const subject = ques?.subject ?? sess?.subject ?? ''
+      const field   = ques?.field   ?? sess?.field   ?? ''
+      const qText   = ques ? ques.question.slice(0, 60) : ''
+      const result  = a.is_correct ? '正解' : '不正解'
+      return [date, subject, field, qText, result]
+    })
+
+  const csv = [header, ...rows]
+    .map(row => row.map(v => `"${String(v ?? '').replace(/"/g, '""')}"`).join(','))
+    .join('\n')
+  const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8' })
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = `cma_quiz_${toDayKey(new Date())}.csv`
+  a.click()
+  URL.revokeObjectURL(url)
+}
+
 // ---- ChartCard ----
 
 function ChartCard({ title, children }: { title: string; children: ReactNode }) {
@@ -92,10 +151,20 @@ export default function Analytics() {
   const [calYear, setCalYear] = useState(new Date().getFullYear())
   const [calMonth, setCalMonth] = useState(new Date().getMonth()) // 0-indexed
   const [selectedDate, setSelectedDate] = useState<string | null>(null)
+  const [quizExporting, setQuizExporting] = useState(false)
 
   useEffect(() => {
     fetchRecords()
   }, [fetchRecords])
+
+  const handleExportQuizCSV = useCallback(async () => {
+    setQuizExporting(true)
+    try {
+      await exportQuizCSV()
+    } finally {
+      setQuizExporting(false)
+    }
+  }, [])
 
   // 1. 累計学習時間の推移（過去60日）
   const cumulativeData = useMemo(() => {
@@ -243,14 +312,24 @@ export default function Analytics() {
               <p className="text-xs text-[#8888aa] mt-0.5">累計 {totalHours} 時間</p>
             )}
           </div>
-          <button
-            onClick={() => exportCSV(records)}
-            disabled={records.length === 0}
-            className="flex items-center gap-2 px-4 py-2 rounded-xl border border-[#2a2a4a] text-sm text-[#c8c8e8] hover:border-[#3a3a5c] disabled:opacity-40 transition-all"
-          >
-            <Download className="w-4 h-4" />
-            CSVエクスポート
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => exportCSV(records)}
+              disabled={records.length === 0}
+              className="flex items-center gap-2 px-4 py-2 rounded-xl border border-[#2a2a4a] text-sm text-[#c8c8e8] hover:border-[#3a3a5c] disabled:opacity-40 transition-all"
+            >
+              <Download className="w-4 h-4" />
+              学習記録
+            </button>
+            <button
+              onClick={handleExportQuizCSV}
+              disabled={quizExporting}
+              className="flex items-center gap-2 px-4 py-2 rounded-xl border border-[#2a2a4a] text-sm text-[#c8c8e8] hover:border-[#3a3a5c] disabled:opacity-40 transition-all"
+            >
+              <Download className="w-4 h-4" />
+              {quizExporting ? 'エクスポート中...' : 'クイズ結果'}
+            </button>
+          </div>
         </div>
 
         {loading ? (
