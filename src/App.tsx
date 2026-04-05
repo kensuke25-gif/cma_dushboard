@@ -14,6 +14,7 @@ import QuizModePage from './pages/QuizModePage'
 import ImportPage from './pages/ImportPage'
 import ProblemsIndexPage from './pages/ProblemsIndexPage'
 import PomodoroPage from './pages/PomodoroPage'
+import MemoPage from './pages/MemoPage'
 
 class ErrorBoundary extends Component<{ children: ReactNode }, { hasError: boolean }> {
   state = { hasError: false }
@@ -94,6 +95,7 @@ export default function App() {
           <Route path="/quiz-mode/:subject/:chapterKey" element={<QuizModePage />} />
           <Route path="/import" element={<ImportPage />} />
           <Route path="/pomodoro" element={<PomodoroPage />} />
+          <Route path="/memo" element={<MemoPage />} />
         </Route>
       </Routes>
     </BrowserRouter>

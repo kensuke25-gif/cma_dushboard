@@ -1,8 +1,9 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Star, BookOpen, FileText, Pencil, X, Upload, Loader2, ChevronLeft } from 'lucide-react'
+import { Star, BookOpen, FileText, Pencil, X, Upload, Loader2, ChevronLeft, StickyNote, Plus, Trash2, Check, ChevronDown, ChevronUp } from 'lucide-react'
 import { useStudyStore } from '../stores/studyStore'
 import { supabase } from '../lib/supabase'
+import { useItemMemoStore, type ItemMemo } from '../stores/itemMemoStore'
 
 type Item = {
   id: number
@@ -180,9 +181,204 @@ function loadQuiz2WeakCount(): number {
   } catch { return 0 }
 }
 
+// ─── 項目別メモセクション ─────────────────────────────────────────────────────
+
+type ItemMemoFormProps = {
+  itemId: number
+  memo: ItemMemo | null   // null = 新規
+  onClose: () => void
+}
+
+function ItemMemoForm({ itemId, memo, onClose }: ItemMemoFormProps) {
+  const { addItemMemo, updateItemMemo } = useItemMemoStore()
+  const isNew = memo === null
+  const [title, setTitle] = useState(memo?.title ?? '')
+  const [body, setBody] = useState(memo?.body ?? '')
+  const [saving, setSaving] = useState(false)
+  const titleRef = useRef<HTMLInputElement>(null)
+
+  useEffect(() => { titleRef.current?.focus() }, [])
+
+  async function handleSave() {
+    const t = title.trim()
+    if (!t) return
+    setSaving(true)
+    try {
+      if (isNew) {
+        await addItemMemo(itemId, t, body.trim())
+      } else {
+        await updateItemMemo(memo.id, itemId, t, body.trim())
+      }
+      onClose()
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  return (
+    <div className="bg-[#111125] border border-[#7c4dff]/30 rounded-xl p-3 space-y-2">
+      <input
+        ref={titleRef}
+        value={title}
+        onChange={e => setTitle(e.target.value)}
+        onKeyDown={e => e.key === 'Enter' && !e.shiftKey && handleSave()}
+        placeholder="タイトル（例：苦手ポイント）"
+        className="w-full bg-[#1a1a2e] border border-[#2a2a4a] rounded-lg px-3 py-2 text-xs text-[#c8c8e8] placeholder-[#4a4a6a] focus:outline-none focus:border-[#7c4dff] transition-colors"
+      />
+      <textarea
+        value={body}
+        onChange={e => setBody(e.target.value)}
+        placeholder="メモ内容（省略可）"
+        rows={3}
+        className="w-full bg-[#1a1a2e] border border-[#2a2a4a] rounded-lg px-3 py-2 text-xs text-[#c8c8e8] placeholder-[#4a4a6a] focus:outline-none focus:border-[#7c4dff] resize-none transition-colors"
+      />
+      <div className="flex gap-2 justify-end">
+        <button
+          onClick={onClose}
+          className="px-3 py-1.5 text-xs text-[#8888aa] hover:text-white hover:bg-[#252540] rounded-lg transition-colors"
+        >
+          キャンセル
+        </button>
+        <button
+          onClick={handleSave}
+          disabled={!title.trim() || saving}
+          className="flex items-center gap-1 px-3 py-1.5 text-xs bg-[#7c4dff] text-white hover:bg-[#6a3de8] rounded-lg transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+        >
+          {saving ? <Loader2 className="w-3 h-3 animate-spin" /> : <Check className="w-3 h-3" />}
+          {isNew ? '追加' : '保存'}
+        </button>
+      </div>
+    </div>
+  )
+}
+
+type ItemMemoSectionProps = { itemId: number }
+
+function ItemMemoSection({ itemId }: ItemMemoSectionProps) {
+  const { memosByItem, loadingItems, fetchItemMemos, deleteItemMemo } = useItemMemoStore()
+  const [editingMemo, setEditingMemo] = useState<ItemMemo | null | undefined>(undefined)
+  // undefined = フォーム非表示, null = 新規, ItemMemo = 編集
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null)
+  const [deleting, setDeleting] = useState(false)
+
+  useEffect(() => { fetchItemMemos(itemId) }, [fetchItemMemos, itemId])
+
+  const memos = memosByItem[itemId] ?? []
+  const loading = loadingItems.has(itemId)
+
+  async function handleDelete(id: string) {
+    setDeleting(true)
+    try {
+      await deleteItemMemo(id, itemId)
+      setConfirmDeleteId(null)
+    } finally {
+      setDeleting(false)
+    }
+  }
+
+  return (
+    <div className="px-4 py-3 bg-[#12122a] border-b border-[#2a2a4a]">
+      <div className="flex items-center justify-between mb-2">
+        <span className="text-xs font-medium text-[#7c4dff] flex items-center gap-1">
+          <StickyNote className="w-3 h-3" strokeWidth={1.5} />
+          メモ
+        </span>
+        {editingMemo === undefined && (
+          <button
+            onClick={() => setEditingMemo(null)}
+            className="flex items-center gap-1 text-xs text-[#5a5a7a] hover:text-[#a78bfa] transition-colors"
+          >
+            <Plus className="w-3 h-3" strokeWidth={2} />
+            追加
+          </button>
+        )}
+      </div>
+
+      {loading ? (
+        <div className="flex justify-center py-3">
+          <Loader2 className="w-4 h-4 text-[#7c4dff] animate-spin" />
+        </div>
+      ) : (
+        <div className="space-y-2">
+          {memos.map(memo => (
+            <div key={memo.id}>
+              {editingMemo?.id === memo.id ? (
+                <ItemMemoForm
+                  itemId={itemId}
+                  memo={memo}
+                  onClose={() => setEditingMemo(undefined)}
+                />
+              ) : confirmDeleteId === memo.id ? (
+                <div className="flex items-center gap-2 px-3 py-2 bg-red-900/20 border border-red-800/40 rounded-xl text-xs">
+                  <span className="flex-1 text-red-300">削除しますか？</span>
+                  <button
+                    onClick={() => setConfirmDeleteId(null)}
+                    className="text-[#8888aa] hover:text-white transition-colors"
+                  >
+                    キャンセル
+                  </button>
+                  <button
+                    onClick={() => handleDelete(memo.id)}
+                    disabled={deleting}
+                    className="text-red-400 hover:text-red-300 transition-colors font-medium"
+                  >
+                    {deleting ? '削除中…' : '削除'}
+                  </button>
+                </div>
+              ) : (
+                <div className="group flex items-start gap-2 px-3 py-2 bg-[#1a1a30] rounded-xl border border-[#2a2a4a]">
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs font-medium text-[#c8c8e8] leading-snug">{memo.title}</p>
+                    {memo.body && (
+                      <p className="text-xs text-[#8888aa] mt-0.5 leading-relaxed whitespace-pre-wrap">{memo.body}</p>
+                    )}
+                  </div>
+                  <div className="flex gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
+                    <button
+                      onClick={() => setEditingMemo(memo)}
+                      className="p-1 rounded hover:bg-[#252540] text-[#5a5a7a] hover:text-[#a78bfa] transition-colors"
+                      title="編集"
+                    >
+                      <Pencil className="w-3 h-3" strokeWidth={1.5} />
+                    </button>
+                    <button
+                      onClick={() => setConfirmDeleteId(memo.id)}
+                      className="p-1 rounded hover:bg-[#252540] text-[#5a5a7a] hover:text-red-400 transition-colors"
+                      title="削除"
+                    >
+                      <Trash2 className="w-3 h-3" strokeWidth={1.5} />
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          ))}
+
+          {memos.length === 0 && editingMemo === undefined && (
+            <p className="text-xs text-[#4a4a6a] italic py-1">
+              まだメモがありません。「追加」からメモを作成できます。
+            </p>
+          )}
+
+          {editingMemo === null && (
+            <ItemMemoForm
+              itemId={itemId}
+              memo={null}
+              onClose={() => setEditingMemo(undefined)}
+            />
+          )}
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+
 export default function Items() {
   const navigate = useNavigate()
   const { weakItems, fetchWeakItems, toggleWeakItem } = useStudyStore()
+  const { memosByItem } = useItemMemoStore()
   const [links, setLinks] = useState<Record<string, string>>(loadCache)
   const [modal, setModal] = useState<ModalState | null>(null)
   const [saving, setSaving] = useState(false)
@@ -192,6 +388,7 @@ export default function Items() {
   const [activeTab, setActiveTab] = useState<SubjectTab>('市場分析')
   const [htmlViewer, setHtmlViewer] = useState<{ title: string; content: string } | null>(null)
   const [htmlLoading, setHtmlLoading] = useState(false)
+  const [expandedMemoItemId, setExpandedMemoItemId] = useState<number | null>(null)
 
   useEffect(() => { fetchWeakItems() }, [fetchWeakItems])
 
@@ -401,10 +598,11 @@ export default function Items() {
       {currentItems.length > 0 && (
         <div className="rounded-[20px] border border-[#2a2a4a] overflow-hidden">
           {/* Header */}
-          <div className="grid grid-cols-[1fr_auto_auto] bg-[#111125] border-b border-[#2a2a4a] px-4 py-2.5">
+          <div className="grid grid-cols-[1fr_auto_auto_auto] bg-[#111125] border-b border-[#2a2a4a] px-4 py-2.5">
             <span className="text-xs text-[#9090bb] font-medium">項目名</span>
             <span className="text-xs text-[#9090bb] font-medium w-12 text-center">苦手</span>
             <span className="text-xs text-[#9090bb] font-medium w-12 text-center">解説</span>
+            <span className="text-xs text-[#9090bb] font-medium w-12 text-center">メモ</span>
           </div>
 
           {grouped.map(({ chapter, items }) => {
@@ -436,63 +634,97 @@ export default function Items() {
                 {items.map((item, rowIndex) => {
                   const expKey = itemExplanationKey(item.id)
                   const expUrl = getLink(expKey)
+                  const isMemoOpen = expandedMemoItemId === item.id
+                  const memoCount = (memosByItem[item.id] ?? []).length
 
                   return (
-                    <div
-                      key={item.id}
-                      className={`grid grid-cols-[1fr_auto_auto] px-4 py-3 border-b border-[#2a2a4a] items-center transition-colors hover:bg-[rgba(124,77,255,0.05)] ${
-                        rowIndex % 2 === 0 ? 'bg-[#1e1e3a]' : 'bg-[#16162a]'
-                      }`}
-                    >
-                      <div className="pr-4 min-w-0">
-                        <p className="text-sm text-[#c8c8e8] font-medium leading-snug">{item.name}</p>
-                        {item.description && (
-                          <p className="text-xs text-[#8888aa] mt-0.5 leading-relaxed">{item.description}</p>
-                        )}
-                      </div>
+                    <div key={item.id}>
+                      <div
+                        className={`grid grid-cols-[1fr_auto_auto_auto] px-4 py-3 border-b border-[#2a2a4a] items-center transition-colors hover:bg-[rgba(124,77,255,0.05)] ${
+                          isMemoOpen ? 'bg-[rgba(124,77,255,0.08)]' : rowIndex % 2 === 0 ? 'bg-[#1e1e3a]' : 'bg-[#16162a]'
+                        }`}
+                      >
+                        <div className="pr-4 min-w-0">
+                          <p className="text-sm text-[#c8c8e8] font-medium leading-snug">{item.name}</p>
+                          {item.description && (
+                            <p className="text-xs text-[#8888aa] mt-0.5 leading-relaxed">{item.description}</p>
+                          )}
+                        </div>
 
-                      <div className="w-12 flex justify-center">
-                        <button
-                          onClick={() => toggleWeakItem(item.id)}
-                          title={weakItems.has(item.id) ? '苦手マーク解除' : '苦手マーク登録'}
-                          className="p-1 rounded-lg hover:bg-[#252540] transition-colors"
-                        >
-                          <Star
-                            className={`w-4 h-4 transition-colors ${
-                              weakItems.has(item.id)
-                                ? 'fill-yellow-400 text-yellow-400'
-                                : 'text-[#3a3a5c] hover:text-[#8888aa]'
-                            }`}
-                            strokeWidth={1.5}
-                          />
-                        </button>
-                      </div>
-
-                      <div className="w-12 flex items-center justify-center gap-0.5">
-                        {expUrl && (
+                        <div className="w-12 flex justify-center">
                           <button
-                            onClick={() => handleEdit(expKey, `${item.name} 解説`)}
-                            title="リンクを編集"
+                            onClick={() => toggleWeakItem(item.id)}
+                            title={weakItems.has(item.id) ? '苦手マーク解除' : '苦手マーク登録'}
+                            className="p-1 rounded-lg hover:bg-[#252540] transition-colors"
+                          >
+                            <Star
+                              className={`w-4 h-4 transition-colors ${
+                                weakItems.has(item.id)
+                                  ? 'fill-yellow-400 text-yellow-400'
+                                  : 'text-[#3a3a5c] hover:text-[#8888aa]'
+                              }`}
+                              strokeWidth={1.5}
+                            />
+                          </button>
+                        </div>
+
+                        <div className="w-12 flex items-center justify-center gap-0.5">
+                          {expUrl && (
+                            <button
+                              onClick={() => handleEdit(expKey, `${item.name} 解説`)}
+                              title="リンクを編集"
+                              className="p-1 rounded-lg hover:bg-[#252540] transition-colors group"
+                            >
+                              <Pencil className="w-3 h-3 text-[#5a5a7a] group-hover:text-[#9090bb] transition-colors" strokeWidth={1.5} />
+                            </button>
+                          )}
+                          <button
+                            onClick={() => handleLinkClick(expKey, `${item.name} 解説`)}
+                            title={expUrl ? '解説を開く' : '解説のリンクを設定'}
                             className="p-1 rounded-lg hover:bg-[#252540] transition-colors group"
                           >
-                            <Pencil className="w-3 h-3 text-[#5a5a7a] group-hover:text-[#9090bb] transition-colors" strokeWidth={1.5} />
+                            <FileText
+                              className={`w-4 h-4 transition-colors ${
+                                expUrl
+                                  ? 'text-[#7c4dff] group-hover:text-[#9d6fff]'
+                                  : 'text-[#3a3a5c] group-hover:text-[#8888aa]'
+                              }`}
+                              strokeWidth={1.5}
+                            />
                           </button>
-                        )}
-                        <button
-                          onClick={() => handleLinkClick(expKey, `${item.name} 解説`)}
-                          title={expUrl ? '解説を開く' : '解説のリンクを設定'}
-                          className="p-1 rounded-lg hover:bg-[#252540] transition-colors group"
-                        >
-                          <FileText
-                            className={`w-4 h-4 transition-colors ${
-                              expUrl
-                                ? 'text-[#7c4dff] group-hover:text-[#9d6fff]'
-                                : 'text-[#3a3a5c] group-hover:text-[#8888aa]'
-                            }`}
-                            strokeWidth={1.5}
-                          />
-                        </button>
+                        </div>
+
+                        {/* メモボタン */}
+                        <div className="w-12 flex justify-center">
+                          <button
+                            onClick={() => setExpandedMemoItemId(isMemoOpen ? null : item.id)}
+                            title={isMemoOpen ? 'メモを閉じる' : 'メモを開く'}
+                            className="relative p-1 rounded-lg hover:bg-[#252540] transition-colors group"
+                          >
+                            <StickyNote
+                              className={`w-4 h-4 transition-colors ${
+                                isMemoOpen
+                                  ? 'text-[#7c4dff]'
+                                  : memoCount > 0
+                                    ? 'text-[#a78bfa]'
+                                    : 'text-[#3a3a5c] group-hover:text-[#8888aa]'
+                              }`}
+                              strokeWidth={1.5}
+                            />
+                            {memoCount > 0 && !isMemoOpen && (
+                              <span className="absolute -top-0.5 -right-0.5 w-3.5 h-3.5 rounded-full bg-[#7c4dff] text-white text-[8px] font-bold flex items-center justify-center leading-none">
+                                {memoCount > 9 ? '9+' : memoCount}
+                              </span>
+                            )}
+                            {isMemoOpen ? (
+                              <ChevronUp className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 text-[#7c4dff]" strokeWidth={2.5} />
+                            ) : null}
+                          </button>
+                        </div>
                       </div>
+
+                      {/* メモセクション（展開時） */}
+                      {isMemoOpen && <ItemMemoSection itemId={item.id} />}
                     </div>
                   )
                 })}
