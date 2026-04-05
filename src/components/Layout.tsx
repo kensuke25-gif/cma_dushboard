@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { Outlet, NavLink, useLocation, useNavigate } from 'react-router-dom'
-import { LayoutDashboard, BookOpen, Brain, BarChart2, FileQuestion, LogOut, Menu, X, ChevronLeft, Upload, Timer } from 'lucide-react'
+import { LayoutDashboard, BookOpen, Brain, BarChart2, FileQuestion, LogOut, Menu, X, ChevronLeft, Upload, Timer, StickyNote, Pause, Play, Square, ExternalLink } from 'lucide-react'
 import { useAuthStore } from '../stores/authStore'
 import { usePomodoroStore, MODES, registerFinishCallback, type PomodoroMode } from '../stores/pomodoroStore'
 import { playTimerEndSound } from '../lib/sound'
@@ -11,6 +11,7 @@ const tabs = [
   { to: '/quiz', label: 'クイズ', Icon: Brain, exact: false },
   { to: '/problems', label: '問題集', Icon: FileQuestion, exact: false },
   { to: '/analytics', label: 'レポート', Icon: BarChart2, exact: false },
+  { to: '/memo', label: 'メモ', Icon: StickyNote, exact: false },
   { to: '/import', label: 'インポート', Icon: Upload, exact: false },
 ]
 
@@ -44,7 +45,7 @@ export default function Layout() {
   }, [sidebarPinned])
   const user = useAuthStore(s => s.user)
   const signOut = useAuthStore(s => s.signOut)
-  const { running, overtimeRunning, tick, mode, seconds } = usePomodoroStore()
+  const { running, overtimeRunning, tick, mode, seconds, overtime, startToggle, stopOvertime } = usePomodoroStore()
   const location = useLocation()
   const navigate = useNavigate()
 
@@ -82,8 +83,10 @@ export default function Layout() {
     return () => clearInterval(id)
   }, [running, overtimeRunning, stableTick])
 
-  const mm = String(Math.floor(seconds / 60)).padStart(2, '0')
-  const ss = String(seconds % 60).padStart(2, '0')
+  const displaySecs = overtimeRunning ? overtime : seconds
+  const mm = String(Math.floor(displaySecs / 60)).padStart(2, '0')
+  const ss = String(displaySecs % 60).padStart(2, '0')
+  const isTimerActive = running || overtimeRunning || (seconds > 0 && seconds < MODES[mode].minutes * 60)
 
   const closeSidebar = () => setSidebarOpen(false)
 
@@ -174,20 +177,31 @@ export default function Layout() {
           ))}
         </nav>
 
-        {/* ミニタイマー（実行中のみ表示） */}
-        {running && (
-          <div className="mx-3 mb-3 p-3 rounded-xl bg-[#1e1e3a] border border-[#2a2a4a]">
+        {/* ミニタイマー（動作中のみ表示） */}
+        {isTimerActive && (
+          <button
+            onClick={() => overtimeRunning ? stopOvertime() : startToggle()}
+            title={running ? '一時停止' : overtimeRunning ? '終了' : '再開'}
+            className="mx-3 mb-3 p-3 rounded-xl bg-[#1e1e3a] border border-[#2a2a4a] hover:border-[#7c4dff]/50 transition-colors w-[calc(100%-24px)]"
+          >
             <div className="flex items-center gap-2">
               <span
-                className="w-2 h-2 rounded-full animate-pulse shrink-0"
+                className={`w-2 h-2 rounded-full shrink-0 ${running || overtimeRunning ? 'animate-pulse' : ''}`}
                 style={{ backgroundColor: MODES[mode].ringColor }}
               />
               <span className={`text-sm font-bold tabular-nums ${MODES[mode].textColor}`}>
-                {mm}:{ss}
+                {overtimeRunning ? '+' : ''}{mm}:{ss}
               </span>
               <span className="text-xs text-[#8888aa] ml-auto">{MODES[mode].label}</span>
+              {running ? (
+                <Pause className="w-3 h-3 text-[#5a5a7a]" strokeWidth={2} />
+              ) : overtimeRunning ? (
+                <Square className="w-3 h-3 text-[#5a5a7a]" strokeWidth={2} />
+              ) : (
+                <Play className="w-3 h-3 text-[#5a5a7a]" strokeWidth={2} />
+              )}
             </div>
-          </div>
+          </button>
         )}
 
         {/* ユーザー情報 + ログアウト */}
@@ -253,10 +267,14 @@ export default function Layout() {
           </NavLink>
 
           {/* ミニタイマーバッジ */}
-          {running && (
-            <span className={`text-xs font-bold tabular-nums shrink-0 ${MODES[mode].textColor}`}>
-              {mm}:{ss}
-            </span>
+          {isTimerActive && (
+            <button
+              onClick={() => overtimeRunning ? stopOvertime() : startToggle()}
+              title={running ? '一時停止' : overtimeRunning ? '終了' : '再開'}
+              className={`text-xs font-bold tabular-nums shrink-0 ${MODES[mode].textColor} hover:opacity-70 transition-opacity`}
+            >
+              {overtimeRunning ? '+' : ''}{mm}:{ss}
+            </button>
           )}
 
           {/* ユーザーアバター */}
@@ -324,22 +342,40 @@ export default function Layout() {
         })}
       </nav>
 
-      {/* フローティングポモドーロタイマー（Dashboard・Pomodoro以外で実行中に表示） */}
-      {running && location.pathname !== '/' && location.pathname !== '/pomodoro' && (
-        <NavLink
-          to="/"
-          title="Dashboardでタイマーを確認"
-          className="fixed bottom-[calc(72px+env(safe-area-inset-bottom))] md:bottom-6 right-6 z-40 flex items-center gap-2 px-4 py-2.5 rounded-full bg-[#1a1a30]/95 border border-[#7c4dff]/50 shadow-xl backdrop-blur-sm hover:border-[#7c4dff] hover:bg-[#252545] transition-colors"
-        >
-          <span
-            className="w-2 h-2 rounded-full animate-pulse shrink-0"
-            style={{ backgroundColor: MODES[mode].ringColor }}
-          />
-          <span className={`text-sm font-bold tabular-nums ${MODES[mode].textColor}`}>
-            {mm}:{ss}
-          </span>
-          <span className="text-xs text-[#8888aa]">{MODES[mode].label}</span>
-        </NavLink>
+      {/* フローティングポモドーロタイマー（Dashboard・Pomodoro以外で動作中に表示） */}
+      {isTimerActive && location.pathname !== '/' && location.pathname !== '/pomodoro' && (
+        <div className="fixed bottom-[calc(72px+env(safe-area-inset-bottom))] md:bottom-6 right-6 z-40 flex items-center gap-1 rounded-full bg-[#1a1a30]/95 border border-[#7c4dff]/50 shadow-xl backdrop-blur-sm overflow-hidden">
+          {/* 停止/再開ボタン */}
+          <button
+            onClick={() => overtimeRunning ? stopOvertime() : startToggle()}
+            title={running ? '一時停止' : overtimeRunning ? '終了' : '再開'}
+            className="flex items-center gap-2 pl-4 pr-2 py-2.5 hover:bg-[#252545] transition-colors"
+          >
+            <span
+              className={`w-2 h-2 rounded-full shrink-0 ${running || overtimeRunning ? 'animate-pulse' : ''}`}
+              style={{ backgroundColor: MODES[mode].ringColor }}
+            />
+            <span className={`text-sm font-bold tabular-nums ${MODES[mode].textColor}`}>
+              {overtimeRunning ? '+' : ''}{mm}:{ss}
+            </span>
+            <span className="text-xs text-[#8888aa]">{MODES[mode].label}</span>
+            {running ? (
+              <Pause className="w-3 h-3 text-[#8888aa]" strokeWidth={2} />
+            ) : overtimeRunning ? (
+              <Square className="w-3 h-3 text-[#8888aa]" strokeWidth={2} />
+            ) : (
+              <Play className="w-3 h-3 text-[#8888aa]" strokeWidth={2} />
+            )}
+          </button>
+          {/* Dashboardへのリンク */}
+          <NavLink
+            to="/"
+            title="Dashboardでタイマーを確認"
+            className="pr-3 py-2.5 text-[#5a5a7a] hover:text-[#8888aa] transition-colors"
+          >
+            <ExternalLink className="w-3 h-3" strokeWidth={1.5} />
+          </NavLink>
+        </div>
       )}
     </div>
   )
