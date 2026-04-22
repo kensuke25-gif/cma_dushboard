@@ -6,6 +6,7 @@ import RecentHistory from '../components/dashboard/RecentHistory'
 import StreakBanner from '../components/problems/StreakBanner'
 import GoalProgressPanel from '../components/dashboard/GoalProgressPanel'
 import MemoPanel from '../components/dashboard/MemoPanel'
+import WeaknessWidget from '../components/dashboard/WeaknessWidget'
 import { useStudyStore } from '../stores/studyStore'
 
 export default function Dashboard() {
@@ -51,6 +52,7 @@ export default function Dashboard() {
         {/* 列 1: 学習統計 */}
         <div className="flex flex-col gap-4 sm:gap-5">
           <StreakBanner />
+          <WeaknessWidget />
           <ProgressSection />
         </div>
 

@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react'
-import { Settings, X, Check, TrendingUp, TrendingDown, Minus } from 'lucide-react'
+import { Settings, X, Check, TrendingUp, TrendingDown, Minus, Target } from 'lucide-react'
 import { useGoalStore, type UserGoals } from '../../stores/goalStore'
 import { useStudyStore } from '../../stores/studyStore'
 
@@ -22,8 +22,13 @@ function useStudyTotals() {
     const lastMonthEnd   = new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59)
     const lastMonthStart = new Date(lastMonthEnd.getFullYear(), lastMonthEnd.getMonth(), 1)
 
+    // 直近7日間（合格ペース算出用）
+    const last7Start = new Date(todayStart)
+    last7Start.setDate(todayStart.getDate() - 6)
+
     let todayMin = 0, weekMin = 0, monthMin = 0, totalMin = 0
     let yesterdayMin = 0, lastWeekMin = 0, lastMonthMin = 0
+    let last7Min = 0
 
     for (const r of records) {
       const d = r.created_at ? new Date(r.created_at) : null
@@ -36,8 +41,9 @@ function useStudyTotals() {
       if (d >= yesterdayStart && d <= yesterdayEnd) yesterdayMin += min
       if (d >= lastWeekStart  && d <= lastWeekEnd)  lastWeekMin  += min
       if (d >= lastMonthStart && d <= lastMonthEnd) lastMonthMin += min
+      if (d >= last7Start)                         last7Min     += min
     }
-    return { todayMin, weekMin, monthMin, totalMin, yesterdayMin, lastWeekMin, lastMonthMin }
+    return { todayMin, weekMin, monthMin, totalMin, yesterdayMin, lastWeekMin, lastMonthMin, last7Min }
   }, [records])
 }
 
@@ -53,6 +59,102 @@ function daysUntilExam(examDateStr: string): number {
 
 const fmtMin = (m: number) =>
   m >= 60 ? `${Math.floor(m / 60)}h${m % 60 > 0 ? `${m % 60}m` : ''}` : `${m}m`
+
+// ── 合格ペースメーター ─────────────────────────────────────
+type PaceStatus = 'ontrack' | 'warning' | 'behind' | 'done' | 'noexam'
+
+function PaceMeter({
+  totalMin,
+  last7Min,
+  targetTotalMin,
+  daysLeft,
+}: {
+  totalMin: number
+  last7Min: number
+  targetTotalMin: number
+  daysLeft: number
+}) {
+  // 現在の1日あたり実績ペース（直近7日平均、分/日）
+  const currentPacePerDay = last7Min / 7
+  // 必要な残り学習分数
+  const remainingMin = Math.max(0, targetTotalMin - totalMin)
+  // 必要な1日あたりペース（分/日）
+  const requiredPacePerDay = daysLeft > 0 ? remainingMin / daysLeft : 0
+  // 現在のペース換算で試験日までに到達できる合計分数
+  const projectedTotal = totalMin + currentPacePerDay * daysLeft
+  // 達成率
+  const projectedPct = targetTotalMin > 0
+    ? Math.min(200, Math.round((projectedTotal / targetTotalMin) * 100))
+    : 0
+
+  let status: PaceStatus
+  if (targetTotalMin === 0 || daysLeft === 0) status = 'noexam'
+  else if (remainingMin === 0) status = 'done'
+  else if (projectedTotal >= targetTotalMin) status = 'ontrack'
+  else if (projectedTotal >= targetTotalMin * 0.9) status = 'warning'
+  else status = 'behind'
+
+  const style: Record<PaceStatus, { badge: string; text: string; bar: string; label: string }> = {
+    ontrack: { badge: 'bg-green-900/30 border-green-500/40',  text: 'text-green-400',  bar: 'bg-green-500',  label: '順調!' },
+    warning: { badge: 'bg-amber-900/30 border-amber-500/40',  text: 'text-amber-400',  bar: 'bg-amber-500',  label: '要ペースアップ' },
+    behind:  { badge: 'bg-red-900/30 border-red-500/40',      text: 'text-red-400',    bar: 'bg-red-500',    label: '危険' },
+    done:    { badge: 'bg-[#7c4dff]/20 border-[#7c4dff]/40',  text: 'text-[#a78bfa]',  bar: 'bg-[#a78bfa]',  label: '目標達成!' },
+    noexam:  { badge: 'bg-[#252540] border-[#3a3a5c]',        text: 'text-[#8888aa]',  bar: 'bg-[#3a3a5c]',  label: '未設定' },
+  }
+  const s = style[status]
+
+  const msg = status === 'done'
+    ? '累計学習時間の目標を達成済み。お疲れさまでした。'
+    : status === 'noexam'
+      ? '試験日と目標時間を設定するとペース診断を表示します。'
+      : status === 'ontrack'
+        ? `現在のペース（${fmtMin(Math.round(currentPacePerDay))}/日）で到達見込み。`
+        : `必要ペース ${fmtMin(Math.round(requiredPacePerDay))}/日、現在 ${fmtMin(Math.round(currentPacePerDay))}/日。`
+
+  return (
+    <div className={`rounded-[16px] border px-3 py-2.5 ${s.badge}`}>
+      <div className="flex items-center justify-between mb-1.5">
+        <div className="flex items-center gap-1.5">
+          <Target className={`w-3.5 h-3.5 ${s.text}`} strokeWidth={1.5} />
+          <span className="text-xs font-semibold text-white">合格ペース診断</span>
+        </div>
+        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${s.badge} ${s.text}`}>
+          {s.label}
+        </span>
+      </div>
+
+      {status !== 'noexam' && (
+        <>
+          {/* 到達見込みバー（目標100%を緑点線で示す） */}
+          <div className="relative w-full h-2 bg-[#111125] rounded-full overflow-hidden mb-1.5">
+            <div
+              className={`h-full rounded-full transition-all duration-500 ${s.bar}`}
+              style={{ width: `${Math.min(100, projectedPct)}%` }}
+            />
+            {/* 100%ライン */}
+            <div
+              className="absolute top-0 bottom-0 w-px bg-white/40"
+              style={{ left: '100%' }}
+            />
+          </div>
+
+          <div className="flex items-center justify-between gap-2 flex-wrap">
+            <span className={`text-[11px] ${s.text} font-medium`}>
+              試験日までに {projectedPct}% 到達見込み
+            </span>
+            <span className="text-[10px] text-[#8888aa]">
+              {msg}
+            </span>
+          </div>
+        </>
+      )}
+
+      {status === 'noexam' && (
+        <p className="text-[11px] text-[#8888aa]">{msg}</p>
+      )}
+    </div>
+  )
+}
 
 // ── 前期比バッジ ──────────────────────────────────────────────
 function DiffBadge({ actual, prev, label }: { actual: number; prev: number; label: string }) {
@@ -226,7 +328,7 @@ function SettingsForm({ initial, saving, onSave, onClose }: SettingsFormProps) {
 // ── メインコンポーネント ──────────────────────────────────────
 export default function GoalProgressPanel() {
   const { goals, saving, fetchGoals, saveGoals } = useGoalStore()
-  const { todayMin, weekMin, monthMin, totalMin, yesterdayMin, lastWeekMin, lastMonthMin } = useStudyTotals()
+  const { todayMin, weekMin, monthMin, totalMin, yesterdayMin, lastWeekMin, lastMonthMin, last7Min } = useStudyTotals()
   const [showSettings, setShowSettings] = useState(false)
 
   useEffect(() => { fetchGoals() }, [fetchGoals])
@@ -257,6 +359,14 @@ export default function GoalProgressPanel() {
           onClose={() => setShowSettings(false)}
         />
       )}
+
+      {/* 合格ペースメーター */}
+      <PaceMeter
+        totalMin={totalMin}
+        last7Min={last7Min}
+        targetTotalMin={goals.examTotalHours * 60}
+        daysLeft={examDays}
+      />
 
       {/* 4カード */}
       <div className="grid grid-cols-2 xl:grid-cols-4 gap-3">

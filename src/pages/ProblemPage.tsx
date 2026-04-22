@@ -33,6 +33,34 @@ function DifficultyDots({ difficulty }: { difficulty: 1 | 2 | 3 }) {
   )
 }
 
+// ── 直近の正誤トレンドドット（最新5件、左が古い → 右が新しい） ─────
+function TrendDots({ history }: { history: NonNullable<ProblemResult>[] }) {
+  // history は古い順で渡される前提。直近5件のみ表示する。
+  const last5 = history.slice(-5)
+  if (last5.length === 0) return null
+  return (
+    <span
+      className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full
+                 bg-[#111125] border border-[#2a2a4a]"
+      title={`直近${last5.length}回の履歴（左: 古い / 右: 新しい）`}
+    >
+      <span className="text-[9px] text-[#5a5a7a] mr-0.5 font-medium">履歴</span>
+      {last5.map((r, i) => (
+        <span
+          key={i}
+          className={`w-2 h-2 rounded-full ${
+            r === 'correct'
+              ? 'bg-green-400'
+              : r === 'partial'
+                ? 'bg-amber-400'
+                : 'bg-red-400'
+          }`}
+        />
+      ))}
+    </span>
+  )
+}
+
 // ── 結果バッジ ────────────────────────────────────
 function ResultBadge({ result }: { result: ProblemResult }) {
   if (!result) {
@@ -219,7 +247,10 @@ export default function ProblemPage() {
   const navigate = useNavigate()
   const config = SUBJECT_CONFIGS.find(c => c.key === subject)
 
-  const { loadingProblems, stats, submitResult, getProblemsBySubject } = useProblemStore()
+  const {
+    loadingProblems, stats, submitResult, getProblemsBySubject,
+    recentAttempts, fetchRecentAttempts,
+  } = useProblemStore()
   const { running, seconds, mode } = usePomodoroStore()
 
   const problems = config ? getProblemsBySubject(config.key as SubjectKey) : []
@@ -270,12 +301,18 @@ export default function ProblemPage() {
   const problem       = problems[index] ?? null
   const currentResult = problem ? (stats[problem.id]?.latestResult ?? null) : null
   const currentChapter = problem ? grouped.find(g => g.chapterKey === problem.chapterKey) : null
+  const currentHistory = problem
+    ? (recentAttempts[problem.id] ?? []).map(a => a.result)
+    : []
 
-  // 問題切替時: 解答非表示 + スクロールリセット
+  // 問題切替時: 解答非表示 + スクロールリセット + 履歴取得
   useEffect(() => {
     setRevealedAnswer(false)
     mainRef.current?.scrollTo({ top: 0, behavior: 'smooth' })
-  }, [index])
+    if (problem && !recentAttempts[problem.id]) {
+      fetchRecentAttempts([problem.id])
+    }
+  }, [index, problem, recentAttempts, fetchRecentAttempts])
 
   // サイドバーのアクティブ項目を自動スクロール
   useEffect(() => {
@@ -424,6 +461,7 @@ export default function ProblemPage() {
                 <span className="text-xs px-2 py-0.5 rounded-full bg-[#7c4dff]/20 text-[#a78bfa] font-medium">
                   {problem.questionNo}
                 </span>
+                <TrendDots history={currentHistory} />
                 {problem.points > 0 && (
                   <span className="text-xs px-2 py-0.5 rounded-full bg-[#252540] text-[#8888aa]">
                     {problem.points}点
