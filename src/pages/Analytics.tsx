@@ -3,8 +3,9 @@ import { Download, ChevronLeft, ChevronRight } from 'lucide-react'
 import {
   LineChart, Line,
   BarChart, Bar,
+  ComposedChart,
   PieChart, Pie, Cell,
-  XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid,
+  XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Legend,
 } from 'recharts'
 import { useStudyStore, type StudyRecord } from '../stores/studyStore'
 import SubjectHeatmap from '../components/problems/SubjectHeatmap'
@@ -146,16 +147,122 @@ function ChartCard({ title, children }: { title: string; children: ReactNode }) 
 
 // ---- メインページ ----
 
+type QuizFieldStat = {
+  subject: string
+  field: string
+  total: number
+  correct: number
+  accuracy: number
+}
+
+// 学習効率スコア週次表示用のデータ型
+type WeeklyCorrectRow = { createdAt: string; correct: number }
+
 export default function Analytics() {
   const { records, loading, fetchRecords } = useStudyStore()
   const [calYear, setCalYear] = useState(new Date().getFullYear())
   const [calMonth, setCalMonth] = useState(new Date().getMonth()) // 0-indexed
   const [selectedDate, setSelectedDate] = useState<string | null>(null)
   const [quizExporting, setQuizExporting] = useState(false)
+  const [quizFieldStats, setQuizFieldStats] = useState<QuizFieldStat[]>([])
+  const [quizStatsLoading, setQuizStatsLoading] = useState(false)
+  const [weeklyQuizCorrect, setWeeklyQuizCorrect] = useState<WeeklyCorrectRow[]>([])
+  const [weeklyProblemCorrect, setWeeklyProblemCorrect] = useState<WeeklyCorrectRow[]>([])
 
   useEffect(() => {
     fetchRecords()
   }, [fetchRecords])
+
+  // 学習効率スコア用: 直近8週間ぶんのクイズ正解数・問題演習正解数を取得
+  useEffect(() => {
+    let cancelled = false
+    async function loadCorrectCounts() {
+      // 直近56日（8週）より前は除外
+      const since = new Date()
+      since.setDate(since.getDate() - 56)
+      const sinceIso = since.toISOString()
+
+      const [qRes, pRes] = await Promise.all([
+        supabase
+          .from('quiz_sessions')
+          .select('created_at, correct_count')
+          .gte('created_at', sinceIso),
+        supabase
+          .from('problem_attempts')
+          .select('attempted_at, result')
+          .gte('attempted_at', sinceIso),
+      ])
+
+      if (cancelled) return
+      const quizRows: WeeklyCorrectRow[] = (qRes.data ?? []).map(
+        (r: { created_at: string; correct_count: number }) => ({
+          createdAt: r.created_at,
+          correct: r.correct_count ?? 0,
+        })
+      )
+      const problemRows: WeeklyCorrectRow[] = (pRes.data ?? [])
+        .filter((r: { result: string }) => r.result === 'correct')
+        .map((r: { attempted_at: string }) => ({
+          createdAt: r.attempted_at,
+          correct: 1,
+        }))
+      setWeeklyQuizCorrect(quizRows)
+      setWeeklyProblemCorrect(problemRows)
+    }
+    loadCorrectCounts()
+    return () => { cancelled = true }
+  }, [])
+
+  // クイズ誤答パターン分析: 分野ごとの正答率を集計
+  useEffect(() => {
+    let cancelled = false
+    async function load() {
+      setQuizStatsLoading(true)
+      try {
+        const { data: answers } = await supabase
+          .from('quiz_answers')
+          .select('question_key, is_correct')
+        if (cancelled || !answers || answers.length === 0) {
+          setQuizFieldStats([])
+          return
+        }
+        const questionKeys = [...new Set(
+          answers.map((a: { question_key: string }) => a.question_key)
+        )]
+        const { data: questions } = await supabase
+          .from('quiz_questions')
+          .select('id, subject, field')
+          .in('id', questionKeys)
+        if (cancelled || !questions) return
+
+        const qMap = new Map(
+          questions.map((q: { id: string; subject: string; field: string }) => [q.id, q])
+        )
+        const bucket = new Map<string, { subject: string; field: string; total: number; correct: number }>()
+        for (const a of answers as { question_key: string; is_correct: boolean }[]) {
+          const q = qMap.get(a.question_key)
+          if (!q) continue
+          const key = `${q.subject}|${q.field}`
+          const b = bucket.get(key) ?? { subject: q.subject, field: q.field, total: 0, correct: 0 }
+          b.total++
+          if (a.is_correct) b.correct++
+          bucket.set(key, b)
+        }
+        const stats: QuizFieldStat[] = [...bucket.values()]
+          .filter((b) => b.total >= 3)   // ノイズ除去: 3回以上回答した分野のみ
+          .map((b) => ({
+            ...b,
+            accuracy: Math.round((b.correct / b.total) * 100),
+          }))
+          .sort((a, b) => a.accuracy - b.accuracy)   // ワースト順
+        if (!cancelled) setQuizFieldStats(stats)
+      } finally {
+        if (!cancelled) setQuizStatsLoading(false)
+      }
+    }
+    load()
+    return () => { cancelled = true }
+  }, [])
 
   const handleExportQuizCSV = useCallback(async () => {
     setQuizExporting(true)
@@ -182,7 +289,7 @@ export default function Analytics() {
     })
   }, [records])
 
-  // 2. 週別学習時間（直近8週）
+  // 2. 週別学習時間（直近8週）+ 学習効率スコア（1時間あたり正解数）
   const weeklyData = useMemo(() => {
     const now = new Date()
     const dow = now.getDay() === 0 ? 6 : now.getDay() - 1 // Mon=0
@@ -198,16 +305,41 @@ export default function Analytics() {
       const startKey = toDayKey(weekStart)
       const endKey = toDayKey(weekEnd)
       const label = `${weekStart.getMonth() + 1}/${weekStart.getDate()}`
-      const total = records
+      const totalMin = records
         .filter(r => {
           if (!r.created_at) return false
           const k = toLocalDateKey(r.created_at)
           return k >= startKey && k <= endKey
         })
         .reduce((s, r) => s + r.minutes, 0)
-      return { label, hours: Math.round(total / 60 * 10) / 10 }
+
+      const inWeek = (iso: string) => {
+        const k = toLocalDateKey(iso)
+        return k >= startKey && k <= endKey
+      }
+      const quizCorrect = weeklyQuizCorrect
+        .filter((r) => inWeek(r.createdAt))
+        .reduce((s, r) => s + r.correct, 0)
+      const problemCorrect = weeklyProblemCorrect
+        .filter((r) => inWeek(r.createdAt))
+        .reduce((s, r) => s + r.correct, 0)
+      const totalCorrect = quizCorrect + problemCorrect
+
+      // 学習効率スコア = 正解数 ÷ 学習時間(h) = 1時間あたり正解数
+      // 学習時間が15分未満の週は信頼性が低いためnullにして線を切断
+      const hours = totalMin / 60
+      const efficiency = hours >= 0.25
+        ? Math.round((totalCorrect / hours) * 10) / 10
+        : null
+
+      return {
+        label,
+        hours: Math.round(hours * 10) / 10,
+        efficiency,
+        totalCorrect,
+      }
     })
-  }, [records])
+  }, [records, weeklyQuizCorrect, weeklyProblemCorrect])
 
   // 3. 科目別学習割合（全期間）
   const subjectData = useMemo(() => {
@@ -355,15 +487,41 @@ export default function Analytics() {
                 </ResponsiveContainer>
               </ChartCard>
 
-              <ChartCard title="週別学習時間（直近8週）">
+              <ChartCard title="週別学習時間 + 学習効率（直近8週）">
                 <ResponsiveContainer width="100%" height={200}>
-                  <BarChart data={weeklyData} margin={{ top: 4, right: 8, left: -20, bottom: 0 }}>
+                  <ComposedChart data={weeklyData} margin={{ top: 4, right: 24, left: -20, bottom: 0 }}>
                     <CartesianGrid strokeDasharray="3 3" stroke="#2a2a4a" />
                     <XAxis dataKey="label" tick={{ fill: '#8888aa', fontSize: 10 }} />
-                    <YAxis tick={{ fill: '#8888aa', fontSize: 10 }} unit="h" />
-                    <Tooltip contentStyle={tooltipStyle} formatter={(v) => [`${Number(v)}h`, '学習時間']} />
-                    <Bar dataKey="hours" fill="#7c4dff" radius={[4, 4, 0, 0]} />
-                  </BarChart>
+                    <YAxis yAxisId="left" tick={{ fill: '#8888aa', fontSize: 10 }} unit="h" />
+                    <YAxis
+                      yAxisId="right"
+                      orientation="right"
+                      tick={{ fill: '#8888aa', fontSize: 10 }}
+                      width={36}
+                    />
+                    <Tooltip
+                      contentStyle={tooltipStyle}
+                      formatter={(v, name) => {
+                        if (name === 'hours')      return [`${Number(v)}h`, '学習時間']
+                        if (name === 'efficiency') return [`${Number(v)}問/h`, '学習効率']
+                        return [String(v), String(name)]
+                      }}
+                    />
+                    <Legend
+                      wrapperStyle={{ fontSize: 10, color: '#8888aa' }}
+                      formatter={(v) => v === 'hours' ? '学習時間' : v === 'efficiency' ? '学習効率(問/h)' : v}
+                    />
+                    <Bar yAxisId="left" dataKey="hours" fill="#7c4dff" radius={[4, 4, 0, 0]} />
+                    <Line
+                      yAxisId="right"
+                      type="monotone"
+                      dataKey="efficiency"
+                      stroke="#34d399"
+                      strokeWidth={2}
+                      dot={{ r: 3, fill: '#34d399' }}
+                      connectNulls={false}
+                    />
+                  </ComposedChart>
                 </ResponsiveContainer>
               </ChartCard>
             </div>
@@ -669,6 +827,64 @@ export default function Analytics() {
 
             </>
           )}
+
+          {/* ========== クイズ誤答パターン分析 ========== */}
+          <div className="flex items-center gap-2 pt-4">
+            <div className="w-1 h-4 rounded-full bg-orange-400" />
+            <h2 className="text-sm font-semibold text-white">
+              クイズ誤答パターン分析
+            </h2>
+          </div>
+
+          <ChartCard title="分野別正答率ワーストランキング（3回以上回答した分野）">
+            {quizStatsLoading ? (
+              <div className="flex justify-center py-8">
+                <div className="w-6 h-6 border-2 border-[#7c4dff] border-t-transparent rounded-full animate-spin" />
+              </div>
+            ) : quizFieldStats.length === 0 ? (
+              <p className="text-center text-xs text-[#5a5a7a] py-8">
+                クイズ回答データがまだありません
+              </p>
+            ) : (
+              <div className="space-y-2">
+                {quizFieldStats.slice(0, 10).map((s) => {
+                  const barColor =
+                    s.accuracy >= 70 ? '#22c55e'
+                    : s.accuracy >= 40 ? '#fbbf24'
+                    : '#ef4444'
+                  const textColor =
+                    s.accuracy >= 70 ? 'text-green-400'
+                    : s.accuracy >= 40 ? 'text-amber-400'
+                    : 'text-red-400'
+                  return (
+                    <div key={`${s.subject}-${s.field}`} className="flex items-center gap-3">
+                      <div className="w-32 shrink-0 min-w-0">
+                        <p className="text-[10px] text-[#8888aa] truncate">{s.subject}</p>
+                        <p className="text-xs text-[#c8c8e8] truncate" title={s.field}>{s.field}</p>
+                      </div>
+                      <div className="flex-1 h-2 bg-[#252540] rounded-full overflow-hidden">
+                        <div
+                          className="h-full rounded-full transition-all duration-500"
+                          style={{ width: `${s.accuracy}%`, backgroundColor: barColor }}
+                        />
+                      </div>
+                      <div className="shrink-0 w-20 text-right">
+                        <span className={`text-xs font-bold tabular-nums ${textColor}`}>{s.accuracy}%</span>
+                        <span className="text-[10px] text-[#5a5a7a] ml-1">
+                          ({s.correct}/{s.total})
+                        </span>
+                      </div>
+                    </div>
+                  )
+                })}
+                {quizFieldStats.length > 10 && (
+                  <p className="text-[10px] text-[#5a5a7a] text-center pt-2">
+                    他 {quizFieldStats.length - 10} 分野あり
+                  </p>
+                )}
+              </div>
+            )}
+          </ChartCard>
 
         </div>
 
