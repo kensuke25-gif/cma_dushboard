@@ -15,6 +15,9 @@ import ImportPage from './pages/ImportPage'
 import ProblemsIndexPage from './pages/ProblemsIndexPage'
 import PomodoroPage from './pages/PomodoroPage'
 import MemoPage from './pages/MemoPage'
+import QAListPage from './pages/QAListPage'
+import QAEditPage from './pages/QAEditPage'
+import QAPlayPage from './pages/QAPlayPage'
 
 class ErrorBoundary extends Component<{ children: ReactNode }, { hasError: boolean }> {
   state = { hasError: false }
@@ -96,6 +99,10 @@ export default function App() {
           <Route path="/import" element={<ImportPage />} />
           <Route path="/pomodoro" element={<PomodoroPage />} />
           <Route path="/memo" element={<MemoPage />} />
+          <Route path="/qa" element={<QAListPage />} />
+          <Route path="/qa/new" element={<QAEditPage />} />
+          <Route path="/qa/:id" element={<QAPlayPage />} />
+          <Route path="/qa/:id/edit" element={<QAEditPage />} />
         </Route>
       </Routes>
     </BrowserRouter>

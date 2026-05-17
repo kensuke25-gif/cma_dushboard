@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { Outlet, NavLink, useLocation, useNavigate } from 'react-router-dom'
-import { LayoutDashboard, BookOpen, Brain, BarChart2, FileQuestion, LogOut, Menu, X, ChevronLeft, Upload, Timer, StickyNote, Pause, Play, Square, ExternalLink } from 'lucide-react'
+import { LayoutDashboard, BookOpen, Brain, BarChart2, FileQuestion, LogOut, Menu, X, ChevronLeft, Upload, Timer, StickyNote, Pause, Play, Square, ExternalLink, MessagesSquare } from 'lucide-react'
 import { useAuthStore } from '../stores/authStore'
 import { usePomodoroStore, MODES, registerFinishCallback, type PomodoroMode } from '../stores/pomodoroStore'
 import { playTimerEndSound } from '../lib/sound'
@@ -10,6 +10,7 @@ const tabs = [
   { to: '/items', label: '項目', Icon: BookOpen, exact: false },
   { to: '/quiz', label: 'クイズ', Icon: Brain, exact: false },
   { to: '/problems', label: '問題集', Icon: FileQuestion, exact: false },
+  { to: '/qa', label: '一問一答', Icon: MessagesSquare, exact: false },
   { to: '/analytics', label: 'レポート', Icon: BarChart2, exact: false },
   { to: '/memo', label: 'メモ', Icon: StickyNote, exact: false },
   { to: '/import', label: 'インポート', Icon: Upload, exact: false },
