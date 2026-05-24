@@ -329,6 +329,25 @@ export type Database = {
         }
         Relationships: []
       }
+      qa_drill_progress: {
+        Row: {
+          user_id: string
+          qid: string
+          result: 'ok' | 'ng'
+          updated_at: string
+        }
+        Insert: {
+          user_id: string
+          qid: string
+          result: 'ok' | 'ng'
+          updated_at?: string
+        }
+        Update: {
+          result?: 'ok' | 'ng'
+          updated_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       problem_latest_results: {
