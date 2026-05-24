@@ -21,6 +21,7 @@ import QAPlayPage from './pages/QAPlayPage'
 import QADrillIndexPage from './pages/QADrillIndexPage'
 import QADrillSubjectPage from './pages/QADrillSubjectPage'
 import QADrillSessionPage from './pages/QADrillSessionPage'
+import AccountingQuizPage from './pages/AccountingQuizPage'
 
 class ErrorBoundary extends Component<{ children: ReactNode }, { hasError: boolean }> {
   state = { hasError: false }
@@ -107,6 +108,7 @@ export default function App() {
           <Route path="/qa/:id" element={<QAPlayPage />} />
           <Route path="/qa/:id/edit" element={<QAEditPage />} />
           <Route path="/drills" element={<QADrillIndexPage />} />
+          <Route path="/drills/accounting" element={<AccountingQuizPage />} />
           <Route path="/drills/:subjectId" element={<QADrillSubjectPage />} />
           <Route path="/drills/:subjectId/:unitId" element={<QADrillSessionPage />} />
         </Route>
