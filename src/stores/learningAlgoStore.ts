@@ -240,8 +240,9 @@ export const useLearningAlgoStore = create<LearningAlgoState>((set, get) => ({
   fetchSM2Cards: async () => {
     set({ sm2Loading: true })
     try {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { data, error } = await supabase
-        .from(SM2_TABLE)
+        .from(SM2_TABLE as any)
         .select('*')
 
       if (error || !data) {
@@ -250,7 +251,8 @@ export const useLearningAlgoStore = create<LearningAlgoState>((set, get) => ({
       }
 
       const map: Record<string, SM2Card> = {}
-      data.forEach((r: {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      ;(data as any[]).forEach((r: {
         problem_id: string
         repetitions: number
         ease_factor: number
@@ -298,8 +300,9 @@ export const useLearningAlgoStore = create<LearningAlgoState>((set, get) => ({
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { error } = await supabase
-      .from(SM2_TABLE)
+      .from(SM2_TABLE as any)
       .upsert({
         user_id:          user.id,
         problem_id:       updatedCard.problemId,
