@@ -30,12 +30,13 @@ export const useItemMemoStore = create<ItemMemoState>((set, get) => ({
     if (loadingItems.has(itemId)) return
     set(s => ({ loadingItems: new Set([...s.loadingItems, itemId]) }))
     const { data } = await supabase
-      .from('item_memos')
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      .from('item_memos' as any)
       .select('*')
       .eq('item_id', itemId)
       .order('updated_at', { ascending: false })
     set(s => ({
-      memosByItem: { ...s.memosByItem, [itemId]: (data ?? []) as ItemMemo[] },
+      memosByItem: { ...s.memosByItem, [itemId]: (data ?? []) as unknown as ItemMemo[] },
       loadingItems: new Set([...s.loadingItems].filter(id => id !== itemId)),
     }))
   },
@@ -44,7 +45,8 @@ export const useItemMemoStore = create<ItemMemoState>((set, get) => ({
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return
     const { data, error } = await supabase
-      .from('item_memos')
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      .from('item_memos' as any)
       .insert({ user_id: user.id, item_id: itemId, title, body })
       .select()
       .single()
@@ -52,7 +54,7 @@ export const useItemMemoStore = create<ItemMemoState>((set, get) => ({
     set(s => ({
       memosByItem: {
         ...s.memosByItem,
-        [itemId]: [data as ItemMemo, ...(s.memosByItem[itemId] ?? [])],
+        [itemId]: [data as unknown as ItemMemo, ...(s.memosByItem[itemId] ?? [])],
       },
     }))
   },
@@ -60,7 +62,8 @@ export const useItemMemoStore = create<ItemMemoState>((set, get) => ({
   updateItemMemo: async (id, itemId, title, body) => {
     const now = new Date().toISOString()
     const { error } = await supabase
-      .from('item_memos')
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      .from('item_memos' as any)
       .update({ title, body, updated_at: now })
       .eq('id', id)
     if (error) throw new Error(error.message)
@@ -75,7 +78,8 @@ export const useItemMemoStore = create<ItemMemoState>((set, get) => ({
   },
 
   deleteItemMemo: async (id, itemId) => {
-    await supabase.from('item_memos').delete().eq('id', id)
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await supabase.from('item_memos' as any).delete().eq('id', id)
     set(s => ({
       memosByItem: {
         ...s.memosByItem,
