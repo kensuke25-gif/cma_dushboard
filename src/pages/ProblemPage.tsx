@@ -305,14 +305,19 @@ export default function ProblemPage() {
     ? (recentAttempts[problem.id] ?? []).map(a => a.result)
     : []
 
-  // 問題切替時: 解答非表示 + スクロールリセット + 履歴取得
+  // 問題切替時のみ: 解答非表示 + スクロールリセット
+  // （recentAttempts に依存させると履歴取得のたびに解答が閉じてしまうため index のみを依存にする）
   useEffect(() => {
     setRevealedAnswer(false)
     mainRef.current?.scrollTo({ top: 0, behavior: 'smooth' })
+  }, [index])
+
+  // 履歴取得（解答の表示状態には影響させない）
+  useEffect(() => {
     if (problem && !recentAttempts[problem.id]) {
       fetchRecentAttempts([problem.id])
     }
-  }, [index, problem, recentAttempts, fetchRecentAttempts])
+  }, [problem, recentAttempts, fetchRecentAttempts])
 
   // サイドバーのアクティブ項目を自動スクロール
   useEffect(() => {
