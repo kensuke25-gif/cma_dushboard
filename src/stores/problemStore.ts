@@ -422,7 +422,16 @@ export const useProblemStore = create<ProblemStore>((set, get) => ({
         new Date(a.attemptedAt).getTime() - new Date(b.attemptedAt).getTime()
       )
     })
-    set({ recentAttempts: map })
+
+    // 既存の履歴とマージしつつ、要求した問題IDは履歴ゼロでも空配列で登録する。
+    // （未登録のままだと呼び出し側の「!recentAttempts[id]」が常に真になり再取得ループに陥るため）
+    set((state) => {
+      const merged = { ...state.recentAttempts }
+      problemIds.forEach((id) => {
+        merged[id] = map[id] ?? []
+      })
+      return { recentAttempts: merged }
+    })
   },
 
   // =====================================
