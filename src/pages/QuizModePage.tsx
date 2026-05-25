@@ -34,8 +34,8 @@ function DifficultyBadge({ difficulty }: { difficulty: 1 | 2 | 3 }) {
           className="w-3 h-3"
           strokeWidth={1.5}
           style={{
-            color: n <= difficulty ? '#fbbf24' : '#3a3a5c',
-            fill:  n <= difficulty ? '#fbbf24' : 'none',
+            color: n <= difficulty ? '#f59e0b' : '#d4d4d8',
+            fill:  n <= difficulty ? '#f59e0b' : 'none',
           }}
         />
       ))}
@@ -50,20 +50,22 @@ function DifficultyBadge({ difficulty }: { difficulty: 1 | 2 | 3 }) {
 function ProgressBar({
   current,
   total,
+  accentHex,
 }: {
   current: number
   total: number
+  accentHex: string
 }) {
   const pct = total > 0 ? Math.round((current / total) * 100) : 0
   return (
     <div className="flex items-center gap-3">
-      <div className="flex-1 h-1.5 bg-[#252540] rounded-full overflow-hidden">
+      <div className="flex-1 h-1.5 bg-[#ececef] rounded-full overflow-hidden">
         <div
-          className="h-full bg-[#7c4dff] rounded-full transition-all duration-300"
-          style={{ width: `${pct}%` }}
+          className="h-full rounded-full transition-all duration-300"
+          style={{ width: `${pct}%`, backgroundColor: accentHex }}
         />
       </div>
-      <span className="text-xs text-[#8888aa] tabular-nums shrink-0">
+      <span className="text-xs text-[#52525b] tabular-nums shrink-0">
         {current} / {total}
       </span>
     </div>
@@ -78,31 +80,31 @@ function HintSection({ hintText }: { hintText: string }) {
   const [open, setOpen] = useState(false)
 
   return (
-    <div className="rounded-xl border border-[#fbbf24]/30 overflow-hidden">
+    <div className="rounded-xl border border-amber-200 overflow-hidden">
       <button
         onClick={() => setOpen((v) => !v)}
         className="w-full flex items-center gap-2 px-4 py-3
-                   bg-[#1a1a2e] hover:bg-[#1e1e35] transition-colors text-left"
+                   bg-amber-50 hover:bg-amber-100 transition-colors text-left"
       >
         <Lightbulb
           className="w-4 h-4 shrink-0"
-          style={{ color: '#fbbf24' }}
+          style={{ color: '#d97706' }}
           strokeWidth={1.5}
         />
-        <span className="text-sm font-medium text-[#fbbf24] flex-1">
+        <span className="text-sm font-medium text-amber-700 flex-1">
           {open ? 'ヒントを閉じる' : 'ヒントを見る'}
         </span>
         {open
-          ? <ChevronUp  className="w-4 h-4 text-[#fbbf24]/60" strokeWidth={1.5} />
-          : <ChevronDown className="w-4 h-4 text-[#fbbf24]/60" strokeWidth={1.5} />
+          ? <ChevronUp  className="w-4 h-4 text-amber-600/70" strokeWidth={1.5} />
+          : <ChevronDown className="w-4 h-4 text-amber-600/70" strokeWidth={1.5} />
         }
       </button>
 
       {open && (
-        <div className="px-4 py-3 bg-[#1a1505] border-t border-[#fbbf24]/20">
-          <div className="pl-2 border-l-2 border-[#fbbf24]/50">
-            <div className="text-sm text-[#e5c97a] leading-relaxed">
-              <MathText text={hintText} />
+        <div className="px-4 py-3 bg-amber-50/50 border-t border-amber-200">
+          <div className="pl-2 border-l-2 border-amber-400">
+            <div className="text-sm text-amber-800 leading-relaxed">
+              <MathText text={hintText} theme="light" />
             </div>
           </div>
         </div>
@@ -117,40 +119,40 @@ function HintSection({ hintText }: { hintText: string }) {
 
 function AnswerSection({ problem }: { problem: Problem }) {
   return (
-    <div className="rounded-xl border border-[#2a2a4a] overflow-hidden
+    <div className="rounded-xl border border-[#e4e4e7] overflow-hidden
                     animate-in slide-in-from-bottom-4 duration-300">
 
       {/* 模範解答 */}
-      <div className="px-5 py-4 bg-[#111125]">
-        <p className="text-xs font-semibold text-[#9090bb] mb-3 flex items-center gap-1.5">
-          <span className="w-1 h-3 rounded-full bg-[#9090bb] inline-block" />
+      <div className="px-5 py-4 bg-white">
+        <p className="text-xs font-semibold text-[#52525b] mb-3 flex items-center gap-1.5">
+          <span className="w-1 h-3 rounded-full bg-[#52525b] inline-block" />
           模範解答
         </p>
-        <div className="text-sm text-[#c8c8e8] leading-relaxed">
-          <MathText text={problem.answerText} />
+        <div className="text-sm text-[#1a1a1a] leading-relaxed">
+          <MathText text={problem.answerText} theme="light" />
         </div>
       </div>
 
       {/* 初学者向け解説 */}
-      <div className="px-5 py-4 bg-[#13132a] border-t border-[#2a2a4a]">
-        <p className="text-xs font-semibold text-[#a78bfa] mb-3 flex items-center gap-1.5">
-          <span className="w-1 h-3 rounded-full bg-[#a78bfa] inline-block" />
+      <div className="px-5 py-4 bg-[#f7f9ff] border-t border-[#e4e4e7]">
+        <p className="text-xs font-semibold text-[#2563eb] mb-3 flex items-center gap-1.5">
+          <span className="w-1 h-3 rounded-full bg-[#2563eb] inline-block" />
           初学者向け解説
         </p>
-        <div className="text-sm text-[#c8c8e8] leading-relaxed">
-          <MathText text={problem.explanation} />
+        <div className="text-sm text-[#1a1a1a] leading-relaxed">
+          <MathText text={problem.explanation} theme="light" />
         </div>
       </div>
 
       {/* 周辺知識（任意） */}
       {problem.relatedKnowledge && (
-        <div className="px-5 py-4 bg-[#0e1a14] border-t border-[#2a2a4a]">
-          <p className="text-xs font-semibold text-[#34d399] mb-3 flex items-center gap-1.5">
-            <span className="w-1 h-3 rounded-full bg-[#34d399] inline-block" />
+        <div className="px-5 py-4 bg-[#f0faf5] border-t border-[#e4e4e7]">
+          <p className="text-xs font-semibold text-[#059669] mb-3 flex items-center gap-1.5">
+            <span className="w-1 h-3 rounded-full bg-[#059669] inline-block" />
             周辺知識・発展
           </p>
-          <div className="text-sm text-[#8888aa] leading-relaxed">
-            <MathText text={problem.relatedKnowledge} />
+          <div className="text-sm text-[#52525b] leading-relaxed">
+            <MathText text={problem.relatedKnowledge} theme="light" />
           </div>
         </div>
       )}
@@ -181,22 +183,22 @@ function ResultButtons({ selected, onSelect, disabled }: ResultButtonsProps) {
       value: 'incorrect',
       label: '不正解',
       icon: '✕',
-      activeClass: 'bg-red-900/40 border-red-500/70 text-red-400',
-      hoverClass:  'hover:bg-red-900/20 hover:border-red-500/40 hover:text-red-400',
+      activeClass: 'bg-red-50 border-red-400 text-red-700',
+      hoverClass:  'hover:bg-red-50 hover:border-red-300 hover:text-red-700',
     },
     {
       value: 'partial',
       label: '部分正解',
       icon: '△',
-      activeClass: 'bg-amber-900/40 border-amber-500/70 text-amber-400',
-      hoverClass:  'hover:bg-amber-900/20 hover:border-amber-500/40 hover:text-amber-400',
+      activeClass: 'bg-amber-50 border-amber-400 text-amber-700',
+      hoverClass:  'hover:bg-amber-50 hover:border-amber-300 hover:text-amber-700',
     },
     {
       value: 'correct',
       label: '正解',
       icon: '○',
-      activeClass: 'bg-green-900/40 border-green-500/70 text-green-400',
-      hoverClass:  'hover:bg-green-900/20 hover:border-green-500/40 hover:text-green-400',
+      activeClass: 'bg-green-50 border-green-400 text-green-700',
+      hoverClass:  'hover:bg-green-50 hover:border-green-300 hover:text-green-700',
     },
   ]
 
@@ -214,7 +216,7 @@ function ResultButtons({ selected, onSelect, disabled }: ResultButtonsProps) {
             disabled:opacity-40 disabled:cursor-not-allowed
             ${selected === value
               ? activeClass
-              : `bg-[#1e1e3a] border-[#3a3a5c] text-[#5a5a7a] ${hoverClass}`
+              : `bg-white border-[#d4d4d8] text-[#9ca3af] ${hoverClass}`
             }
           `}
         >
@@ -246,69 +248,69 @@ function SummaryScreen({
     : 0
 
   return (
-    <div className="min-h-screen bg-[#1a1a2e] flex items-center justify-center p-4">
+    <div className="min-h-screen bg-white flex items-center justify-center p-4">
       <div className="w-full max-w-sm">
 
         {/* タイトル */}
         <div className="text-center mb-8">
           <div className="text-4xl mb-3">🎉</div>
-          <h2 className="text-xl font-bold text-white">演習完了！</h2>
-          <p className="text-sm text-[#8888aa] mt-1">
+          <h2 className="text-xl font-bold text-[#1a1a1a]">演習完了！</h2>
+          <p className="text-sm text-[#52525b] mt-1">
             お疲れ様でした
           </p>
         </div>
 
         {/* スコアカード */}
-        <div className="bg-[#111125] rounded-2xl border border-[#2a2a4a] p-6 mb-4">
+        <div className="bg-white rounded-2xl border border-[#e4e4e7] shadow-sm p-6 mb-4">
 
           {/* 正答率メーター */}
           <div className="text-center mb-6">
-            <div className="text-5xl font-bold text-white mb-1">
+            <div className="text-5xl font-bold text-[#1a1a1a] mb-1">
               {accuracy}
-              <span className="text-2xl text-[#8888aa]">%</span>
+              <span className="text-2xl text-[#9ca3af]">%</span>
             </div>
-            <p className="text-xs text-[#8888aa]">正答率</p>
+            <p className="text-xs text-[#52525b]">正答率</p>
           </div>
 
           {/* 内訳 */}
           <div className="space-y-2">
             <div className="flex items-center justify-between
-                            px-4 py-2.5 rounded-xl bg-green-900/20
-                            border border-green-500/20">
-              <span className="flex items-center gap-2 text-sm text-green-400">
+                            px-4 py-2.5 rounded-xl bg-green-50
+                            border border-green-200">
+              <span className="flex items-center gap-2 text-sm text-green-700">
                 <span className="text-base">○</span> 正解
               </span>
-              <span className="text-sm font-bold text-green-400">
+              <span className="text-sm font-bold text-green-700">
                 {session.correct}問
-                <span className="text-xs font-normal text-[#8888aa] ml-1">
+                <span className="text-xs font-normal text-[#52525b] ml-1">
                   ({Math.round(session.correct / session.totalProblems * 100)}%)
                 </span>
               </span>
             </div>
 
             <div className="flex items-center justify-between
-                            px-4 py-2.5 rounded-xl bg-amber-900/20
-                            border border-amber-500/20">
-              <span className="flex items-center gap-2 text-sm text-amber-400">
+                            px-4 py-2.5 rounded-xl bg-amber-50
+                            border border-amber-200">
+              <span className="flex items-center gap-2 text-sm text-amber-700">
                 <span className="text-base">△</span> 部分正解
               </span>
-              <span className="text-sm font-bold text-amber-400">
+              <span className="text-sm font-bold text-amber-700">
                 {session.partial}問
-                <span className="text-xs font-normal text-[#8888aa] ml-1">
+                <span className="text-xs font-normal text-[#52525b] ml-1">
                   ({Math.round(session.partial / session.totalProblems * 100)}%)
                 </span>
               </span>
             </div>
 
             <div className="flex items-center justify-between
-                            px-4 py-2.5 rounded-xl bg-red-900/20
-                            border border-red-500/20">
-              <span className="flex items-center gap-2 text-sm text-red-400">
+                            px-4 py-2.5 rounded-xl bg-red-50
+                            border border-red-200">
+              <span className="flex items-center gap-2 text-sm text-red-700">
                 <span className="text-base">✕</span> 不正解
               </span>
-              <span className="text-sm font-bold text-red-400">
+              <span className="text-sm font-bold text-red-700">
                 {session.incorrect}問
-                <span className="text-xs font-normal text-[#8888aa] ml-1">
+                <span className="text-xs font-normal text-[#52525b] ml-1">
                   ({Math.round(session.incorrect / session.totalProblems * 100)}%)
                 </span>
               </span>
@@ -317,10 +319,10 @@ function SummaryScreen({
 
           {/* ストリーク */}
           {streak >= 3 && (
-            <div className="mt-4 pt-4 border-t border-[#2a2a4a]
+            <div className="mt-4 pt-4 border-t border-[#e4e4e7]
                             flex items-center justify-center gap-2">
-              <Flame className="w-5 h-5 text-orange-400" strokeWidth={1.5} />
-              <span className="text-sm font-bold text-orange-400">
+              <Flame className="w-5 h-5 text-orange-500" strokeWidth={1.5} />
+              <span className="text-sm font-bold text-orange-600">
                 {streak}日連続正解中！
               </span>
             </div>
@@ -333,7 +335,7 @@ function SummaryScreen({
             <button
               onClick={onRetryWrong}
               className="w-full flex items-center justify-center gap-2
-                         py-3 rounded-xl bg-[#7c4dff] hover:bg-[#6c3de8]
+                         py-3 rounded-xl bg-[#1f2937] hover:bg-[#111827]
                          text-white font-medium text-sm transition-colors"
             >
               <RotateCcw className="w-4 h-4" strokeWidth={1.5} />
@@ -344,9 +346,9 @@ function SummaryScreen({
           <button
             onClick={onBackToList}
             className="w-full flex items-center justify-center gap-2
-                       py-3 rounded-xl border border-[#2a2a4a]
-                       text-[#c8c8e8] hover:border-[#3a3a5c]
-                       hover:bg-[#1e1e3a] font-medium text-sm transition-colors"
+                       py-3 rounded-xl border border-[#d4d4d8]
+                       text-[#1a1a1a] hover:border-[#9ca3af]
+                       hover:bg-[#f4f4f5] font-medium text-sm transition-colors"
           >
             <ListChecks className="w-4 h-4" strokeWidth={1.5} />
             問題一覧へ戻る
@@ -491,12 +493,12 @@ export default function QuizModePage() {
   // ---- 問題がない場合 ----
   if (problems.length === 0) {
     return (
-      <div className="min-h-screen bg-[#1a1a2e] flex items-center justify-center p-4">
+      <div className="min-h-screen bg-white flex items-center justify-center p-4">
         <div className="text-center">
-          <p className="text-[#8888aa] mb-4">この科目・章の問題が見つかりません</p>
+          <p className="text-[#52525b] mb-4">この科目・章の問題が見つかりません</p>
           <button
             onClick={() => navigate(-1)}
-            className="text-[#7c4dff] text-sm underline"
+            className="text-[#1f2937] text-sm underline"
           >
             戻る
           </button>
@@ -524,23 +526,23 @@ export default function QuizModePage() {
   // -----------------------------------------------
 
   return (
-    <div className="min-h-screen bg-[#1a1a2e] flex flex-col">
+    <div className="min-h-screen bg-white flex flex-col">
 
       {/* ========== ヘッダー（sticky） ========== */}
-      <header className="sticky top-0 z-20 bg-[#111125] border-b border-[#2a2a4a]">
+      <header className="sticky top-0 z-20 bg-white border-b border-[#e4e4e7]">
         <div className="max-w-2xl mx-auto px-4 py-3 space-y-2">
 
           {/* 上段: 戻るボタン + パンくず */}
           <div className="flex items-center gap-2">
             <button
               onClick={handleBackToList}
-              className="p-1.5 rounded-lg text-[#8888aa] hover:text-white
-                         hover:bg-[#252540] transition-colors shrink-0"
+              className="p-1.5 rounded-lg text-[#52525b] hover:text-[#1a1a1a]
+                         hover:bg-[#f4f4f5] transition-colors shrink-0"
             >
               <ChevronLeft className="w-4 h-4" strokeWidth={1.5} />
             </button>
             <div className="min-w-0">
-              <p className="text-xs text-[#8888aa] truncate">
+              <p className="text-xs text-[#52525b] truncate">
                 {config?.shortLabel ?? subject}
                 {chapterKey && problem && (
                   <> › {problem.chapterName}</>
@@ -550,7 +552,7 @@ export default function QuizModePage() {
           </div>
 
           {/* 下段: 進捗バー */}
-          <ProgressBar current={index + 1} total={problems.length} />
+          <ProgressBar current={index + 1} total={problems.length} accentHex={config?.accentHex ?? '#1f2937'} />
 
         </div>
       </header>
@@ -562,13 +564,15 @@ export default function QuizModePage() {
           {/* 問題メタ情報 */}
           <div className="flex items-center gap-2 flex-wrap">
             <DifficultyBadge difficulty={problem.difficulty} />
-            <span className="text-xs px-2 py-0.5 rounded-full
-                             bg-[#7c4dff]/20 text-[#a78bfa] font-medium">
+            <span
+              className="text-xs px-2 py-0.5 rounded-full font-medium"
+              style={{ backgroundColor: `${config?.accentHex ?? '#1f2937'}1a`, color: config?.accentHex ?? '#1f2937' }}
+            >
               {problem.questionNo}
             </span>
             {problem.points > 0 && (
               <span className="text-xs px-2 py-0.5 rounded-full
-                               bg-[#252540] text-[#8888aa]">
+                               bg-[#f4f4f5] text-[#52525b]">
                 {problem.points}点
               </span>
             )}
@@ -576,7 +580,7 @@ export default function QuizModePage() {
               <span
                 key={tag}
                 className="text-xs px-2 py-0.5 rounded-full
-                           bg-[#1e1e3a] text-[#5a5a7a]"
+                           bg-[#f4f4f5] text-[#9ca3af]"
               >
                 {tag}
               </span>
@@ -584,10 +588,10 @@ export default function QuizModePage() {
           </div>
 
           {/* 問題文カード */}
-          <div className="rounded-xl border border-[#2a2a4a] bg-[#1e1e3a]
+          <div className="rounded-xl border border-[#e4e4e7] bg-[#fafafa]
                           px-5 py-5">
-            <div className="text-sm text-[#c8c8e8] leading-relaxed">
-              <MathText text={problem.questionText} />
+            <div className="text-sm text-[#1a1a1a] leading-relaxed">
+              <MathText text={problem.questionText} theme="light" />
             </div>
           </div>
 
@@ -606,8 +610,8 @@ export default function QuizModePage() {
 
       {/* ========== 下部固定フッター ========== */}
       <footer className="fixed bottom-0 left-0 right-0 z-20
-                         bg-[#111125]/95 backdrop-blur-sm
-                         border-t border-[#2a2a4a]">
+                         bg-white/95 backdrop-blur-sm
+                         border-t border-[#e4e4e7]">
         <div className="max-w-2xl mx-auto px-4 py-3 space-y-2">
 
           {/* 正誤ボタン */}
@@ -626,8 +630,8 @@ export default function QuizModePage() {
               py-3 rounded-xl font-medium text-sm
               transition-all duration-200
               ${submitted
-                ? 'bg-[#7c4dff] hover:bg-[#6c3de8] text-white shadow-lg shadow-[#7c4dff]/20'
-                : 'bg-[#252540] text-[#3a3a5c] cursor-not-allowed'
+                ? 'bg-[#1f2937] hover:bg-[#111827] text-white shadow-sm'
+                : 'bg-[#ececef] text-[#cbcbd1] cursor-not-allowed'
               }
             `}
           >
@@ -639,7 +643,7 @@ export default function QuizModePage() {
           </button>
 
           {/* キーボードショートカットヒント（デスクトップのみ） */}
-          <p className="hidden md:block text-center text-[10px] text-[#3a3a5c]">
+          <p className="hidden md:block text-center text-[10px] text-[#9ca3af]">
             1: 正解 　2: 部分正解 　3: 不正解 　→: 次へ
           </p>
 

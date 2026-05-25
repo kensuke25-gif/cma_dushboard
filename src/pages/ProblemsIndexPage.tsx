@@ -17,12 +17,12 @@ function HistoryDots({ history }: { history: AttemptResult[] }) {
           key={i}
           className={`w-4 h-4 rounded-full border flex items-center justify-center text-[8px] font-bold ${
             r === 'correct'
-              ? 'bg-green-900/50 border-green-500/50 text-green-400'
+              ? 'bg-green-50 border-green-300 text-green-700'
               : r === 'partial'
-                ? 'bg-amber-900/50 border-amber-500/50 text-amber-400'
+                ? 'bg-amber-50 border-amber-300 text-amber-700'
                 : r === 'incorrect'
-                  ? 'bg-red-900/50 border-red-500/50 text-red-400'
-                  : 'border-[#2a2a4a] text-[#3a3a5c]'
+                  ? 'bg-red-50 border-red-300 text-red-700'
+                  : 'border-[#e4e4e7] text-[#cbcbd1]'
           }`}
         >
           {r === 'correct' ? '○' : r === 'partial' ? '△' : r === 'incorrect' ? '✕' : '−'}
@@ -113,32 +113,32 @@ export default function ProblemsIndexPage() {
   })
 
   return (
-    <div className="min-h-screen bg-[#1a1a2e] p-4 md:p-6">
+    <div className="min-h-screen bg-white p-4 md:p-6">
       <div className="max-w-3xl mx-auto">
 
         {/* ヘッダー */}
         <div className="mb-6">
-          <h1 className="text-xl font-bold text-white flex items-center gap-2">
-            <BookOpen className="w-5 h-5 text-[#a78bfa]" strokeWidth={1.5} />
+          <h1 className="text-xl font-bold text-[#1a1a1a] flex items-center gap-2">
+            <BookOpen className="w-5 h-5 text-[#52525b]" strokeWidth={1.5} />
             問題集
           </h1>
-          <p className="text-sm text-[#8888aa] mt-1">科目・章を選んで演習を開始</p>
+          <p className="text-sm text-[#52525b] mt-1">科目・章を選んで演習を開始</p>
         </div>
 
         {loadingProblems && (
           <div className="flex justify-center py-20">
-            <div className="w-8 h-8 border-2 border-[#7c4dff] border-t-transparent rounded-full animate-spin" />
+            <div className="w-8 h-8 border-2 border-[#1f2937] border-t-transparent rounded-full animate-spin" />
           </div>
         )}
 
         {!loadingProblems && problems.length === 0 && (
-          <div className="bg-[#111125] rounded-2xl p-8 text-center border border-[#2a2a4a]">
-            <BookOpen className="w-10 h-10 text-[#3a3a5c] mx-auto mb-3" strokeWidth={1.5} />
-            <p className="text-[#8888aa] mb-2">まだ問題データがありません</p>
-            <p className="text-xs text-[#5a5a7a] mb-4">インポートページから問題ファイルを取り込んでください</p>
+          <div className="bg-white rounded-2xl p-8 text-center border border-[#e4e4e7] shadow-sm">
+            <BookOpen className="w-10 h-10 text-[#cbcbd1] mx-auto mb-3" strokeWidth={1.5} />
+            <p className="text-[#52525b] mb-2">まだ問題データがありません</p>
+            <p className="text-xs text-[#9ca3af] mb-4">インポートページから問題ファイルを取り込んでください</p>
             <button
               onClick={() => navigate('/import')}
-              className="px-4 py-2 bg-[#7c4dff] hover:bg-[#6c3de8] text-white text-sm rounded-xl transition-colors"
+              className="px-4 py-2 bg-[#1f2937] hover:bg-[#111827] text-white text-sm rounded-xl transition-colors"
             >
               インポートへ
             </button>
@@ -151,35 +151,35 @@ export default function ProblemsIndexPage() {
           const isSubjectExpanded = expandedSubjects.has(config.key)
 
           return (
-            <div key={config.key} className="mb-4 bg-[#111125] rounded-2xl border border-[#2a2a4a] overflow-hidden">
+            <div key={config.key} className="mb-4 bg-white rounded-2xl border border-[#e4e4e7] shadow-sm overflow-hidden">
 
               {/* 科目ヘッダー（タップで章一覧を展開/格納） */}
               <button
                 onClick={() => toggleSubject(config.key)}
-                className="w-full flex items-center gap-3 px-5 py-4 text-left hover:bg-[#161630] transition-colors"
+                className="w-full flex items-center gap-3 px-5 py-4 text-left hover:bg-[#f4f4f5] transition-colors"
               >
                 <div className="w-2 h-8 rounded-full shrink-0" style={{ backgroundColor: config.accentHex }} />
                 <div className="flex-1 min-w-0">
-                  <p className="font-semibold text-white text-sm">{config.shortLabel}</p>
-                  <p className="text-xs text-[#5a5a7a] truncate">{config.label}</p>
+                  <p className="font-semibold text-[#1a1a1a] text-sm">{config.shortLabel}</p>
+                  <p className="text-xs text-[#9ca3af] truncate">{config.label}</p>
                 </div>
                 <div className="shrink-0 text-right mr-2">
-                  <p className="text-xs text-[#8888aa]">{totalAnswered} / {totalProblems}</p>
+                  <p className="text-xs text-[#52525b]">{totalAnswered} / {totalProblems}</p>
                   <p className="text-xs font-medium" style={{ color: config.accentHex }}>{progress}%</p>
                 </div>
                 {isSubjectExpanded
-                  ? <ChevronUp className="w-4 h-4 text-[#5a5a7a] shrink-0" strokeWidth={1.5} />
-                  : <ChevronDown className="w-4 h-4 text-[#5a5a7a] shrink-0" strokeWidth={1.5} />
+                  ? <ChevronUp className="w-4 h-4 text-[#9ca3af] shrink-0" strokeWidth={1.5} />
+                  : <ChevronDown className="w-4 h-4 text-[#9ca3af] shrink-0" strokeWidth={1.5} />
                 }
               </button>
 
               {/* 科目プログレスバー */}
-              <div className="h-0.5 bg-[#2a2a4a]">
+              <div className="h-0.5 bg-[#ececef]">
                 <div className="h-full transition-all duration-500" style={{ width: `${progress}%`, backgroundColor: config.accentHex }} />
               </div>
 
               {/* 章一覧（展開時のみ） */}
-              {isSubjectExpanded && <div className="divide-y divide-[#1e1e38]">
+              {isSubjectExpanded && <div className="divide-y divide-[#ececef]">
                 {chapters.map(ch => {
                   const isExpanded = expandedChapters.has(ch.chapterKey)
                   const isConfirming = confirmDeleteKey === ch.chapterKey
@@ -202,11 +202,11 @@ export default function ProblemsIndexPage() {
                             className="w-1 h-4 rounded-full shrink-0"
                             style={{ backgroundColor: config.accentHex + '80' }}
                           />
-                          <span className="text-sm text-[#c8c8e8] leading-snug flex-1">{ch.chapterName}</span>
+                          <span className="text-sm text-[#1a1a1a] leading-snug flex-1">{ch.chapterName}</span>
                         </button>
 
                         {/* 回答進捗 */}
-                        <span className="text-xs text-[#5a5a7a] tabular-nums shrink-0">
+                        <span className="text-xs text-[#9ca3af] tabular-nums shrink-0">
                           {ch.answered}/{ch.problems.length}
                         </span>
 
@@ -214,7 +214,7 @@ export default function ProblemsIndexPage() {
                         <button
                           onClick={() => navigate(chapterPath)}
                           title="この章の問題を開く"
-                          className="shrink-0 p-1.5 rounded-lg text-[#5a5a7a] hover:text-white hover:bg-[#252540] transition-colors"
+                          className="shrink-0 p-1.5 rounded-lg text-[#9ca3af] hover:text-[#1a1a1a] hover:bg-[#f4f4f5] transition-colors"
                         >
                           <ExternalLink className="w-3.5 h-3.5" strokeWidth={1.5} />
                         </button>
@@ -223,7 +223,7 @@ export default function ProblemsIndexPage() {
                         <button
                           onClick={() => setConfirmDeleteKey(isConfirming ? null : ch.chapterKey)}
                           title="この章を削除"
-                          className="shrink-0 p-1.5 rounded-lg text-[#5a5a7a] hover:text-red-400 hover:bg-red-900/20 transition-colors"
+                          className="shrink-0 p-1.5 rounded-lg text-[#9ca3af] hover:text-red-600 hover:bg-red-50 transition-colors"
                         >
                           <Trash2 className="w-3.5 h-3.5" strokeWidth={1.5} />
                         </button>
@@ -232,7 +232,7 @@ export default function ProblemsIndexPage() {
                         <button
                           onClick={() => toggleChapter(ch.chapterKey)}
                           title={isExpanded ? '折りたたむ' : '問題一覧を表示'}
-                          className="shrink-0 p-1.5 rounded-lg text-[#5a5a7a] hover:text-white hover:bg-[#252540] transition-colors"
+                          className="shrink-0 p-1.5 rounded-lg text-[#9ca3af] hover:text-[#1a1a1a] hover:bg-[#f4f4f5] transition-colors"
                         >
                           {isExpanded
                             ? <ChevronUp className="w-3.5 h-3.5" strokeWidth={1.5} />
@@ -243,20 +243,20 @@ export default function ProblemsIndexPage() {
 
                       {/* 削除確認バー */}
                       {isConfirming && (
-                        <div className="flex items-center gap-2 px-4 py-2.5 bg-red-950/40 border-t border-red-900/40">
-                          <p className="flex-1 text-xs text-red-300">
+                        <div className="flex items-center gap-2 px-4 py-2.5 bg-red-50 border-t border-red-200">
+                          <p className="flex-1 text-xs text-red-700">
                             「{ch.chapterName}」の問題と回答履歴を全て削除しますか？
                           </p>
                           <button
                             onClick={() => setConfirmDeleteKey(null)}
-                            className="px-3 py-1 text-xs text-[#8888aa] hover:text-white rounded-lg hover:bg-[#252540] transition-colors"
+                            className="px-3 py-1 text-xs text-[#52525b] hover:text-[#1a1a1a] rounded-lg hover:bg-[#f4f4f5] transition-colors"
                           >
                             キャンセル
                           </button>
                           <button
                             onClick={() => handleDeleteChapter(ch.chapterKey)}
                             disabled={deleting}
-                            className="px-3 py-1 text-xs bg-red-700 hover:bg-red-600 text-white rounded-lg transition-colors disabled:opacity-50"
+                            className="px-3 py-1 text-xs bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors disabled:opacity-50"
                           >
                             {deleting ? '削除中…' : '削除する'}
                           </button>
@@ -265,14 +265,14 @@ export default function ProblemsIndexPage() {
 
                       {/* 削除エラー */}
                       {deleteError && confirmDeleteKey === ch.chapterKey && (
-                        <div className="px-4 py-2 bg-red-950/40 border-t border-red-900/40">
-                          <p className="text-xs text-red-400">{deleteError}</p>
+                        <div className="px-4 py-2 bg-red-50 border-t border-red-200">
+                          <p className="text-xs text-red-600">{deleteError}</p>
                         </div>
                       )}
 
                       {/* 章プログレスバー */}
                       {ch.answered > 0 && (
-                        <div className="h-px mx-4 bg-[#2a2a4a] rounded-full overflow-hidden">
+                        <div className="h-px mx-4 bg-[#ececef] rounded-full overflow-hidden">
                           <div
                             className="h-full transition-all duration-500"
                             style={{ width: `${chProgress}%`, backgroundColor: config.accentHex + '70' }}
@@ -282,7 +282,7 @@ export default function ProblemsIndexPage() {
 
                       {/* 問題一覧（展開時のみ） */}
                       {isExpanded && (
-                        <div className="bg-[#0e0e20] border-t border-[#1e1e38] divide-y divide-[#1a1a35]">
+                        <div className="bg-[#fafafa] border-t border-[#ececef] divide-y divide-[#ececef]">
                           {ch.problems.map(p => {
                             const latestResult = stats[p.id]?.latestResult ?? null
                             const history = (recentAttempts[p.id] ?? []).map(a => a.result)
@@ -291,13 +291,13 @@ export default function ProblemsIndexPage() {
                               <button
                                 key={p.id}
                                 onClick={() => navigate(`${config.path}?chapter=${ch.chapterKey}&problem=${p.id}`)}
-                                className="w-full flex items-start gap-3 px-5 py-3 hover:bg-[#1a1a3a] transition-colors text-left"
+                                className="w-full flex items-start gap-3 px-5 py-3 hover:bg-[#f4f4f5] transition-colors text-left"
                               >
                                 <span className={`mt-0.5 w-5 h-5 rounded-full border flex items-center justify-center text-[10px] font-bold shrink-0 ${
-                                  latestResult === 'correct'    ? 'bg-green-900/30 border-green-500/40 text-green-400'
-                                  : latestResult === 'partial'  ? 'bg-amber-900/30 border-amber-500/40 text-amber-400'
-                                  : latestResult === 'incorrect'? 'bg-red-900/30 border-red-500/40 text-red-400'
-                                  : 'border-[#3a3a5c] text-[#5a5a7a]'
+                                  latestResult === 'correct'    ? 'bg-green-50 border-green-300 text-green-700'
+                                  : latestResult === 'partial'  ? 'bg-amber-50 border-amber-300 text-amber-700'
+                                  : latestResult === 'incorrect'? 'bg-red-50 border-red-300 text-red-700'
+                                  : 'border-[#d4d4d8] text-[#9ca3af]'
                                 }`}>
                                   {latestResult === 'correct' ? '○'
                                     : latestResult === 'partial' ? '△'
@@ -305,8 +305,8 @@ export default function ProblemsIndexPage() {
                                     : '−'}
                                 </span>
                                 <div className="flex-1 min-w-0">
-                                  <p className="text-xs font-medium text-[#a78bfa] mb-0.5">{p.questionNo}</p>
-                                  <p className="text-xs text-[#8888aa] leading-snug line-clamp-1">
+                                  <p className="text-xs font-medium mb-0.5" style={{ color: config.accentHex }}>{p.questionNo}</p>
+                                  <p className="text-xs text-[#52525b] leading-snug line-clamp-1">
                                     {p.questionText.replace(/\$[^$]*\$/g, '[数式]').slice(0, 60)}
                                   </p>
                                   {history.length > 0 && (
