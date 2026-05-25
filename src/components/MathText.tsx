@@ -10,11 +10,15 @@ import katex from 'katex'
 // 型定義
 // -----------------------------------------------
 
+type Theme = 'dark' | 'light'
+
 type Props = {
   /** レンダリングするテキスト（LaTeX記法・マークダウンテーブルを含む可） */
   text: string
   /** ルート要素に追加する Tailwind クラス */
   className?: string
+  /** 配色テーマ（テーブル等）。既定は dark で従来挙動を維持 */
+  theme?: Theme
 }
 
 // テキストブロック内の数式セグメント
@@ -168,7 +172,7 @@ function sanitizeLatex(latex: string): string {
 // エラーフォールバック付き数式レンダラー
 // -----------------------------------------------
 
-function MathRenderer({ latex, display }: { latex: string; display: boolean }) {
+function MathRenderer({ latex, display, theme = 'dark' }: { latex: string; display: boolean; theme?: Theme }) {
   let html: string
   try {
     html = katex.renderToString(sanitizeLatex(latex), {
@@ -178,7 +182,7 @@ function MathRenderer({ latex, display }: { latex: string; display: boolean }) {
     })
   } catch {
     const raw = display ? `$$${latex}$$` : `$${latex}$`
-    return <span className="font-mono text-amber-400 text-sm">{raw}</span>
+    return <span className={`font-mono text-sm ${theme === 'light' ? 'text-amber-600' : 'text-amber-400'}`}>{raw}</span>
   }
 
   if (display) {
@@ -209,13 +213,13 @@ function PlainText({ value }: { value: string }) {
 // 数式セグメント列のレンダラー（テーブルセル内でも使用）
 // -----------------------------------------------
 
-function RenderMathSegments({ text }: { text: string }) {
+function RenderMathSegments({ text, theme = 'dark' }: { text: string; theme?: Theme }) {
   const segs = parseSegments(text)
   return (
     <>
       {segs.map((seg, i) => {
-        if (seg.type === 'block')  return <MathRenderer key={i} latex={seg.value} display={true} />
-        if (seg.type === 'inline') return <MathRenderer key={i} latex={seg.value} display={false} />
+        if (seg.type === 'block')  return <MathRenderer key={i} latex={seg.value} display={true} theme={theme} />
+        if (seg.type === 'inline') return <MathRenderer key={i} latex={seg.value} display={false} theme={theme} />
         return <PlainText key={i} value={seg.value} />
       })}
     </>
@@ -232,15 +236,28 @@ const alignClass: Record<Align, string> = {
   right:  'text-right',
 }
 
-function MarkdownTable({ headers, rows, aligns }: {
+function MarkdownTable({ headers, rows, aligns, theme = 'dark' }: {
   headers: string[]
   rows: string[][]
   aligns: Align[]
+  theme?: Theme
 }) {
   const colAlign = (i: number): Align => aligns[i] ?? 'left'
+  const light = theme === 'light'
+
+  const wrapCls = light ? 'border-[#e4e4e7]' : 'border-[#2a2a4a]'
+  const thCls = light
+    ? 'text-[#3f3f46] bg-[#f4f4f5] border-[#e4e4e7]'
+    : 'text-[#c8c8e8] bg-[#252540] border-[#2a2a4a]'
+  const tdCls = light
+    ? 'text-[#27272a] border-[#e4e4e7]'
+    : 'text-[#c8c8e8] border-[#2a2a4a]'
+  const rowCls = (ri: number) => light
+    ? (ri % 2 === 0 ? 'bg-white' : 'bg-[#fafafa]')
+    : (ri % 2 === 0 ? 'bg-[#1a1a2e]' : 'bg-[#1e1e3a]')
 
   return (
-    <div className="my-3 overflow-x-auto rounded-xl border border-[#2a2a4a]">
+    <div className={`my-3 overflow-x-auto rounded-xl border ${wrapCls}`}>
       <table className="min-w-full text-sm border-collapse">
         {headers.length > 0 && (
           <thead>
@@ -248,9 +265,9 @@ function MarkdownTable({ headers, rows, aligns }: {
               {headers.map((h, i) => (
                 <th
                   key={i}
-                  className={`px-3 py-2 font-semibold text-[#c8c8e8] bg-[#252540] border-b border-[#2a2a4a] ${alignClass[colAlign(i)]}`}
+                  className={`px-3 py-2 font-semibold border-b ${thCls} ${alignClass[colAlign(i)]}`}
                 >
-                  <RenderMathSegments text={h} />
+                  <RenderMathSegments text={h} theme={theme} />
                 </th>
               ))}
             </tr>
@@ -258,13 +275,13 @@ function MarkdownTable({ headers, rows, aligns }: {
         )}
         <tbody>
           {rows.map((row, ri) => (
-            <tr key={ri} className={ri % 2 === 0 ? 'bg-[#1a1a2e]' : 'bg-[#1e1e3a]'}>
+            <tr key={ri} className={rowCls(ri)}>
               {row.map((cell, ci) => (
                 <td
                   key={ci}
-                  className={`px-3 py-2 text-[#c8c8e8] border-b border-[#2a2a4a] last:border-b-0 ${alignClass[colAlign(ci)]}`}
+                  className={`px-3 py-2 border-b last:border-b-0 ${tdCls} ${alignClass[colAlign(ci)]}`}
                 >
-                  <RenderMathSegments text={cell} />
+                  <RenderMathSegments text={cell} theme={theme} />
                 </td>
               ))}
             </tr>
@@ -279,7 +296,7 @@ function MarkdownTable({ headers, rows, aligns }: {
 // メインコンポーネント
 // -----------------------------------------------
 
-export default function MathText({ text, className }: Props) {
+export default function MathText({ text, className, theme = 'dark' }: Props) {
   if (!text) return null
 
   const topSegments = splitByTables(text)
@@ -294,11 +311,12 @@ export default function MathText({ text, className }: Props) {
               headers={seg.headers}
               rows={seg.rows}
               aligns={seg.aligns}
+              theme={theme}
             />
           )
         }
         // テキストブロック → 既存の数式レンダリング
-        return <RenderMathSegments key={i} text={seg.value} />
+        return <RenderMathSegments key={i} text={seg.value} theme={theme} />
       })}
     </span>
   )

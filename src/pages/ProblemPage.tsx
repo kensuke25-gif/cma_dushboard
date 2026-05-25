@@ -26,7 +26,7 @@ function DifficultyDots({ difficulty }: { difficulty: 1 | 2 | 3 }) {
         <span
           key={n}
           className="w-2 h-2 rounded-full"
-          style={{ backgroundColor: n <= difficulty ? '#fbbf24' : '#2a2a4a' }}
+          style={{ backgroundColor: n <= difficulty ? '#f59e0b' : '#d4d4d8' }}
         />
       ))}
     </div>
@@ -41,19 +41,19 @@ function TrendDots({ history }: { history: NonNullable<ProblemResult>[] }) {
   return (
     <span
       className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full
-                 bg-[#111125] border border-[#2a2a4a]"
+                 bg-[#fafafa] border border-[#e4e4e7]"
       title={`直近${last5.length}回の履歴（左: 古い / 右: 新しい）`}
     >
-      <span className="text-[9px] text-[#5a5a7a] mr-0.5 font-medium">履歴</span>
+      <span className="text-[9px] text-[#9ca3af] mr-0.5 font-medium">履歴</span>
       {last5.map((r, i) => (
         <span
           key={i}
           className={`w-2 h-2 rounded-full ${
             r === 'correct'
-              ? 'bg-green-400'
+              ? 'bg-green-600'
               : r === 'partial'
-                ? 'bg-amber-400'
-                : 'bg-red-400'
+                ? 'bg-amber-500'
+                : 'bg-red-600'
           }`}
         />
       ))}
@@ -65,15 +65,15 @@ function TrendDots({ history }: { history: NonNullable<ProblemResult>[] }) {
 function ResultBadge({ result }: { result: ProblemResult }) {
   if (!result) {
     return (
-      <span className="w-5 h-5 rounded-full border border-[#3a3a5c] inline-flex items-center justify-center text-[10px] text-[#5a5a7a] shrink-0">
+      <span className="w-5 h-5 rounded-full border border-[#d4d4d8] inline-flex items-center justify-center text-[10px] text-[#9ca3af] shrink-0">
         −
       </span>
     )
   }
   const m: Record<NonNullable<ProblemResult>, { label: string; cls: string }> = {
-    correct:   { label: '○', cls: 'bg-green-900/30 text-green-400 border-green-500/40' },
-    partial:   { label: '△', cls: 'bg-amber-900/30 text-amber-400 border-amber-500/40' },
-    incorrect: { label: '×', cls: 'bg-red-900/30 text-red-400 border-red-500/40' },
+    correct:   { label: '○', cls: 'bg-green-50 text-green-700 border-green-300' },
+    partial:   { label: '△', cls: 'bg-amber-50 text-amber-700 border-amber-300' },
+    incorrect: { label: '×', cls: 'bg-red-50 text-red-700 border-red-300' },
   }
   return (
     <span className={`w-5 h-5 rounded-full border inline-flex items-center justify-center text-[10px] font-bold shrink-0 ${m[result].cls}`}>
@@ -86,24 +86,24 @@ function ResultBadge({ result }: { result: ProblemResult }) {
 function HintSection({ hintText }: { hintText: string }) {
   const [open, setOpen] = useState(false)
   return (
-    <div className="rounded-xl border border-[#fbbf24]/30 overflow-hidden">
+    <div className="rounded-xl border border-amber-200 overflow-hidden">
       <button
         onClick={() => setOpen(v => !v)}
-        className="w-full flex items-center gap-2 px-4 py-3 bg-[#1a1a2e] hover:bg-[#1e1e35] transition-colors text-left"
+        className="w-full flex items-center gap-2 px-4 py-3 bg-amber-50 hover:bg-amber-100 transition-colors text-left"
       >
-        <Lightbulb className="w-4 h-4 shrink-0 text-[#fbbf24]" strokeWidth={1.5} />
-        <span className="text-sm font-medium text-[#fbbf24] flex-1">
+        <Lightbulb className="w-4 h-4 shrink-0 text-[#d97706]" strokeWidth={1.5} />
+        <span className="text-sm font-medium text-amber-700 flex-1">
           {open ? 'ヒントを閉じる' : 'ヒントを見る'}
         </span>
         {open
-          ? <ChevronUp   className="w-4 h-4 text-[#fbbf24]/60" strokeWidth={1.5} />
-          : <ChevronDown className="w-4 h-4 text-[#fbbf24]/60" strokeWidth={1.5} />
+          ? <ChevronUp   className="w-4 h-4 text-amber-600/70" strokeWidth={1.5} />
+          : <ChevronDown className="w-4 h-4 text-amber-600/70" strokeWidth={1.5} />
         }
       </button>
       {open && (
-        <div className="px-4 py-3 bg-[#1a1505] border-t border-[#fbbf24]/20">
-          <div className="pl-2 border-l-2 border-[#fbbf24]/50 text-sm text-[#e5c97a] leading-relaxed">
-            <MathText text={hintText} />
+        <div className="px-4 py-3 bg-amber-50/50 border-t border-amber-200">
+          <div className="pl-2 border-l-2 border-amber-400 text-sm text-amber-800 leading-relaxed">
+            <MathText text={hintText} theme="light" />
           </div>
         </div>
       )}
@@ -114,35 +114,35 @@ function HintSection({ hintText }: { hintText: string }) {
 // ── 解答・解説セクション ──────────────────────────
 function AnswerSection({ problem }: { problem: Problem }) {
   return (
-    <div className="rounded-xl border border-[#2a2a4a] overflow-hidden animate-in slide-in-from-bottom-4 duration-300">
-      <div className="px-5 py-4 bg-[#111125]">
-        <p className="text-xs font-semibold text-[#9090bb] mb-3 flex items-center gap-1.5">
-          <span className="w-1 h-3 rounded-full bg-[#9090bb] inline-block" />
+    <div className="rounded-xl border border-[#e4e4e7] overflow-hidden animate-in slide-in-from-bottom-4 duration-300">
+      <div className="px-5 py-4 bg-white">
+        <p className="text-xs font-semibold text-[#52525b] mb-3 flex items-center gap-1.5">
+          <span className="w-1 h-3 rounded-full bg-[#52525b] inline-block" />
           模範解答
         </p>
-        <div className="text-sm text-[#c8c8e8] leading-relaxed">
-          <MathText text={problem.answerText} />
+        <div className="text-sm text-[#1a1a1a] leading-relaxed">
+          <MathText text={problem.answerText} theme="light" />
         </div>
       </div>
 
-      <div className="px-5 py-4 bg-[#13132a] border-t border-[#2a2a4a]">
-        <p className="text-xs font-semibold text-[#a78bfa] mb-3 flex items-center gap-1.5">
-          <span className="w-1 h-3 rounded-full bg-[#a78bfa] inline-block" />
+      <div className="px-5 py-4 bg-[#f7f9ff] border-t border-[#e4e4e7]">
+        <p className="text-xs font-semibold text-[#2563eb] mb-3 flex items-center gap-1.5">
+          <span className="w-1 h-3 rounded-full bg-[#2563eb] inline-block" />
           初学者向け解説
         </p>
-        <div className="text-sm text-[#c8c8e8] leading-relaxed">
-          <MathText text={problem.explanation} />
+        <div className="text-sm text-[#1a1a1a] leading-relaxed">
+          <MathText text={problem.explanation} theme="light" />
         </div>
       </div>
 
       {problem.relatedKnowledge && (
-        <div className="px-5 py-4 bg-[#0e1a14] border-t border-[#2a2a4a]">
-          <p className="text-xs font-semibold text-[#34d399] mb-3 flex items-center gap-1.5">
-            <span className="w-1 h-3 rounded-full bg-[#34d399] inline-block" />
+        <div className="px-5 py-4 bg-[#f0faf5] border-t border-[#e4e4e7]">
+          <p className="text-xs font-semibold text-[#059669] mb-3 flex items-center gap-1.5">
+            <span className="w-1 h-3 rounded-full bg-[#059669] inline-block" />
             周辺知識・発展
           </p>
-          <div className="text-sm text-[#8888aa] leading-relaxed">
-            <MathText text={problem.relatedKnowledge} />
+          <div className="text-sm text-[#52525b] leading-relaxed">
+            <MathText text={problem.relatedKnowledge} theme="light" />
           </div>
         </div>
       )}
@@ -152,9 +152,9 @@ function AnswerSection({ problem }: { problem: Problem }) {
 
 // ── 採点ボタン ────────────────────────────────────
 const RESULT_BTNS = [
-  { value: 'incorrect' as const, label: '✕', text: '不正解',  activeClass: 'bg-red-900/40 border-red-500/70 text-red-400' },
-  { value: 'partial'   as const, label: '△', text: '部分正解', activeClass: 'bg-amber-900/40 border-amber-500/70 text-amber-400' },
-  { value: 'correct'   as const, label: '○', text: '正解',    activeClass: 'bg-green-900/40 border-green-500/70 text-green-400' },
+  { value: 'incorrect' as const, label: '✕', text: '不正解',  activeClass: 'bg-red-50 border-red-400 text-red-700' },
+  { value: 'partial'   as const, label: '△', text: '部分正解', activeClass: 'bg-amber-50 border-amber-400 text-amber-700' },
+  { value: 'correct'   as const, label: '○', text: '正解',    activeClass: 'bg-green-50 border-green-400 text-green-700' },
 ]
 
 function ScoringButtons({
@@ -166,7 +166,7 @@ function ScoringButtons({
 }) {
   return (
     <div>
-      <p className="text-xs text-[#5a5a7a] mb-2 text-center">採点してください</p>
+      <p className="text-xs text-[#9ca3af] mb-2 text-center">採点してください</p>
       <div className="grid grid-cols-3 gap-2">
         {RESULT_BTNS.map(({ value, label, text, activeClass }) => (
           <button
@@ -175,7 +175,7 @@ function ScoringButtons({
             className={`flex flex-col items-center justify-center gap-1 py-3 rounded-xl border font-medium transition-all duration-150 ${
               result === value
                 ? activeClass
-                : 'bg-[#1e1e3a] border-[#3a3a5c] text-[#5a5a7a] hover:border-[#5a5a7a] hover:text-[#8888aa]'
+                : 'bg-white border-[#d4d4d8] text-[#9ca3af] hover:border-[#9ca3af] hover:text-[#52525b]'
             }`}
           >
             <span className="text-xl leading-none">{label}</span>
@@ -205,8 +205,8 @@ function ProblemListContent({
         <div key={chapterKey} className="mb-1">
           {/* 章ヘッダー */}
           <div className="px-3 py-1.5 flex items-center gap-2">
-            <div className="w-1 h-3 rounded-full bg-[#7c4dff] shrink-0" />
-            <span className="text-[11px] font-semibold text-[#9090bb] leading-snug line-clamp-2">
+            <div className="w-1 h-3 rounded-full bg-[#52525b] shrink-0" />
+            <span className="text-[11px] font-semibold text-[#52525b] leading-snug line-clamp-2">
               {chapterName}
             </span>
           </div>
@@ -223,13 +223,13 @@ function ProblemListContent({
                   onClick={() => onJump(globalIdx)}
                   className={`w-full text-left flex items-center gap-2 px-2 py-1.5 rounded-lg transition-colors min-h-[36px] ${
                     isActive
-                      ? 'bg-[#7c4dff]/20 text-white'
-                      : 'text-[#8888aa] hover:text-[#c8c8e8] hover:bg-[#1a1a3a]'
+                      ? 'bg-zinc-100 text-[#1a1a1a]'
+                      : 'text-[#52525b] hover:text-[#1a1a1a] hover:bg-[#f4f4f5]'
                   }`}
                 >
                   <ResultBadge result={r} />
                   <span className="text-xs flex-1 leading-snug">{p.questionNo}</span>
-                  {isActive && <span className="w-1.5 h-1.5 rounded-full bg-[#7c4dff] shrink-0" />}
+                  {isActive && <span className="w-1.5 h-1.5 rounded-full bg-[#1a1a1a] shrink-0" />}
                 </button>
               )
             })}
@@ -345,17 +345,17 @@ export default function ProblemPage() {
   // ── エラー画面 ────────────────────────────────
   if (!config) {
     return (
-      <div className="min-h-screen bg-[#1a1a2e] flex items-center justify-center">
-        <p className="text-[#8888aa]">科目が見つかりません</p>
+      <div className="min-h-screen bg-white flex items-center justify-center">
+        <p className="text-[#52525b]">科目が見つかりません</p>
       </div>
     )
   }
   if (!loadingProblems && problems.length === 0) {
     return (
-      <div className="min-h-screen bg-[#1a1a2e] flex items-center justify-center p-4">
+      <div className="min-h-screen bg-white flex items-center justify-center p-4">
         <div className="text-center">
-          <p className="text-[#8888aa] mb-4">この科目の問題データが登録されていません</p>
-          <button onClick={() => navigate(-1)} className="text-[#7c4dff] text-sm underline">戻る</button>
+          <p className="text-[#52525b] mb-4">この科目の問題データが登録されていません</p>
+          <button onClick={() => navigate(-1)} className="text-[#1f2937] text-sm underline">戻る</button>
         </div>
       </div>
     )
@@ -363,24 +363,24 @@ export default function ProblemPage() {
 
   // ── レンダリング ──────────────────────────────
   return (
-    <div className="min-h-screen bg-[#1a1a2e] flex flex-col">
+    <div className="min-h-screen bg-white flex flex-col">
 
       {/* ===== ページヘッダー（sticky） ===== */}
-      <header className="sticky top-0 z-20 bg-[#111125] border-b border-[#2a2a4a] shrink-0">
+      <header className="sticky top-0 z-20 bg-white border-b border-[#e4e4e7] shrink-0">
         <div className="px-3 py-2.5">
           <div className="flex items-center gap-2">
 
             {/* 戻るボタン */}
             <button
               onClick={() => navigate(-1)}
-              className="p-1.5 rounded-lg text-[#8888aa] hover:text-white hover:bg-[#252540] transition-colors shrink-0"
+              className="p-1.5 rounded-lg text-[#52525b] hover:text-[#1a1a1a] hover:bg-[#f4f4f5] transition-colors shrink-0"
             >
               <ChevronLeft className="w-4 h-4" strokeWidth={1.5} />
             </button>
 
             {/* パンくず */}
             <div className="flex-1 min-w-0">
-              <p className="text-xs text-[#8888aa] truncate">
+              <p className="text-xs text-[#52525b] truncate">
                 {config.shortLabel}
                 {currentChapter && <> › {currentChapter.chapterName}</>}
               </p>
@@ -388,14 +388,14 @@ export default function ProblemPage() {
 
             {/* 進捗バッジ */}
             {problems.length > 0 && (
-              <span className="text-xs tabular-nums text-[#8888aa] px-2 py-1 rounded-lg bg-[#252540] shrink-0">
+              <span className="text-xs tabular-nums text-[#52525b] px-2 py-1 rounded-lg bg-[#f4f4f5] shrink-0">
                 {index + 1} / {problems.length}
               </span>
             )}
 
             {/* ポモドーロ残り時間（実行中のみ） */}
             {running && (
-              <span className={`text-xs font-bold tabular-nums px-2 py-1 rounded-lg bg-[#252540] shrink-0 ${MODES[mode].textColor}`}>
+              <span className={`text-xs font-bold tabular-nums px-2 py-1 rounded-lg bg-[#f4f4f5] shrink-0 ${MODES[mode].textColor}`}>
                 {pomMm}:{pomSs}
               </span>
             )}
@@ -403,7 +403,7 @@ export default function ProblemPage() {
             {/* 目次ボタン（モバイルのみ） */}
             <button
               onClick={() => setShowToc(true)}
-              className="md:hidden flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#252540] border border-[#3a3a5c] text-xs text-[#8888aa] hover:text-white hover:border-[#5a5a7a] transition-colors shrink-0"
+              className="md:hidden flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#f4f4f5] border border-[#d4d4d8] text-xs text-[#52525b] hover:text-[#1a1a1a] hover:border-[#9ca3af] transition-colors shrink-0"
             >
               <List className="w-3.5 h-3.5" strokeWidth={1.5} />
               目次
@@ -412,10 +412,10 @@ export default function ProblemPage() {
 
           {/* プログレスバー */}
           {problems.length > 0 && (
-            <div className="mt-2 h-1 bg-[#252540] rounded-full overflow-hidden">
+            <div className="mt-2 h-1 bg-[#ececef] rounded-full overflow-hidden">
               <div
-                className="h-full bg-[#7c4dff] rounded-full transition-all duration-300"
-                style={{ width: `${((index + 1) / problems.length) * 100}%` }}
+                className="h-full rounded-full transition-all duration-300"
+                style={{ width: `${((index + 1) / problems.length) * 100}%`, backgroundColor: config.accentHex }}
               />
             </div>
           )}
@@ -428,13 +428,13 @@ export default function ProblemPage() {
         {/* 問題一覧サイドバー（md+ のみ） */}
         <aside
           ref={sidebarRef}
-          className="hidden md:flex flex-col w-56 shrink-0 border-r border-[#2a2a4a] overflow-y-auto sticky self-start"
+          className="hidden md:flex flex-col w-56 shrink-0 border-r border-[#e4e4e7] overflow-y-auto sticky self-start"
           style={{ top: '60px', maxHeight: 'calc(100dvh - 60px)' }}
         >
           {/* サイドバーヘッダー */}
-          <div className="px-3 py-2.5 border-b border-[#2a2a4a] shrink-0 flex items-center justify-between">
-            <p className="text-xs font-semibold text-[#9090bb]">問題一覧</p>
-            <span className="text-[10px] text-[#5a5a7a]">{problems.length}問</span>
+          <div className="px-3 py-2.5 border-b border-[#e4e4e7] shrink-0 flex items-center justify-between">
+            <p className="text-xs font-semibold text-[#52525b]">問題一覧</p>
+            <span className="text-[10px] text-[#9ca3af]">{problems.length}問</span>
           </div>
           <ProblemListContent
             grouped={grouped}
@@ -448,7 +448,7 @@ export default function ProblemPage() {
         <main ref={mainRef} className="flex-1 min-w-0 pb-28">
           {loadingProblems && (
             <div className="flex justify-center py-20">
-              <div className="w-8 h-8 border-2 border-[#7c4dff] border-t-transparent rounded-full animate-spin" />
+              <div className="w-8 h-8 border-2 border-[#1f2937] border-t-transparent rounded-full animate-spin" />
             </div>
           )}
 
@@ -458,26 +458,29 @@ export default function ProblemPage() {
               {/* メタバッジ */}
               <div className="flex items-center gap-2 flex-wrap">
                 <DifficultyDots difficulty={problem.difficulty} />
-                <span className="text-xs px-2 py-0.5 rounded-full bg-[#7c4dff]/20 text-[#a78bfa] font-medium">
+                <span
+                  className="text-xs px-2 py-0.5 rounded-full font-medium"
+                  style={{ backgroundColor: `${config.accentHex}1a`, color: config.accentHex }}
+                >
                   {problem.questionNo}
                 </span>
                 <TrendDots history={currentHistory} />
                 {problem.points > 0 && (
-                  <span className="text-xs px-2 py-0.5 rounded-full bg-[#252540] text-[#8888aa]">
+                  <span className="text-xs px-2 py-0.5 rounded-full bg-[#f4f4f5] text-[#52525b]">
                     {problem.points}点
                   </span>
                 )}
                 {problem.tags.map(tag => (
-                  <span key={tag} className="text-xs px-2 py-0.5 rounded-full bg-[#1e1e3a] text-[#5a5a7a]">
+                  <span key={tag} className="text-xs px-2 py-0.5 rounded-full bg-[#f4f4f5] text-[#9ca3af]">
                     {tag}
                   </span>
                 ))}
               </div>
 
               {/* 問題文 */}
-              <div className="rounded-xl border border-[#2a2a4a] bg-[#1e1e3a] px-5 py-5">
-                <div className="text-sm text-[#c8c8e8] leading-relaxed">
-                  <MathText text={problem.questionText} />
+              <div className="rounded-xl border border-[#e4e4e7] bg-[#fafafa] px-5 py-5">
+                <div className="text-sm text-[#1a1a1a] leading-relaxed">
+                  <MathText text={problem.questionText} theme="light" />
                 </div>
               </div>
 
@@ -489,7 +492,7 @@ export default function ProblemPage() {
                 /* 解答を確認するボタン */
                 <button
                   onClick={() => setRevealedAnswer(true)}
-                  className="w-full flex items-center justify-center gap-2 py-4 rounded-xl bg-[#7c4dff] hover:bg-[#6c3de8] text-white font-semibold text-sm transition-colors shadow-lg shadow-[#7c4dff]/25"
+                  className="w-full flex items-center justify-center gap-2 py-4 rounded-xl bg-[#1f2937] hover:bg-[#111827] text-white font-semibold text-sm transition-colors shadow-sm"
                 >
                   <Eye className="w-4 h-4" strokeWidth={1.5} />
                   解答を確認する
@@ -508,7 +511,7 @@ export default function ProblemPage() {
                   {/* 解答を閉じる */}
                   <button
                     onClick={() => setRevealedAnswer(false)}
-                    className="w-full flex items-center justify-center gap-1.5 py-2.5 text-xs text-[#5a5a7a] hover:text-[#8888aa] transition-colors"
+                    className="w-full flex items-center justify-center gap-1.5 py-2.5 text-xs text-[#9ca3af] hover:text-[#52525b] transition-colors"
                   >
                     <ChevronUp className="w-3.5 h-3.5" strokeWidth={1.5} />
                     解答を閉じる
@@ -522,11 +525,11 @@ export default function ProblemPage() {
       </div>
 
       {/* ===== フッター（fixed） ===== */}
-      <footer className="fixed bottom-0 left-0 right-0 z-20 bg-[#111125]/95 backdrop-blur-sm border-t border-[#2a2a4a]">
+      <footer className="fixed bottom-0 left-0 right-0 z-20 bg-white/95 backdrop-blur-sm border-t border-[#e4e4e7]">
         {/* サイドバー幅分のスペーサー + ナビゲーション */}
         <div className="flex">
           {/* md+ サイドバーと揃えるスペーサー */}
-          <div className="hidden md:block w-56 shrink-0 border-r border-[#2a2a4a]/50" />
+          <div className="hidden md:block w-56 shrink-0 border-r border-[#e4e4e7]/60" />
 
           {/* ナビゲーション */}
           <div className="flex-1 px-4 py-3 space-y-2">
@@ -535,9 +538,9 @@ export default function ProblemPage() {
                 onClick={() => setIndex(i => i - 1)}
                 disabled={index === 0}
                 className="flex items-center justify-center gap-1.5 flex-1 py-3 rounded-xl border font-medium text-sm transition-all
-                           disabled:opacity-30 disabled:cursor-not-allowed
-                           border-[#3a3a5c] text-[#8888aa] hover:border-[#5a5a7a] hover:text-white
-                           disabled:border-[#2a2a4a] disabled:text-[#3a3a5c]"
+                           disabled:opacity-40 disabled:cursor-not-allowed
+                           border-[#d4d4d8] text-[#52525b] hover:border-[#9ca3af] hover:text-[#1a1a1a]
+                           disabled:border-[#e4e4e7] disabled:text-[#cbcbd1]"
               >
                 <ChevronLeft className="w-4 h-4" strokeWidth={1.5} />
                 前の問題
@@ -547,16 +550,16 @@ export default function ProblemPage() {
                 onClick={() => setIndex(i => i + 1)}
                 disabled={index >= problems.length - 1}
                 className="flex items-center justify-center gap-1.5 flex-1 py-3 rounded-xl font-medium text-sm transition-all
-                           disabled:opacity-30 disabled:cursor-not-allowed
-                           bg-[#7c4dff] hover:bg-[#6c3de8] text-white shadow-lg shadow-[#7c4dff]/20
-                           disabled:bg-[#252540] disabled:text-[#3a3a5c] disabled:shadow-none"
+                           disabled:opacity-40 disabled:cursor-not-allowed
+                           bg-[#1f2937] hover:bg-[#111827] text-white shadow-sm
+                           disabled:bg-[#e4e4e7] disabled:text-[#cbcbd1] disabled:shadow-none"
               >
                 次の問題
                 <ChevronRight className="w-4 h-4" strokeWidth={1.5} />
               </button>
             </div>
 
-            <p className="hidden md:block text-center text-[10px] text-[#3a3a5c]">
+            <p className="hidden md:block text-center text-[10px] text-[#9ca3af]">
               ← / → キーで問題を移動　Esc で戻る
             </p>
           </div>
@@ -571,13 +574,13 @@ export default function ProblemPage() {
             onClick={() => setShowToc(false)}
           />
           <aside className="fixed top-0 right-0 bottom-0 z-50 w-72 max-w-[85vw] md:hidden
-                            bg-[#111125] border-l border-[#2a2a4a] flex flex-col
+                            bg-white border-l border-[#e4e4e7] flex flex-col
                             animate-in slide-in-from-right duration-200">
-            <div className="flex items-center justify-between px-4 py-4 border-b border-[#2a2a4a] shrink-0">
-              <p className="text-sm font-semibold text-white">問題一覧</p>
+            <div className="flex items-center justify-between px-4 py-4 border-b border-[#e4e4e7] shrink-0">
+              <p className="text-sm font-semibold text-[#1a1a1a]">問題一覧</p>
               <button
                 onClick={() => setShowToc(false)}
-                className="p-1.5 rounded-lg text-[#8888aa] hover:text-white hover:bg-[#252540] transition-colors"
+                className="p-1.5 rounded-lg text-[#52525b] hover:text-[#1a1a1a] hover:bg-[#f4f4f5] transition-colors"
               >
                 <X className="w-4 h-4" strokeWidth={1.5} />
               </button>
@@ -590,8 +593,8 @@ export default function ProblemPage() {
                 onJump={jumpTo}
               />
             </div>
-            <div className="px-4 py-3 border-t border-[#2a2a4a] shrink-0 text-center">
-              <p className="text-xs text-[#5a5a7a]">{index + 1} / {problems.length} 問</p>
+            <div className="px-4 py-3 border-t border-[#e4e4e7] shrink-0 text-center">
+              <p className="text-xs text-[#9ca3af]">{index + 1} / {problems.length} 問</p>
             </div>
           </aside>
         </>
